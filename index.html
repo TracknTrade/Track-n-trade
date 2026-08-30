@@ -227,10 +227,10 @@
       border-right: 1px solid var(--border);
     }
     .stats-by-buyer .bwc:last-child { border-right: none; }
-    .stats-by-buyer .k {
+    .stats-by-buyer .stat-k {
       font-size: 0.68rem; font-weight: 800; color: var(--muted); white-space: nowrap;
     }
-    .stats-by-buyer .v { font-size: 1.05rem; font-weight: 800; margin-top: 3px; white-space: nowrap; }
+    .stats-by-buyer .stat-v { font-size: 1.05rem; font-weight: 800; margin-top: 3px; white-space: nowrap; }
     .way-group { margin-bottom: 14px; }
     .way-group:last-child { margin-bottom: 0; }
     .way-group-h {
@@ -255,6 +255,7 @@
       font-size: clamp(20px, 5vw, 32px);
       height: 58px; min-height: 58px; flex: 0 0 58px;
     }
+    .rec-next.rec-next-error { background: #dc2626; font-size: clamp(15px, 4.2vw, 20px); letter-spacing: .01em; }
     .buyer-pick { display: flex; flex-wrap: wrap; gap: 8px; }
     .buyer-pick button {
       flex: 1; min-width: 30%; background: #334155; color: #fff; border: 2px solid transparent;
@@ -1161,12 +1162,26 @@ function recNext() {
     saveDraft();
     return;
   }
-  if (!addLot()) return;
+  if (!addLot()) { flashRecError('NEED $/HD + PEN'); return; }
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   ALL_FIELDS.forEach(function(id){ if (id !== 'lotBuyer') document.getElementById(id).value = ''; });
   recHighlight();
   clearDraft();
+}
+let recErrorTimer = null;
+function flashRecError(msg) {
+  const btn = document.getElementById('recNext');
+  if (!btn) return;
+  if (recErrorTimer) { clearTimeout(recErrorTimer); recErrorTimer = null; }
+  if (!btn.dataset.origText) btn.dataset.origText = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('rec-next-error');
+  recErrorTimer = setTimeout(function(){
+    btn.textContent = btn.dataset.origText;
+    btn.classList.remove('rec-next-error');
+    recErrorTimer = null;
+  }, 1800);
 }
 
 /* lots */
@@ -1210,16 +1225,16 @@ function renderLots() {
     stdBar.classList.add('hidden');
     bwBar.classList.remove('hidden');
     bwBar.innerHTML = wayNames.map(function(n) {
-      return '<div class="bwc"><div class="k">'+xmlEsc(n).toUpperCase()+'</div><div class="v">'+byWay[n].hd+' hd</div></div>';
+      return '<div class="bwc"><div class="stat-k">'+xmlEsc(n).toUpperCase()+'</div><div class="stat-v">'+(byWay[n].hd || '—')+' hd</div></div>';
     }).join('');
   } else {
     stdBar.classList.remove('hidden');
     bwBar.classList.add('hidden');
   }
-  document.getElementById('statHd').textContent = th;
-  document.getElementById('statAvgHd').textContent = '$'+(th?Math.round(td/th):0).toLocaleString();
-  document.getElementById('statAvgKg').textContent = '$'+(tk?(td/tk).toFixed(2):'0.00');
-  document.getElementById('statTotal').textContent = '$'+Math.round(td).toLocaleString();
+  document.getElementById('statHd').textContent = th || '—';
+  document.getElementById('statAvgHd').textContent = th ? ('$'+Math.round(td/th).toLocaleString()) : '—';
+  document.getElementById('statAvgKg').textContent = tk ? ('$'+(td/tk).toFixed(2)) : '—';
+  document.getElementById('statTotal').textContent = th ? ('$'+Math.round(td).toLocaleString()) : '—';
 
   fillBuyerWaySelect(wayNames);
 
@@ -1231,16 +1246,17 @@ function renderLots() {
 
   const moneyRows = wayNames.map(function(n) {
     const g = byWay[n];
-    const avgHd = g.hd ? Math.round(g.dol/g.hd) : 0;
+    const hasHd = g.hd > 0;
+    const avgHd = hasHd ? Math.round(g.dol/g.hd) : 0;
     const avgKg = g.kg ? (g.dol/g.kg) : 0;
-    const avgWt = g.hd ? Math.round(g.kg/g.hd) : 0;
+    const avgWt = hasHd ? Math.round(g.kg/g.hd) : 0;
     return '<tr>'
       + '<td>'+xmlEsc(n)+'</td>'
-      + '<td>'+g.hd+'</td>'
-      + '<td>$'+avgHd.toLocaleString()+'</td>'
-      + '<td>$'+avgKg.toFixed(2)+'</td>'
-      + '<td>'+avgWt+'</td>'
-      + '<td>$'+Math.round(g.dol).toLocaleString()+'</td>'
+      + '<td>'+(hasHd ? g.hd : '—')+'</td>'
+      + '<td>'+(hasHd ? '$'+avgHd.toLocaleString() : '—')+'</td>'
+      + '<td>'+(g.kg ? '$'+avgKg.toFixed(2) : '—')+'</td>'
+      + '<td>'+(hasHd ? avgWt : '—')+'</td>'
+      + '<td>'+(hasHd ? '$'+Math.round(g.dol).toLocaleString() : '—')+'</td>'
       + '</tr>';
   }).join('');
   document.getElementById('lotsSummaryMoney').innerHTML =
