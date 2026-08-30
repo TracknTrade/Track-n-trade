@@ -130,6 +130,14 @@
       padding: 0; text-align: center;
     }
     .info-btn:active { background: var(--muted); }
+    .phone-row { display: flex; gap: 8px; align-items: stretch; }
+    .phone-row input { flex: 1; min-width: 0; }
+    .contact-btn {
+      flex: 0 0 auto; background: var(--green-2); color: #fff; border: none;
+      border-radius: 12px; padding: 0 14px; font-weight: 800; font-size: var(--fs-xs);
+      white-space: nowrap;
+    }
+    .contact-btn:active { background: var(--green); }
     .cost-calc-out { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 4px; }
     .cost-calc-out b { font-size: var(--fs-lg); }
     .lot-row { display: flex; gap: 8px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--bg); font-size: var(--fs-sm); }
@@ -151,6 +159,9 @@
     .lots-table input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--green-2); }
     .lots-table .c-st { font-size: var(--fs-sm); font-weight: 800; }
     .lots-table .sub { display: block; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); margin-top: 3px; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .lots-table.compact th { padding: 9px 6px; font-size: 0.62rem; white-space: nowrap; }
+    .lots-table.compact td { padding: 11px 6px; font-size: var(--fs-sm); white-space: nowrap; }
     #weightClasses .card { margin-bottom: 10px; position: relative; padding-top: 22px; }
     .card-x {
       position: absolute; top: 8px; left: 10px;
@@ -206,6 +217,26 @@
     .rec-stats .stat-v {
       font-size: 1.05rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .stats-by-buyer {
+      display: flex; gap: 0; overflow-x: auto; background: var(--card);
+      border: 2px solid var(--border); border-radius: 10px; flex: 0 0 auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .stats-by-buyer .bwc {
+      flex: 0 0 auto; min-width: 74px; text-align: center; padding: 7px 8px;
+      border-right: 1px solid var(--border);
+    }
+    .stats-by-buyer .bwc:last-child { border-right: none; }
+    .stats-by-buyer .k {
+      font-size: 0.68rem; font-weight: 800; color: var(--muted); white-space: nowrap;
+    }
+    .stats-by-buyer .v { font-size: 1.05rem; font-weight: 800; margin-top: 3px; white-space: nowrap; }
+    .way-group { margin-bottom: 14px; }
+    .way-group:last-child { margin-bottom: 0; }
+    .way-group-h {
+      font-size: var(--fs-xs); font-weight: 800; color: var(--green);
+      text-transform: uppercase; letter-spacing: .04em; padding: 6px 0;
+    }
     #numPad { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .rec-pad {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
@@ -230,11 +261,12 @@
       border-radius: 10px; padding: 12px 8px; font-weight: 800; font-size: var(--fs-sm);
     }
     .buyer-pick button.on { border-color: #34d399; background: var(--green); }
-    body.kp-open header { padding-top: 2px; }
+    body.kp-open header { padding-top: 2px; pointer-events: none; }
     body.kp-open main {
       height: calc((100dvh - var(--header-h)) / 2) !important;
       max-height: calc((100dvh - var(--header-h)) / 2);
       padding-bottom: 4px;
+      overflow: hidden;
     }
     #keypad {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -367,20 +399,21 @@
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
           <div class="rec-top">
-            <div class="rec-stats stats">
+            <div class="rec-stats stats" id="statsStandard">
               <div class="stat"><div class="stat-k">HD</div><div class="stat-v" id="statHd">0</div></div>
               <div class="stat"><div class="stat-k">AVG $/HD</div><div class="stat-v" id="statAvgHd">$0</div></div>
               <div class="stat"><div class="stat-k">AVG $/KG</div><div class="stat-v" id="statAvgKg">$0.00</div></div>
               <div class="stat"><div class="stat-k">TOTAL</div><div class="stat-v" id="statTotal">$0</div></div>
             </div>
+            <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
             <div class="card" style="margin-top:4px;">
               <div class="rec-fields">
                 <div><label>$/HD</label><input id="lotPrice" class="rec-field" data-step="0" readonly></div>
-                <div><label>HD</label><input id="lotHd" class="rec-field" data-step="1" readonly></div>
-                <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="2" readonly></div>
-                <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="3" readonly></div>
+                <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
+                <div><label>HD</label><input id="lotHd" class="rec-field" data-step="2" readonly></div>
+                <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
                 <div class="wide"><label>BUYER-WAY</label>
-                  <input id="lotBuyer" class="rec-field native" data-step="4" readonly placeholder="alias">
+                  <input id="lotBuyer" class="rec-field native" data-step="4" readonly placeholder="buyer way">
                 </div>
               </div>
             </div>
@@ -400,11 +433,16 @@
             <button type="button" class="rec-next" id="recNext" onclick="recNext()">NEXT</button>
           </div>
         </div>
-        <div class="screen" id="lotsCard"><div class="card"><div class="title">Lots bought</div><div id="lotsList"></div></div></div>
+        <div class="screen" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
+        <div class="screen" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
       </div>
 
       <div id="blockText" class="screen"><div class="card">
         <div class="title">Send selected lots</div>
+        <label>Select by buyer way</label>
+        <select id="buyerWaySelect" class="native" onchange="selectByBuyerWay(this.value)" style="margin-bottom:8px;">
+          <option value="">All lots</option>
+        </select>
         <div class="grid-2">
           <div><label>Sale</label><input id="saleName" class="native" placeholder="Sale name"></div>
           <div><label>Yard</label><input id="pickupLoc" class="native" placeholder="Yard / location"></div>
@@ -412,7 +450,10 @@
         <label style="margin-top:8px;">Livestock carrier</label>
         <select id="carrierPick" class="native" onchange="syncCarrierPhone()"></select>
         <label style="margin-top:8px;">Carrier mobile</label>
-        <input id="carrierPhoneNow" class="native" type="tel" placeholder="04xx xxx xxx">
+        <div class="phone-row">
+          <input id="carrierPhoneNow" class="native" type="tel" placeholder="04xx xxx xxx">
+          <button type="button" id="contactBtnSend" class="contact-btn hidden" onclick="pickContact('carrierPhoneNow')">Contacts</button>
+        </div>
         <p class="note">Tick the lots above, pick the carrier, check the number, then send.</p>
         <button type="button" id="smsLink" class="btn btn-g">TEXT SELECTED LOTS</button>
         <button class="btn btn-d" onclick="copyPickup()">COPY SELECTED LOTS</button>
@@ -423,7 +464,7 @@
       <div class="screen">
         <div class="card">
         <button class="btn btn-n" onclick="exportExcel()">EXPORT TO EXCEL</button>
-        <p class="note">One workbook: Lots sheet + Summary sheet. Excel, Sheets and most offices open it.</p>
+        <p class="note">One workbook: Lots sheet + Summary sheet. Excel, Sheets and most offices open it. On phones that support it, this opens your share sheet so you can email or send it straight to the office.</p>
         </div>
       </div>
     </section>
@@ -501,9 +542,10 @@
         <div class="title">Livestock carriers</div>
         <p class="note">Add each trucking company. On the Yards tab you pick who gets the selected lots.</p>
         <div id="carrierList"></div>
-        <div class="grid-2" style="margin-top:8px;">
-          <input id="newCarrierName" class="native" placeholder="Carrier name">
+        <input id="newCarrierName" class="native" style="margin-top:8px;" placeholder="Carrier name">
+        <div class="phone-row" style="margin-top:8px;">
           <input id="newCarrierPhone" class="native" type="tel" placeholder="Mobile">
+          <button type="button" id="contactBtnNew" class="contact-btn hidden" onclick="pickContact('newCarrierPhone')">Contacts</button>
         </div>
         <button class="btn btn-g" onclick="addCarrier()">Add carrier</button>
       </div>
@@ -521,14 +563,14 @@
       </div>
 
       <div class="card">
-        <div class="title">Buyer-ways</div>
-        <p class="note">Auction names like Rock, Shed, Log. Assign a lot to an alias in the ring. The export shows the real alias for the office.</p>
+        <div class="title">Buyer Way</div>
+        <p class="note">Auction names like Rock, Shed, Log — or Self if you're buying direct. Assign a lot to a buyer way in the ring. The export shows the real buyer way for the office.</p>
         <label>Assign next lot to</label>
         <select id="meClient" class="native" onchange="saveWho()" style="margin-bottom:12px;"></select>
         <div id="clientChips"></div>
         <div class="grid-2">
-          <input id="newClient" class="native" placeholder="Alias / buyer code">
-          <button class="btn btn-g" style="margin-top:0;" onclick="addClient()">Add alias</button>
+          <input id="newClient" class="native" placeholder="Buyer way">
+          <button class="btn btn-g" style="margin-top:0;" onclick="addClient()">Add buyer way</button>
         </div>
       </div>
 
@@ -546,9 +588,9 @@ const defaults = {
   carriers: [{name:'Main carrier', phone:''}],
   smsTail: '',
   agents: ['Me'],
-  clients: ['Unassigned', 'Rock', 'Shed', 'Log'],
+  clients: ['Self', 'Rock', 'Shed', 'Log'],
   meAgent: 'Me',
-  meClient: 'Unassigned'
+  meClient: 'Self'
 };
 
 let S = JSON.parse(JSON.stringify(defaults));
@@ -575,6 +617,7 @@ window.addEventListener('resize', syncHeaderH);
 window.addEventListener('orientationchange', syncHeaderH);
 
 function showTab(name) {
+  closeKp();
   document.getElementById('pageYards').classList.toggle('hidden', name !== 'yards');
   document.getElementById('pageSettings').classList.toggle('hidden', name !== 'settings');
   document.getElementById('tabYards').classList.toggle('on', name === 'yards');
@@ -740,6 +783,38 @@ function syncCarrierPhone() {
   const car = currentCarrier();
   const inp = document.getElementById('carrierPhoneNow');
   if (inp) inp.value = car.phone || '';
+}
+
+function contactPickerSupported() {
+  return !!(navigator.contacts && navigator.contacts.select);
+}
+function initContactPicker() {
+  const supported = contactPickerSupported();
+  ['contactBtnSend','contactBtnNew'].forEach(function(id){
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !supported);
+  });
+}
+function pickContact(targetId) {
+  if (!contactPickerSupported()) return;
+  navigator.contacts.select(['tel','name'], {multiple:false}).then(function(contacts){
+    if (!contacts || !contacts.length) return;
+    const c = contacts[0];
+    const tel = (c.tel && c.tel[0]) || '';
+    const el = document.getElementById(targetId);
+    if (tel && el) {
+      el.value = tel;
+      el.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    if (targetId === 'newCarrierPhone') {
+      const nameEl = document.getElementById('newCarrierName');
+      if (nameEl && !nameEl.value && c.name && c.name[0]) nameEl.value = c.name[0];
+    }
+    if (targetId === 'carrierPhoneNow' && tel) {
+      const car = currentCarrier();
+      if (car) car.phone = tel;
+    }
+  }).catch(function(){});
 }
 
 /* keypad */
@@ -991,6 +1066,7 @@ function sendWatchToRecorder(wt, hd) {
   recOrder = ALL_FIELDS.filter(function(id){ return id !== 'lotPrice' && id !== 'lotWt'; });
   recStep = 0;
   recHighlight();
+  saveDraft();
   document.getElementById('wWt').value = '';
   document.getElementById('wKg').value = '';
   const target = document.getElementById('recSplit');
@@ -1003,9 +1079,33 @@ function renderWatches() {
 }
 
 
-const ALL_FIELDS = ['lotPrice','lotHd','lotWt','lotPen','lotBuyer'];
+const ALL_FIELDS = ['lotPrice','lotPen','lotHd','lotWt','lotBuyer'];
 let recOrder = ALL_FIELDS.slice();
 let recStep = 0;
+const DRAFT_KEY = 'cbpro_draft';
+function saveDraft() {
+  try {
+    const d = {recOrder: recOrder, recStep: recStep};
+    ALL_FIELDS.forEach(function(id){ const el = document.getElementById(id); if (el) d[id] = el.value; });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch(e) {}
+}
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    ALL_FIELDS.forEach(function(id){
+      if (d[id]) { const el = document.getElementById(id); if (el) el.value = d[id]; }
+    });
+    if (Array.isArray(d.recOrder) && d.recOrder.length) recOrder = d.recOrder;
+    if (typeof d.recStep === 'number') recStep = d.recStep;
+  } catch(e) {}
+}
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+document.addEventListener('visibilitychange', function(){ if (document.hidden) saveDraft(); });
 function recActive() { return document.getElementById(recOrder[recStep]); }
 function recHighlight() {
   ALL_FIELDS.forEach(function(id) {
@@ -1037,6 +1137,7 @@ function pickBuyer(name) {
   fillBuyerPick();
   const sel = document.getElementById('meClient');
   if (sel) sel.value = name;
+  saveDraft();
 }
 function recType(k) {
   const inp = recActive();
@@ -1046,6 +1147,7 @@ function recType(k) {
   else if (k === '.') { if (v.indexOf('.') < 0) v = v === '' ? '0.' : v + '.'; }
   else if (v.length < 8) v += k;
   inp.value = v;
+  saveDraft();
 }
 function recNext() {
   if (recStep < recOrder.length - 1) {
@@ -1056,13 +1158,15 @@ function recNext() {
       document.getElementById('lotBuyer').value = S.meClient || '';
     }
     recHighlight();
+    saveDraft();
     return;
   }
-  addLot();
+  if (!addLot()) return;
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   ALL_FIELDS.forEach(function(id){ if (id !== 'lotBuyer') document.getElementById(id).value = ''; });
   recHighlight();
+  clearDraft();
 }
 
 /* lots */
@@ -1071,7 +1175,7 @@ function addLot() {
   const hd = parseFloat(document.getElementById('lotHd').value)||0;
   const wt = parseFloat(document.getElementById('lotWt').value)||0;
   const pen = (document.getElementById('lotPen').value||'').trim();
-  if (!hd || !wt) { document.getElementById('smsStatus').textContent = 'Need head and weight.'; return; }
+  if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need $/hd and pen.'; return false; }
   lots.push({
     id: nextLot++, price, hd, wt, pen,
     agent: S.meAgent, client: (document.getElementById('lotBuyer').value || S.meClient),
@@ -1085,34 +1189,115 @@ function addLot() {
   document.getElementById('lotWt').value='';
   document.getElementById('lotPen').value='';
   renderLots();
+  return true;
 }
 function renderLots() {
   let th=0, td=0, tk=0;
   lots.forEach(l => { th+=l.hd; td+=l.price*l.hd; tk+=l.wt*l.hd; });
+
+  const byWay = {};
+  lots.forEach(l => {
+    const k = l.client || 'Self';
+    if (!byWay[k]) byWay[k] = {hd:0, dol:0, kg:0, lots:[]};
+    byWay[k].hd += l.hd; byWay[k].dol += l.price*l.hd; byWay[k].kg += l.wt*l.hd;
+    byWay[k].lots.push(l);
+  });
+  const wayNames = Object.keys(byWay);
+
+  const stdBar = document.getElementById('statsStandard');
+  const bwBar = document.getElementById('statsByBuyer');
+  if (wayNames.length > 1) {
+    stdBar.classList.add('hidden');
+    bwBar.classList.remove('hidden');
+    bwBar.innerHTML = wayNames.map(function(n) {
+      return '<div class="bwc"><div class="k">'+xmlEsc(n).toUpperCase()+'</div><div class="v">'+byWay[n].hd+' hd</div></div>';
+    }).join('');
+  } else {
+    stdBar.classList.remove('hidden');
+    bwBar.classList.add('hidden');
+  }
   document.getElementById('statHd').textContent = th;
   document.getElementById('statAvgHd').textContent = '$'+(th?Math.round(td/th):0).toLocaleString();
   document.getElementById('statAvgKg').textContent = '$'+(tk?(td/tk).toFixed(2):'0.00');
   document.getElementById('statTotal').textContent = '$'+Math.round(td).toLocaleString();
+
+  fillBuyerWaySelect(wayNames);
+
   if (!lots.length) {
-    document.getElementById('lotsList').innerHTML = '<div class="note">No lots yet.</div>';
+    document.getElementById('lotsSummaryMoney').innerHTML = '<div class="note">No lots yet.</div>';
+    document.getElementById('lotsSummaryTrucking').innerHTML = '<div class="note">No lots yet.</div>';
     return;
   }
-  const rows = lots.map(l => {
-    const st = l.sent
-      ? '<span class="st-ok">✓</span>'
-      : '<span class="st-no">✗</span>';
+
+  const moneyRows = wayNames.map(function(n) {
+    const g = byWay[n];
+    const avgHd = g.hd ? Math.round(g.dol/g.hd) : 0;
+    const avgKg = g.kg ? (g.dol/g.kg) : 0;
+    const avgWt = g.hd ? Math.round(g.kg/g.hd) : 0;
     return '<tr>'
-      + '<td class="c-tick"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
-      + '<td>'+(l.pen||'—')+'<span class="sub">'+(l.client||'')+'</span></td>'
-      + '<td>'+l.hd+'</td>'
-      + '<td>$'+Number(l.price).toLocaleString()+'</td>'
-      + '<td class="c-st">'+st+'</td>'
+      + '<td>'+xmlEsc(n)+'</td>'
+      + '<td>'+g.hd+'</td>'
+      + '<td>$'+avgHd.toLocaleString()+'</td>'
+      + '<td>$'+avgKg.toFixed(2)+'</td>'
+      + '<td>'+avgWt+'</td>'
+      + '<td>$'+Math.round(g.dol).toLocaleString()+'</td>'
       + '</tr>';
   }).join('');
-  document.getElementById('lotsList').innerHTML =
-    '<table class="lots-table"><thead><tr>'
-    + '<th class="c-tick"></th><th>PEN</th><th>HD</th><th>$/HD</th><th></th>'
-    + '</tr></thead><tbody>'+rows+'</tbody></table>';
+  document.getElementById('lotsSummaryMoney').innerHTML =
+    '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
+    + '<th>BUYER WAY</th><th>HD</th><th>AVG $/HD</th><th>AVG $/KG</th><th>AVG KG</th><th>TOTAL $</th>'
+    + '</tr></thead><tbody>'+moneyRows+'</tbody></table></div>';
+
+  const truckHtml = wayNames.map(function(n) {
+    const g = byWay[n];
+    const rows = g.lots.map(function(l) {
+      const st = l.sent ? '<span class="st-ok">✓</span>' : '<span class="st-no">✗</span>';
+      return '<tr onclick="editLot('+l.id+')">'
+        + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
+        + '<td>'+(l.pen||'—')+'</td>'
+        + '<td>'+(l.hd||'—')+'</td>'
+        + '<td>'+(l.wt||'—')+'</td>'
+        + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
+        + '<td class="c-st">'+st+'</td>'
+        + '</tr>';
+    }).join('');
+    return '<div class="way-group"><div class="way-group-h">'+xmlEsc(n)+'</div>'
+      + '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
+      + '<th class="c-tick"></th><th>PEN</th><th>HD</th><th>KG/HD</th><th>TOTAL KG</th><th></th>'
+      + '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+  document.getElementById('lotsSummaryTrucking').innerHTML = truckHtml;
+}
+function editLot(id) {
+  const idx = lots.findIndex(function(x){ return x.id === id; });
+  if (idx < 0) return;
+  const l = lots[idx];
+  lots.splice(idx, 1);
+  document.getElementById('lotPrice').value = l.price || '';
+  document.getElementById('lotPen').value = l.pen || '';
+  document.getElementById('lotHd').value = l.hd || '';
+  document.getElementById('lotWt').value = l.wt || '';
+  document.getElementById('lotBuyer').value = l.client || '';
+  const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
+  recOrder = missing.length ? missing : ALL_FIELDS.slice();
+  recStep = 0;
+  recHighlight();
+  renderLots();
+  saveDraft();
+  const target = document.getElementById('recSplit');
+  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function fillBuyerWaySelect(names) {
+  const sel = document.getElementById('buyerWaySelect');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All lots</option>' + names.map(function(n){ return '<option value="'+n.replace(/"/g,'')+'">'+n+'</option>'; }).join('');
+  if (names.indexOf(cur) >= 0) sel.value = cur;
+}
+function selectByBuyerWay(name) {
+  if (!name) { lots.forEach(function(l){ l.selected = true; }); }
+  else { lots.forEach(function(l){ l.selected = (l.client === name); }); }
+  renderLots();
 }
 function toggleLot(id, on) {
   const l = lots.find(x => x.id === id); if (l) l.selected = !!on;
@@ -1216,14 +1401,14 @@ function xmlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/<
 function cell(v){ return '<Cell><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+xmlEsc(v)+'</Data></Cell>'; }
 function row(arr){ return '<Row>'+arr.map(cell).join('')+'</Row>'; }
 function exportExcel() {
-  const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer alias','Sent','Carrier'];
+  const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier'];
   const lotRows = [row(headers)];
   lots.forEach(l => {
     const kg = l.wt ? (l.price/l.wt) : 0;
     lotRows.push(row([
       (l.t||'').slice(0,16).replace('T',' '),
       l.sale||'', l.yard||'', l.pen||'', l.hd, l.wt, l.price,
-      Math.round(kg*100)/100, l.price*l.hd, l.agent||'', l.client||'', l.sent?'Yes':'Unassigned', l.carrier||''
+      Math.round(kg*100)/100, l.price*l.hd, l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||''
     ]));
   });
   let th=0, td=0, tk=0;
@@ -1236,7 +1421,7 @@ function exportExcel() {
   });
   const byClient = {};
   lots.forEach(l => {
-    const k = l.client||'Unassigned';
+    const k = l.client||'Self';
     if (!byClient[k]) byClient[k] = {hd:0, dol:0};
     byClient[k].hd += l.hd; byClient[k].dol += l.price*l.hd;
   });
@@ -1251,10 +1436,10 @@ function exportExcel() {
     row(['Agent','Head','Total $']),
     ...Object.keys(byAgent).map(k => row([k, byAgent[k].hd, Math.round(byAgent[k].dol)])),
     row(['', '']),
-    row(['Buyer alias','Head','Total $']),
+    row(['Buyer way','Head','Total $']),
     ...Object.keys(byClient).map(k => row([k, byClient[k].hd, Math.round(byClient[k].dol)]))
   ];
-  const watchRows = [row(['Time','Side','Weight','$/hd','$/kg','Agent','Buyer alias'])];
+  const watchRows = [row(['Time','Side','Weight','$/hd','$/kg','Agent','Buyer way'])];
   watches.forEach(w => watchRows.push(row([(w.t||'').slice(0,16).replace('T',' '), w.side, w.wt, w.hd, w.kg, w.agent||'', w.client||''])));
 
   const xml = '<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>'
@@ -1269,6 +1454,20 @@ function exportExcel() {
     window.navigator.msSaveOrOpenBlob(blob, name);
     return;
   }
+  const status = document.getElementById('smsStatus');
+  const file = (window.File) ? new File([blob], name, {type: blob.type}) : null;
+  if (file && navigator.canShare && navigator.canShare({files: [file]})) {
+    navigator.share({files: [file], title: 'Track n Trade export'}).then(function(){
+      if (status) status.textContent = 'Excel file ready to send.';
+    }).catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      downloadExcelBlob(blob, name);
+    });
+    return;
+  }
+  downloadExcelBlob(blob, name);
+}
+function downloadExcelBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1289,8 +1488,9 @@ function init() {
   if (document.getElementById('finExit')) document.getElementById('finExit').value = S.finExit || 'hd';
   applyExitMode();
   if (document.getElementById('useCarry')) document.getElementById('useCarry').value = String(S.useCarry == 0 ? 0 : 1);
-  fillWho(); fillCarriers();
+  fillWho(); fillCarriers(); initContactPicker();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); bindKp();
+  restoreDraft();
   recHighlight();
   const pad = document.getElementById('recPad');
   if (pad && !pad.dataset.bound) {
@@ -1336,6 +1536,9 @@ window.pickBuyer = pickBuyer;
 window.setExitMode = setExitMode;
 window.setFinExit = setFinExit;
 window.toggleCostInfo = toggleCostInfo;
+window.editLot = editLot;
+window.selectByBuyerWay = selectByBuyerWay;
+window.pickContact = pickContact;
 </script>
 </body>
 </html>
