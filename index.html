@@ -252,13 +252,49 @@
       padding: 0;
     }
     .rec-pad button.alt { background: #475569; }
-    .rec-next {
-      width: 100%; margin-top: 8px; background: var(--green-2); color: #fff;
-      border: none; border-radius: 12px; font-weight: 800;
-      font-size: clamp(20px, 5vw, 32px);
+    .rec-next-row {
+      display: flex; gap: 8px; margin-top: 8px;
       height: 58px; min-height: 58px; flex: 0 0 58px;
     }
+    .rec-next {
+      flex: 3 1 0; background: var(--green-2); color: #fff;
+      border: none; border-radius: 12px; font-weight: 800;
+      font-size: clamp(20px, 5vw, 32px); height: 100%; min-height: 0;
+    }
     .rec-next.rec-next-error { background: #dc2626; font-size: clamp(15px, 4.2vw, 20px); letter-spacing: .01em; }
+    .rec-newsale {
+      flex: 1 1 0; background: #7f1d1d; color: #fff; border: none; border-radius: 12px;
+      font-weight: 800; font-size: clamp(11px, 3vw, 14px); line-height: 1.15;
+    }
+    .rec-newsale:active { background: #991b1b; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.72); z-index: 210;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.hidden { display: none !important; }
+    .modal-card {
+      background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 380px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    }
+    .modal-title { font-size: var(--fs-lg); font-weight: 800; color: #7f1d1d; margin-bottom: 8px; }
+    .modal-body { font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; margin-bottom: 18px; }
+    .slide-confirm {
+      position: relative; height: 56px; border-radius: 28px; background: #fee2e2;
+      overflow: hidden; margin-bottom: 12px; touch-action: none; user-select: none;
+    }
+    .slide-track {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #7f1d1d; font-weight: 800; font-size: var(--fs-sm); letter-spacing: .02em;
+    }
+    .slide-knob {
+      position: absolute; top: 3px; left: 3px; width: 50px; height: 50px; border-radius: 50%;
+      background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.2rem;
+    }
+    .modal-cancel {
+      width: 100%; background: #f1f5f9; color: var(--ink); border: none; border-radius: 12px;
+      padding: 14px; font-weight: 800; font-size: var(--fs-sm);
+    }
     .buyer-pick { display: flex; flex-wrap: wrap; gap: 8px; }
     .buyer-pick button {
       flex: 1; min-width: 30%; background: #334155; color: #fff; border: 2px solid transparent;
@@ -326,6 +362,18 @@
         <button type="button" class="kp-clear k alt" data-k="clear">Clear</button>
         <button type="button" class="kp-done" onclick="closeKp()">Done</button>
       </div>
+    </div>
+  </div>
+
+  <div id="newSaleModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Start a new sale?</div>
+      <div class="modal-body" id="newSaleModalBody">This archives the current lots and clears the list for a fresh sale.</div>
+      <div class="slide-confirm" id="slideConfirm">
+        <div class="slide-track">Slide to confirm</div>
+        <div class="slide-knob" id="slideKnob">→</div>
+      </div>
+      <button type="button" class="modal-cancel" onclick="closeNewSaleConfirm()">Cancel</button>
     </div>
   </div>
 
@@ -435,7 +483,10 @@
             <div id="buyerPad" class="hidden">
               <div class="buyer-pick" id="buyerPick"></div>
             </div>
-            <button type="button" class="rec-next" id="recNext" onclick="recNext()">NEXT</button>
+            <div class="rec-next-row">
+              <button type="button" class="rec-newsale" id="recNewSale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="rec-next" id="recNext" onclick="recNext()">NEXT</button>
+            </div>
           </div>
         </div>
         <div class="screen" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
@@ -585,6 +636,9 @@
 
 <script>
 const KEY = 'cbpro_v1';
+const LOTS_KEY = 'cbpro_lots';
+const HISTORY_KEY = 'cbpro_history';
+const HISTORY_CAP = 8;
 const defaults = {
   showIndicator: true, showRing: true, showRecorder: true, showText: true,
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
@@ -611,6 +665,18 @@ function load() {
 }
 function persist() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+}
+function persistLots() {
+  try { localStorage.setItem(LOTS_KEY, JSON.stringify(lots)); } catch(e) {}
+}
+function loadLots() {
+  try {
+    const raw = localStorage.getItem(LOTS_KEY);
+    if (raw) {
+      lots = JSON.parse(raw) || [];
+      nextLot = lots.reduce(function(m, l){ return Math.max(m, (l.id||0) + 1); }, 1);
+    }
+  } catch(e) {}
 }
 
 function syncHeaderH() {
@@ -1204,6 +1270,80 @@ function flashRecError(msg) {
   }, 1800);
 }
 
+/* new sale */
+function openNewSaleConfirm() {
+  const total = lots.length;
+  const unsent = lots.filter(function(l){ return !l.sent; }).length;
+  let msg = total
+    ? ('This archives the current ' + total + ' lot' + (total === 1 ? '' : 's') + ' and clears the list for a fresh sale.')
+    : 'No lots entered yet — this just resets the entry fields.';
+  if (total && unsent) msg += ' ' + unsent + ' lot' + (unsent === 1 ? '' : 's') + ' not yet sent to a carrier.';
+  document.getElementById('newSaleModalBody').textContent = msg;
+  resetSlideConfirm();
+  document.getElementById('newSaleModal').classList.remove('hidden');
+}
+function closeNewSaleConfirm() {
+  document.getElementById('newSaleModal').classList.add('hidden');
+  resetSlideConfirm();
+}
+function startNewSale() {
+  if (lots.length) {
+    let hist = [];
+    try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { hist = []; }
+    hist.push({ t: new Date().toISOString(), lots: lots });
+    if (hist.length > HISTORY_CAP) hist = hist.slice(hist.length - HISTORY_CAP);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
+  }
+  lots = [];
+  recStep = 0;
+  recOrder = ALL_FIELDS.slice();
+  ALL_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
+  recHighlight();
+  clearDraft();
+  renderLots();
+  closeNewSaleConfirm();
+}
+let slideDragging = false, slideStartX = 0, slideMax = 0;
+function resetSlideConfirm() {
+  const knob = document.getElementById('slideKnob');
+  if (knob) knob.style.transform = 'translateX(0px)';
+}
+function initSlideConfirm() {
+  const knob = document.getElementById('slideKnob');
+  const track = document.getElementById('slideConfirm');
+  if (!knob || !track || knob.dataset.bound === '1') return;
+  knob.dataset.bound = '1';
+  function down(e) {
+    slideDragging = true;
+    slideStartX = (e.touches ? e.touches[0].clientX : e.clientX);
+    slideMax = track.clientWidth - knob.offsetWidth - 6;
+    knob.style.transition = '';
+    e.preventDefault();
+  }
+  function move(e) {
+    if (!slideDragging) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    const dx = Math.min(Math.max(x - slideStartX, 0), slideMax);
+    knob.style.transform = 'translateX(' + dx + 'px)';
+    if (dx >= slideMax - 2) {
+      slideDragging = false;
+      startNewSale();
+    }
+  }
+  function up() {
+    if (!slideDragging) return;
+    slideDragging = false;
+    knob.style.transition = 'transform .2s';
+    knob.style.transform = 'translateX(0px)';
+  }
+  knob.addEventListener('touchstart', down, {passive:false});
+  knob.addEventListener('touchmove', move, {passive:false});
+  knob.addEventListener('touchend', up);
+  knob.addEventListener('mousedown', down);
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
 /* lots */
 function addLot() {
   const price = parseFloat(document.getElementById('lotPrice').value)||0;
@@ -1227,6 +1367,7 @@ function addLot() {
   return true;
 }
 function renderLots() {
+  persistLots();
   let th=0, td=0, tk=0;
   lots.forEach(l => { th+=l.hd; td+=l.price*l.hd; tk+=l.wt*l.hd; });
 
@@ -1516,6 +1657,7 @@ function downloadExcelBlob(blob, name) {
 
 function init() {
   load();
+  loadLots();
   syncHeaderH();
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate'].forEach(k => {
     const el = document.getElementById(k);
@@ -1524,7 +1666,7 @@ function init() {
   if (document.getElementById('finExit')) document.getElementById('finExit').value = S.finExit || 'hd';
   applyExitMode();
   if (document.getElementById('useCarry')) document.getElementById('useCarry').value = String(S.useCarry == 0 ? 0 : 1);
-  fillWho(); fillCarriers(); initContactPicker();
+  fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); bindKp();
   restoreDraft();
   recHighlight();
@@ -1575,6 +1717,8 @@ window.toggleCostInfo = toggleCostInfo;
 window.editLot = editLot;
 window.selectByBuyerWay = selectByBuyerWay;
 window.pickContact = pickContact;
+window.openNewSaleConfirm = openNewSaleConfirm;
+window.closeNewSaleConfirm = closeNewSaleConfirm;
 </script>
 </body>
 </html>
