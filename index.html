@@ -682,7 +682,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-08-31.7'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-08-31.8'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
@@ -1210,7 +1210,7 @@ function renderWatches() {
 }
 
 
-const ALL_FIELDS = ['lotPrice','lotPen','lotHd','lotWt','lotBuyer'];
+const ALL_FIELDS = ['lotPrice','lotHd','lotPen','lotWt','lotBuyer'];
 let recOrder = ALL_FIELDS.slice();
 let recStep = 0;
 const DRAFT_KEY = 'cbpro_draft';
