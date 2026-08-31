@@ -124,6 +124,14 @@
     .watch label { color: #d1fae5; }
     .watch input { background: #fff; color: #111; text-align: center; font-size: 2.2rem; min-height: 76px; }
     .ring-row { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+    .trend-row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+    .trend-light {
+      width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+      background: #cbd5e1; transition: background .2s;
+    }
+    .trend-light.up { background: #22c55e; }
+    .trend-light.down { background: #dc2626; }
+    .trend-diff { font-size: var(--fs-lg); font-weight: 800; color: var(--ink); }
     .ring-btns { display: flex; flex-direction: column; gap: 12px; }
     .ring-btns button { background: var(--green-2); color: #fff; border: none; border-radius: 12px; width: 78px; height: 58px; font-weight: 800; font-size: var(--fs-sm); }
     .ring-wrap { position: relative; flex: 1; height: 200px; }
@@ -470,6 +478,20 @@
         <div id="watchList"></div>
       </div></div>
 
+      <div class="screen">
+        <div class="card">
+          <div class="title">Last market</div>
+          <div class="grid-2">
+            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
+            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-light" id="trendLight"></div>
+            <div class="trend-diff" id="trendDiff">—</div>
+          </div>
+        </div>
+      </div>
+
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
           <div class="rec-top">
@@ -589,7 +611,7 @@
             </select>
           </div>
         </div>
-        <p class="note">Set carry costs to No and Net profit to your margin if you know your desired gross margin/gross profit.</p>
+        <p class="note">Set carry costs to No, if you know your desired gross margin/gross profit.</p>
       </div>
 
       <div class="card">
@@ -659,11 +681,12 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-08-31.3'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-08-31.5'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showRing: true, showRecorder: true, showText: true,
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
+  mktAvgKg: 0, mktAvgWt: 0,
   agentPhone: '',
   carriers: [{name:'Main carrier', phone:''}],
   smsTail: '',
@@ -1476,6 +1499,36 @@ function addLot() {
   renderLots();
   return true;
 }
+function updateMarketTrend() {
+  const mkt = parseFloat(document.getElementById('mktAvgKg').value) || 0;
+  let td = 0, tk = 0;
+  lots.forEach(function(l){ td += l.price*l.hd; tk += l.wt*l.hd; });
+  const recAvgKg = tk ? (td/tk) : 0;
+  const light = document.getElementById('trendLight');
+  const diffEl = document.getElementById('trendDiff');
+  light.classList.remove('up','down');
+  if (!mkt || !recAvgKg) {
+    diffEl.textContent = '—';
+    return;
+  }
+  const diff = recAvgKg - mkt;
+  if (diff > 0) light.classList.add('up');
+  else if (diff < 0) light.classList.add('down');
+  const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+  diffEl.textContent = sign + '$' + Math.abs(diff).toFixed(2) + '/kg';
+}
+function saveMarketAvgKg() {
+  S.mktAvgKg = parseFloat(document.getElementById('mktAvgKg').value) || 0;
+  persist();
+  updateMarketTrend();
+}
+function saveMarketAvgWt() {
+  S.mktAvgWt = parseFloat(document.getElementById('mktAvgWt').value) || 0;
+  persist();
+}
+document.getElementById('mktAvgKg').addEventListener('input', saveMarketAvgKg);
+document.getElementById('mktAvgWt').addEventListener('input', saveMarketAvgWt);
+
 function renderLots() {
   persistLots();
   let th=0, td=0, tk=0;
@@ -1506,6 +1559,7 @@ function renderLots() {
   document.getElementById('statAvgHd').textContent = th ? ('$'+Math.round(td/th).toLocaleString()) : '—';
   document.getElementById('statAvgKg').textContent = tk ? ('$'+(td/tk).toFixed(2)) : '—';
   document.getElementById('statTotal').textContent = th ? ('$'+Math.round(td).toLocaleString()) : '—';
+  updateMarketTrend();
 
   fillBuyerWaySelect(wayNames);
 
@@ -1769,9 +1823,9 @@ function init() {
   load();
   loadLots();
   syncHeaderH();
-  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate'].forEach(k => {
+  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','mktAvgKg','mktAvgWt'].forEach(k => {
     const el = document.getElementById(k);
-    if (el) el.value = S[k];
+    if (el) el.value = S[k] || '';
   });
   if (document.getElementById('finExit')) document.getElementById('finExit').value = S.finExit || 'hd';
   applyExitMode();
