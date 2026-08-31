@@ -449,7 +449,7 @@
         </div>
         </div>
       </div>
-      <div class="screen">
+      <div class="screen" id="blockTradeAnalysis">
         <div class="title">Trade Analysis</div>
         <div id="weightClasses"></div>
       </div>
@@ -554,6 +554,7 @@
       <div class="card">
         <div class="title">Show or hide tools</div>
         <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator</span><div class="switch" id="sw_showIndicator"><i></i></div></div>
+        <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis</span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring</span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showRecorder')"><span>Purchase recorder</span><div class="switch" id="sw_showRecorder"><i></i></div></div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent</span><div class="switch" id="sw_showText"><i></i></div></div>
@@ -658,9 +659,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-08-31.2'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-08-31.3'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showRing: true, showRecorder: true, showText: true,
+  showIndicator: true, showTradeAnalysis: true, showRing: true, showRecorder: true, showText: true,
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
   agentPhone: '',
@@ -719,13 +720,14 @@ function showTab(name) {
 
 function applyFeatures() {
   document.getElementById('blockIndicator').classList.toggle('hidden', !S.showIndicator);
+  document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
   document.getElementById('blockRecorder').classList.toggle('hidden', !S.showRecorder);
   document.getElementById('blockText').classList.toggle('hidden', !S.showText);
 }
 
 function fillSettings() {
-  ['showIndicator','showRing','showRecorder','showText'].forEach(k => {
+  ['showIndicator','showTradeAnalysis','showRing','showRecorder','showText'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
