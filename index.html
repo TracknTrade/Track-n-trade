@@ -73,6 +73,11 @@
       justify-content: center;
       padding: 10px 0 18px;
     }
+    .screen-tight {
+      min-height: 0;
+      justify-content: flex-start;
+      padding: 6px 0;
+    }
     .card { background: var(--card); border: 2px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 0; }
     .title { font-size: var(--fs-md); font-weight: 700; margin-bottom: 10px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -414,22 +419,22 @@
             <div><label>Head to buy</label><input id="headCount" inputmode="decimal"></div>
             <div><label>Agistment $/wk</label><input id="agistRate" inputmode="decimal"></div>
             <div><label>Fixed costs $/hd</label><input id="fixedCosts" inputmode="decimal"></div>
-            <div><label>Wanted profit $/hd</label><input id="targetProfit" inputmode="decimal"></div>
+            <div><label>Net profit $/hd</label><input id="targetProfit" inputmode="decimal"></div>
             <div>
               <label>Use carry costs</label>
               <select id="useCarry" class="native" onchange="calculate()">
                 <option value="1">Yes, include CoC</option>
-                <option value="0">No, profit only</option>
+                <option value="0">No, Gross Profit only</option>
               </select>
             </div>
           </div>
           <button class="btn btn-g" onclick="addWeight()">+ Add weight class</button>
         </div>
         </div>
-        <div class="screen">
+      </div>
+      <div class="screen">
         <div class="title">Trade Analysis</div>
         <div id="weightClasses"></div>
-        </div>
       </div>
 
       <div id="blockRing" class="screen"><div class="watch">
@@ -442,7 +447,6 @@
         <div class="ring-row">
           <div class="ring-btns">
             <button type="button" onclick="logWatch('Buy')">Buy</button>
-            <button type="button" onclick="logWatch('Sell')">Sell</button>
           </div>
           <div class="ring-wrap"><div class="ring" id="priceRing"></div><div class="ring-lines"></div></div>
         </div>
@@ -489,11 +493,11 @@
             </div>
           </div>
         </div>
-        <div class="screen" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
-        <div class="screen" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
+        <div class="screen screen-tight" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
+        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
       </div>
 
-      <div id="blockText" class="screen"><div class="card">
+      <div id="blockText" class="screen screen-tight"><div class="card">
         <div class="title">Send selected lots</div>
         <label>Select by buyer way</label>
         <select id="buyerWaySelect" class="native" onchange="selectByBuyerWay(this.value)" style="margin-bottom:8px;">
@@ -517,7 +521,7 @@
         <p class="note" id="smsStatus"></p>
       </div></div>
 
-      <div class="screen">
+      <div class="screen screen-tight">
         <div class="card">
         <button class="btn btn-n" onclick="exportExcel()">EXPORT TO EXCEL</button>
         <p class="note">One workbook: Lots sheet + Summary sheet. Excel, Sheets and most offices open it. On phones that support it, this opens your share sheet so you can email or send it straight to the office.</p>
@@ -558,16 +562,16 @@
           <div><label>Head to buy</label><input id="s_headCount" inputmode="decimal"></div>
           <div><label>Agistment $/wk</label><input id="s_agistRate" inputmode="decimal"></div>
           <div><label>Fixed costs $/hd</label><input id="s_fixedCosts" inputmode="decimal"></div>
-          <div><label>Wanted profit $/hd</label><input id="s_targetProfit" inputmode="decimal"></div>
+          <div><label>Net profit $/hd</label><input id="s_targetProfit" inputmode="decimal"></div>
           <div>
             <label>Use carry costs</label>
             <select id="s_useCarry" class="native">
               <option value="1">Yes, include CoC</option>
-              <option value="0">No, profit only</option>
+              <option value="0">No, Gross Profit only</option>
             </select>
           </div>
         </div>
-        <p class="note">Wanted profit is the margin you want per head. Max buy = sale benchmark minus carry costs (if on) minus this profit. Set carry to No and profit to 500 if you just want a $500 margin with no agistment maths.</p>
+        <p class="note">Set carry costs to No and Net profit to your margin if you know your desired gross margin/gross profit.</p>
       </div>
 
       <div class="card">
@@ -590,13 +594,13 @@
 
       <div class="card">
         <div class="title">Delivery / SMS sign-off</div>
-        <label>Message after the pen list</label>
+        <label>Message/Notes/delivery address for carrier</label>
         <textarea id="s_smsTail" class="native"></textarea>
       </div>
 
       <div class="card">
         <div class="title">Livestock carriers</div>
-        <p class="note">Add each trucking company. On the Yards tab you pick who gets the selected lots.</p>
+        <p class="note">Add trucking companies. These will be selectable on the Yards Tab</p>
         <div id="carrierList"></div>
         <input id="newCarrierName" class="native" style="margin-top:8px;" placeholder="Carrier name">
         <div class="phone-row" style="margin-top:8px;">
@@ -607,9 +611,9 @@
       </div>
 
       <div class="card">
-        <div class="title">Agency agents</div>
-        <p class="note">People who can buy on this book. Each lot is tagged with who entered it.</p>
-        <label>I am (agent)</label>
+        <div class="title">Agency/Staff Buyers</div>
+        <p class="note">Use this to facilitate multiple buyers, buying multiple ways for the one organisation</p>
+        <label>I am Individual or Agency/Staff buyer</label>
         <select id="meAgent" class="native" onchange="saveWho()" style="margin-bottom:12px;"></select>
         <div id="agentChips"></div>
         <div class="grid-2">
@@ -620,9 +624,7 @@
 
       <div class="card">
         <div class="title">Buyer Way</div>
-        <p class="note">Auction names like Rock, Shed, Log — or Self if you're buying direct. Assign a lot to a buyer way in the ring. The export shows the real buyer way for the office.</p>
-        <label>Assign next lot to</label>
-        <select id="meClient" class="native" onchange="saveWho()" style="margin-bottom:12px;"></select>
+        <p class="note">Buyer Ways, like Rock, Shed, Log — or Self if you're buying direct. A buyer way can be assigned to a lot on the Purchase Recorder.</p>
         <div id="clientChips"></div>
         <div class="grid-2">
           <input id="newClient" class="native" placeholder="Buyer way">
@@ -646,9 +648,9 @@ const defaults = {
   agentPhone: '',
   carriers: [{name:'Main carrier', phone:''}],
   smsTail: '',
-  agents: ['Me'],
-  clients: ['Self', 'Rock', 'Shed', 'Log'],
-  meAgent: 'Me',
+  agents: ['Self', 'Agency/Staff Buyer'],
+  clients: ['Self', 'Client 1', 'Client 2', 'Client 3', 'Client 4'],
+  meAgent: 'Self',
   meClient: 'Self'
 };
 
@@ -809,14 +811,11 @@ function delClient(n) {
 }
 function fillWho() {
   const a = document.getElementById('meAgent');
-  const c = document.getElementById('meClient');
   a.innerHTML = S.agents.map(x => '<option>' + x + '</option>').join('');
-  c.innerHTML = S.clients.map(x => '<option>' + x + '</option>').join('');
-  a.value = S.meAgent; c.value = S.meClient;
+  a.value = S.meAgent;
 }
 function saveWho() {
   S.meAgent = document.getElementById('meAgent').value;
-  S.meClient = document.getElementById('meClient').value;
   persist();
 }
 function renderCarriers() {
@@ -987,7 +986,7 @@ function renderClasses() {
   classes.forEach(c => {
     const d = document.createElement('div');
     d.className = 'card'; d.id = 'card'+c.id;
-    d.innerHTML = (classes.length>1?'<button type="button" class="card-x" onclick="removeClass('+c.id+')">x</button>':'') + '<div><label>Starting weight</label><input class="wt" value="'+c.weight+'" oninput="updateClass('+c.id+',\'weight\',this.value)"></div>'
+    d.innerHTML = (classes.length>1?'<button type="button" class="card-x" onclick="removeClass('+c.id+')">x</button>':'') + '<div><label>Buying weight</label><input class="wt" value="'+c.weight+'" oninput="updateClass('+c.id+',\'weight\',this.value)"></div>'
       + '<label>Purchase $/hd</label><input value="'+c.buyPrice+'" oninput="updateClass('+c.id+',\'buyPrice\',this.value)">'
       + '<div class="row"><span class="muted">Days</span><span id="days'+c.id+'">—</span></div>'
       + '<div class="row"><span class="muted">Exit</span><span id="exit'+c.id+'">—</span></div>'
@@ -1222,8 +1221,6 @@ function pickBuyer(name) {
   S.meClient = name;
   persist();
   fillBuyerPick();
-  const sel = document.getElementById('meClient');
-  if (sel) sel.value = name;
   saveDraft();
 }
 function recType(k) {
