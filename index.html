@@ -554,8 +554,8 @@
             </div>
           </div>
           <div class="rec-bot hidden" id="recBotPrime">
-            <div class="prime-status" id="primeStatus">Tap Record, then say: price, pen, head, weight, paint marks.</div>
-            <button type="button" class="prime-record-btn" id="primeRecordBtn" onclick="togglePrimeRecord()">🎙 RECORD</button>
+            <div class="prime-status" id="primeStatus">Press and hold, say price, pen, head, weight, paint marks, then release.</div>
+            <button type="button" class="prime-record-btn" id="primeRecordBtn">🎙 HOLD TO RECORD</button>
             <div class="rec-next-row">
               <button type="button" class="rec-newsale" onclick="openNewSaleConfirm()">New<br>sale</button>
               <button type="button" class="rec-next" id="primeSaveBtn" onclick="primeSaveLot()">SAVE LOT</button>
@@ -721,7 +721,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-01.1'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-01.5'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -772,14 +772,25 @@ function syncHeaderH() {
 window.addEventListener('resize', syncHeaderH);
 window.addEventListener('orientationchange', syncHeaderH);
 
+let yardsScrollTop = 0;
 function showTab(name) {
   closeKp();
+  const main = document.querySelector('main');
+  if (main && !document.getElementById('pageYards').classList.contains('hidden')) {
+    yardsScrollTop = main.scrollTop;
+  }
   document.getElementById('pageYards').classList.toggle('hidden', name !== 'yards');
   document.getElementById('pageSettings').classList.toggle('hidden', name !== 'settings');
   document.getElementById('tabYards').classList.toggle('on', name === 'yards');
   document.getElementById('tabSettings').classList.toggle('on', name === 'settings');
-  if (name === 'settings') fillSettings();
-  if (name === 'yards') applyFeatures();
+  if (name === 'settings') {
+    fillSettings();
+    if (main) main.scrollTop = 0;
+  }
+  if (name === 'yards') {
+    applyFeatures();
+    if (main) main.scrollTop = yardsScrollTop;
+  }
 }
 
 function applyFeatures() {
@@ -1407,8 +1418,9 @@ function applyRecorderMode() {
   document.getElementById('descField').classList.toggle('hidden', !prime);
   document.getElementById('recBotSpecial').classList.toggle('hidden', prime);
   document.getElementById('recBotPrime').classList.toggle('hidden', !prime);
-  if (!prime && primeListening && primeRecognition) {
-    try { primeRecognition.stop(); } catch(e) {}
+  if (!prime && primeListening) {
+    if (primeRecognition) { try { primeRecognition.abort(); } catch(e) {} }
+    primeResetUI();
   }
 }
 
@@ -1458,15 +1470,37 @@ function parsePrimeSpeech(transcript) {
 
 let primeRecognition = null;
 let primeListening = false;
-function getPrimeRecognition() {
+let primeWakeLock = null;
+let primeTimeoutId = null;
+const PRIME_LISTEN_TIMEOUT_MS = 20000;
+
+function primeRequestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(function(lock){ primeWakeLock = lock; }).catch(function(){});
+    }
+  } catch(e) {}
+}
+function primeReleaseWakeLock() {
+  try {
+    if (primeWakeLock) { primeWakeLock.release().catch(function(){}); primeWakeLock = null; }
+  } catch(e) {}
+}
+function primeResetUI() {
+  primeListening = false;
+  if (primeTimeoutId) { clearTimeout(primeTimeoutId); primeTimeoutId = null; }
+  primeReleaseWakeLock();
+  const btn = document.getElementById('primeRecordBtn');
+  if (btn) { btn.textContent = '🎙 HOLD TO RECORD'; btn.classList.remove('listening'); }
+}
+function buildPrimeRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
-  if (primeRecognition) return primeRecognition;
-  primeRecognition = new SR();
-  primeRecognition.continuous = false;
-  primeRecognition.interimResults = true;
-  primeRecognition.lang = 'en-AU';
-  primeRecognition.onresult = function(e) {
+  const rec = new SR();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = 'en-AU';
+  rec.onresult = function(e) {
     let finalStr = '';
     let interimStr = '';
     for (let i = 0; i < e.results.length; i++) {
@@ -1480,34 +1514,66 @@ function getPrimeRecognition() {
       if (st) st.textContent = 'Hearing: "' + interimStr + '"';
     }
   };
-  primeRecognition.onerror = function(e) {
+  rec.onerror = function(e) {
     const st = document.getElementById('primeStatus');
     if (st) st.textContent = 'Mic error: ' + e.error + ' — tap Record to try again.';
+    primeResetUI();
   };
-  primeRecognition.onend = function() {
-    primeListening = false;
-    const btn = document.getElementById('primeRecordBtn');
-    if (btn) { btn.textContent = '🎙 RECORD'; btn.classList.remove('listening'); }
+  rec.onend = function() {
+    primeResetUI();
   };
-  return primeRecognition;
+  return rec;
 }
-function togglePrimeRecord() {
-  const rec = getPrimeRecognition();
+function clearPrimeFields() {
+  document.getElementById('lotPrice').value = '';
+  document.getElementById('lotPen').value = '';
+  document.getElementById('lotHd').value = '';
+  document.getElementById('lotWt').value = '';
+  document.getElementById('lotDesc').value = '';
+}
+function primeStartRecording() {
+  if (primeListening) return;
+  clearPrimeFields();
   const btn = document.getElementById('primeRecordBtn');
   const st = document.getElementById('primeStatus');
-  if (!rec) {
+  primeRecognition = buildPrimeRecognition();
+  if (!primeRecognition) {
     if (st) st.textContent = 'Voice recording is not supported in this browser.';
     return;
   }
-  if (primeListening) {
-    rec.stop();
-    return;
-  }
   if (st) st.textContent = 'Listening… speak price, pen, head, weight, paint marks.';
-  btn.textContent = 'LISTENING… (tap to stop)';
+  btn.textContent = 'LISTENING… (release to stop)';
   btn.classList.add('listening');
   primeListening = true;
-  try { rec.start(); } catch(e) {}
+  primeRequestWakeLock();
+  primeTimeoutId = setTimeout(function(){
+    if (primeListening && primeRecognition) {
+      try { primeRecognition.stop(); } catch(e) {}
+      primeResetUI();
+      if (st) st.textContent = 'Stopped listening (timed out) — tap and hold Record to try again.';
+    }
+  }, PRIME_LISTEN_TIMEOUT_MS);
+  try { primeRecognition.start(); } catch(e) { primeResetUI(); }
+}
+function primeStopRecording() {
+  if (!primeListening) return;
+  if (primeRecognition) { try { primeRecognition.stop(); } catch(e) {} }
+  primeResetUI();
+  const st = document.getElementById('primeStatus');
+  if (st && st.textContent.indexOf('Listening') === 0) st.textContent = 'Processing…';
+}
+function initPrimeRecordButton() {
+  const btn = document.getElementById('primeRecordBtn');
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
+  function start(e) { e.preventDefault(); primeStartRecording(); }
+  function stop(e) { e.preventDefault(); primeStopRecording(); }
+  btn.addEventListener('touchstart', start, {passive:false});
+  btn.addEventListener('touchend', stop);
+  btn.addEventListener('touchcancel', stop);
+  btn.addEventListener('mousedown', start);
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', function(e){ if (primeListening) stop(e); });
 }
 function applyPrimeTranscript(transcript) {
   const parsed = parsePrimeSpeech(transcript);
@@ -1706,6 +1772,14 @@ function lotPriceKg(l) {
   if (l.priceUnit === 'kg') return l.price || 0;
   return l.wt ? (l.price/l.wt) : 0;
 }
+function weightedAvgKg(list) {
+  let sum = 0, hd = 0;
+  list.forEach(function(l){
+    const pk = lotPriceKg(l);
+    if (pk && l.hd) { sum += pk * l.hd; hd += l.hd; }
+  });
+  return hd ? sum/hd : 0;
+}
 function addLot() {
   const price = parseFloat(document.getElementById('lotPrice').value)||0;
   const hd = parseFloat(document.getElementById('lotHd').value)||0;
@@ -1733,9 +1807,7 @@ function addLot() {
 }
 function updateMarketTrend() {
   const mkt = parseFloat(document.getElementById('mktAvgKg').value) || 0;
-  let td = 0, tk = 0;
-  lots.forEach(function(l){ td += lotDollars(l); tk += l.wt*l.hd; });
-  const recAvgKg = tk ? (td/tk) : 0;
+  const recAvgKg = weightedAvgKg(lots);
   const light = document.getElementById('trendLight');
   const diffEl = document.getElementById('trendDiff');
   light.classList.remove('up','down');
@@ -1763,8 +1835,8 @@ document.getElementById('mktAvgWt').addEventListener('input', saveMarketAvgWt);
 
 function renderLots() {
   persistLots();
-  let th=0, td=0, tk=0;
-  lots.forEach(l => { th+=l.hd; td+=lotDollars(l); tk+=l.wt*l.hd; });
+  let th=0, td=0;
+  lots.forEach(l => { th+=l.hd; td+=lotDollars(l); });
 
   const byWay = {};
   lots.forEach(l => {
@@ -1787,9 +1859,10 @@ function renderLots() {
     stdBar.classList.remove('hidden');
     bwBar.classList.add('hidden');
   }
+  const avgKgAll = weightedAvgKg(lots);
   document.getElementById('statHd').textContent = th || '—';
   document.getElementById('statAvgHd').textContent = th ? ('$'+Math.round(td/th).toLocaleString()) : '—';
-  document.getElementById('statAvgKg').textContent = tk ? ('$'+(td/tk).toFixed(2)) : '—';
+  document.getElementById('statAvgKg').textContent = avgKgAll ? ('$'+avgKgAll.toFixed(2)) : '—';
   document.getElementById('statTotal').textContent = th ? ('$'+Math.round(td).toLocaleString()) : '—';
   updateMarketTrend();
 
@@ -1805,13 +1878,13 @@ function renderLots() {
     const g = byWay[n];
     const hasHd = g.hd > 0;
     const avgHd = hasHd ? Math.round(g.dol/g.hd) : 0;
-    const avgKg = g.kg ? (g.dol/g.kg) : 0;
+    const avgKg = weightedAvgKg(g.lots);
     const avgWt = hasHd ? Math.round(g.kg/g.hd) : 0;
     return '<tr>'
       + '<td>'+xmlEsc(n)+'</td>'
       + '<td>'+(hasHd ? g.hd : '—')+'</td>'
       + '<td>'+(hasHd ? '$'+avgHd.toLocaleString() : '—')+'</td>'
-      + '<td>'+(g.kg ? '$'+avgKg.toFixed(2) : '—')+'</td>'
+      + '<td>'+(avgKg ? '$'+avgKg.toFixed(2) : '—')+'</td>'
       + '<td>'+(hasHd ? avgWt : '—')+'</td>'
       + '<td>'+(hasHd ? '$'+Math.round(g.dol).toLocaleString() : '—')+'</td>'
       + '</tr>';
@@ -1985,8 +2058,8 @@ function exportExcel() {
       Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
     ]));
   });
-  let th=0, td=0, tk=0;
-  lots.forEach(l=>{ th+=l.hd; td+=lotDollars(l); tk+=l.wt*l.hd; });
+  let th=0, td=0;
+  lots.forEach(l=>{ th+=l.hd; td+=lotDollars(l); });
   const byAgent = {};
   lots.forEach(l => {
     const k = l.agent||'Unknown';
@@ -2004,7 +2077,7 @@ function exportExcel() {
     row(['Total head', th]),
     row(['Total $', Math.round(td)]),
     row(['Average $/hd', th?Math.round(td/th):0]),
-    row(['Average $/kg', tk?Math.round(td/tk*100)/100:0]),
+    row(['Average $/kg', Math.round(weightedAvgKg(lots)*100)/100]),
     row(['Lots', lots.length]),
     row(['', '']),
     row(['Agent','Head','Total $']),
@@ -2066,7 +2139,7 @@ function init() {
   document.getElementById('modeSpecial').classList.toggle('on', S.saleMode !== 'prime');
   document.getElementById('modePrime').classList.toggle('on', S.saleMode === 'prime');
   applyRecorderMode();
-  fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); checkForUpdate();
+  fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); bindKp();
   restoreDraft();
   recHighlight();
@@ -2103,7 +2176,6 @@ window.delClient = delClient;
 window.saveWho = saveWho;
 window.openToolInfo = openToolInfo;
 window.setSaleMode = setSaleMode;
-window.togglePrimeRecord = togglePrimeRecord;
 window.primeSaveLot = primeSaveLot;
 window.closeToolInfo = closeToolInfo;
 window.exportExcel = exportExcel;
