@@ -287,6 +287,17 @@
       font-weight: 800; font-size: clamp(11px, 3vw, 14px); line-height: 1.15;
     }
     .rec-newsale:active { background: #991b1b; }
+    #recBotPrime { display: flex; flex-direction: column; }
+    .prime-status {
+      font-size: var(--fs-sm); color: #cbd5e1; text-align: center;
+      margin-bottom: 12px; line-height: 1.4;
+    }
+    .prime-record-btn {
+      flex: 1; width: 100%; min-height: 0; border: none; border-radius: 16px;
+      font-size: clamp(20px, 6vw, 30px); font-weight: 800; background: var(--green-2); color: #fff;
+      margin-bottom: 10px;
+    }
+    .prime-record-btn.listening { background: #dc2626; }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(15,23,42,.72); z-index: 210;
       display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -512,17 +523,20 @@
             <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
             <div class="card" style="margin-top:4px;">
               <div class="rec-fields">
-                <div><label>$/HD</label><input id="lotPrice" class="rec-field" data-step="0" readonly></div>
+                <div><label id="lblPrice">$/HD</label><input id="lotPrice" class="rec-field" data-step="0" readonly></div>
                 <div><label>HD</label><input id="lotHd" class="rec-field" data-step="2" readonly></div>
                 <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
                 <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
                 <div class="wide"><label>BUYER-WAY</label>
                   <input id="lotBuyer" class="rec-field native" data-step="4" readonly placeholder="buyer way">
                 </div>
+                <div class="wide hidden" id="descField"><label>PAINT MARKS / DESCRIPTION</label>
+                  <input id="lotDesc" class="rec-field native" placeholder="none">
+                </div>
               </div>
             </div>
           </div>
-          <div class="rec-bot">
+          <div class="rec-bot" id="recBotSpecial">
             <div id="numPad">
               <div class="rec-pad" id="recPad">
                 <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
@@ -537,6 +551,14 @@
             <div class="rec-next-row">
               <button type="button" class="rec-newsale" id="recNewSale" onclick="openNewSaleConfirm()">New<br>sale</button>
               <button type="button" class="rec-next" id="recNext" onclick="recNext()">NEXT</button>
+            </div>
+          </div>
+          <div class="rec-bot hidden" id="recBotPrime">
+            <div class="prime-status" id="primeStatus">Tap Record, then say: price, pen, head, weight, paint marks.</div>
+            <button type="button" class="prime-record-btn" id="primeRecordBtn" onclick="togglePrimeRecord()">🎙 RECORD</button>
+            <div class="rec-next-row">
+              <button type="button" class="rec-newsale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="rec-next" id="primeSaveBtn" onclick="primeSaveLot()">SAVE LOT</button>
             </div>
           </div>
         </div>
@@ -581,6 +603,15 @@
       <div style="padding:10px 0 0;">
         <button type="button" class="btn btn-g" style="margin-top:0;" onclick="showTab('yards')">BACK TO YARDS</button>
       </div>
+      <div class="card">
+        <div class="title">Sale mode</div>
+        <div class="mode-sw">
+          <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">Special sale</button>
+          <button type="button" id="modePrime" onclick="setSaleMode('prime')">Prime sale</button>
+        </div>
+        <p class="note">Prime sale swaps the Purchase recorder for one-tap voice entry — record price ($/kg), pen, head, weight, and any paint marks in one go, check the fields, then Save Lot. Needs microphone access and works best in Safari on iPhone.</p>
+      </div>
+
       <div class="card">
         <div class="title">Show or hide tools</div>
         <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
@@ -690,9 +721,10 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-08-31.9'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-01.1'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
+  saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
   mktAvgKg: 0, mktAvgWt: 0,
@@ -1360,6 +1392,143 @@ function recNext() {
   recHighlight();
   clearDraft();
 }
+
+/* sale mode: special vs prime (voice) */
+function setSaleMode(mode) {
+  S.saleMode = mode;
+  persist();
+  document.getElementById('modeSpecial').classList.toggle('on', mode === 'special');
+  document.getElementById('modePrime').classList.toggle('on', mode === 'prime');
+  applyRecorderMode();
+}
+function applyRecorderMode() {
+  const prime = S.saleMode === 'prime';
+  document.getElementById('lblPrice').textContent = prime ? '$/KG' : '$/HD';
+  document.getElementById('descField').classList.toggle('hidden', !prime);
+  document.getElementById('recBotSpecial').classList.toggle('hidden', prime);
+  document.getElementById('recBotPrime').classList.toggle('hidden', !prime);
+  if (!prime && primeListening && primeRecognition) {
+    try { primeRecognition.stop(); } catch(e) {}
+  }
+}
+
+function parsePrimeSpeech(transcript) {
+  let text = ' ' + transcript.trim() + ' ';
+  const result = {price: null, pen: null, hd: null, wt: null, desc: ''};
+
+  const priceMatch = text.match(/\$\s*(\d+(?:\.\d+)?)/);
+  const dollarsMatch = !priceMatch && text.match(/(\d+)\s*dollars?\s*(?:and\s*)?(\d+)?\s*(?:cents?)?/i);
+  if (priceMatch) {
+    result.price = parseFloat(priceMatch[1]);
+    text = text.replace(priceMatch[0], ' ');
+  } else if (dollarsMatch) {
+    const dollars = parseInt(dollarsMatch[1], 10);
+    const cents = dollarsMatch[2] ? parseInt(dollarsMatch[2], 10) : 0;
+    result.price = dollars + cents / 100;
+    text = text.replace(dollarsMatch[0], ' ');
+  } else {
+    const firstNum = text.match(/(\d+(?:\.\d+)?)/);
+    if (firstNum) {
+      result.price = parseFloat(firstNum[1]);
+      text = text.replace(firstNum[0], ' ');
+    }
+  }
+
+  const penMatch = text.match(/pen\s*(?:number\s*)?(\d+)/i);
+  if (penMatch) {
+    result.pen = penMatch[1];
+    text = text.replace(penMatch[0], ' ');
+  }
+
+  const headMatch = text.match(/(\d+)\s*head/i);
+  if (headMatch) {
+    result.hd = parseFloat(headMatch[1]);
+    text = text.replace(headMatch[0], ' ');
+  }
+
+  const wtMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:kgs?|kilos?|kilograms?)/i);
+  if (wtMatch) {
+    result.wt = parseFloat(wtMatch[1]);
+    text = text.replace(wtMatch[0], ' ');
+  }
+
+  result.desc = text.replace(/\s+/g, ' ').trim();
+  return result;
+}
+
+let primeRecognition = null;
+let primeListening = false;
+function getPrimeRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  if (primeRecognition) return primeRecognition;
+  primeRecognition = new SR();
+  primeRecognition.continuous = false;
+  primeRecognition.interimResults = true;
+  primeRecognition.lang = 'en-AU';
+  primeRecognition.onresult = function(e) {
+    let finalStr = '';
+    let interimStr = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalStr += e.results[i][0].transcript + ' ';
+      else interimStr += e.results[i][0].transcript;
+    }
+    if (finalStr.trim()) {
+      applyPrimeTranscript(finalStr.trim());
+    } else if (interimStr) {
+      const st = document.getElementById('primeStatus');
+      if (st) st.textContent = 'Hearing: "' + interimStr + '"';
+    }
+  };
+  primeRecognition.onerror = function(e) {
+    const st = document.getElementById('primeStatus');
+    if (st) st.textContent = 'Mic error: ' + e.error + ' — tap Record to try again.';
+  };
+  primeRecognition.onend = function() {
+    primeListening = false;
+    const btn = document.getElementById('primeRecordBtn');
+    if (btn) { btn.textContent = '🎙 RECORD'; btn.classList.remove('listening'); }
+  };
+  return primeRecognition;
+}
+function togglePrimeRecord() {
+  const rec = getPrimeRecognition();
+  const btn = document.getElementById('primeRecordBtn');
+  const st = document.getElementById('primeStatus');
+  if (!rec) {
+    if (st) st.textContent = 'Voice recording is not supported in this browser.';
+    return;
+  }
+  if (primeListening) {
+    rec.stop();
+    return;
+  }
+  if (st) st.textContent = 'Listening… speak price, pen, head, weight, paint marks.';
+  btn.textContent = 'LISTENING… (tap to stop)';
+  btn.classList.add('listening');
+  primeListening = true;
+  try { rec.start(); } catch(e) {}
+}
+function applyPrimeTranscript(transcript) {
+  const parsed = parsePrimeSpeech(transcript);
+  if (parsed.price != null) document.getElementById('lotPrice').value = parsed.price;
+  if (parsed.pen != null) document.getElementById('lotPen').value = parsed.pen;
+  if (parsed.hd != null) document.getElementById('lotHd').value = parsed.hd;
+  if (parsed.wt != null) document.getElementById('lotWt').value = parsed.wt;
+  document.getElementById('lotDesc').value = parsed.desc || '';
+  const st = document.getElementById('primeStatus');
+  if (st) st.textContent = 'Heard: "' + transcript + '" — check the fields, then Save Lot.';
+  saveDraft();
+}
+function primeSaveLot() {
+  const st = document.getElementById('primeStatus');
+  if (addLot()) {
+    if (st) st.textContent = 'Saved. Tap Record for the next lot.';
+  } else {
+    if (st) st.textContent = 'Missing $/kg or pen — check the fields, then Save Lot.';
+  }
+}
+
 let recErrorTimer = null;
 function flashRecError(msg) {
   const btn = document.getElementById('recNext');
@@ -1526,14 +1695,28 @@ function initPullToRefresh() {
 }
 
 /* lots */
+function lotDollars(l) {
+  return (l.priceUnit === 'kg') ? (l.price||0)*(l.wt||0)*(l.hd||0) : (l.price||0)*(l.hd||0);
+}
+function lotPriceHd(l) {
+  if (l.priceUnit === 'kg') return l.wt ? l.price*l.wt : 0;
+  return l.price || 0;
+}
+function lotPriceKg(l) {
+  if (l.priceUnit === 'kg') return l.price || 0;
+  return l.wt ? (l.price/l.wt) : 0;
+}
 function addLot() {
   const price = parseFloat(document.getElementById('lotPrice').value)||0;
   const hd = parseFloat(document.getElementById('lotHd').value)||0;
   const wt = parseFloat(document.getElementById('lotWt').value)||0;
   const pen = (document.getElementById('lotPen').value||'').trim();
-  if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need $/hd and pen.'; return false; }
+  const priceUnit = (S.saleMode === 'prime') ? 'kg' : 'hd';
+  const descEl = document.getElementById('lotDesc');
+  if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need '+(priceUnit==='kg'?'$/kg':'$/hd')+' and pen.'; return false; }
   lots.push({
-    id: nextLot++, price, hd, wt, pen,
+    id: nextLot++, price, hd, wt, pen, priceUnit,
+    desc: (priceUnit === 'kg' && descEl) ? descEl.value.trim() : '',
     agent: S.meAgent, client: (document.getElementById('lotBuyer').value || S.meClient),
     sale: document.getElementById('saleName').value,
     yard: document.getElementById('pickupLoc').value,
@@ -1544,13 +1727,14 @@ function addLot() {
   document.getElementById('lotHd').value='';
   document.getElementById('lotWt').value='';
   document.getElementById('lotPen').value='';
+  if (descEl) descEl.value = '';
   renderLots();
   return true;
 }
 function updateMarketTrend() {
   const mkt = parseFloat(document.getElementById('mktAvgKg').value) || 0;
   let td = 0, tk = 0;
-  lots.forEach(function(l){ td += l.price*l.hd; tk += l.wt*l.hd; });
+  lots.forEach(function(l){ td += lotDollars(l); tk += l.wt*l.hd; });
   const recAvgKg = tk ? (td/tk) : 0;
   const light = document.getElementById('trendLight');
   const diffEl = document.getElementById('trendDiff');
@@ -1580,13 +1764,13 @@ document.getElementById('mktAvgWt').addEventListener('input', saveMarketAvgWt);
 function renderLots() {
   persistLots();
   let th=0, td=0, tk=0;
-  lots.forEach(l => { th+=l.hd; td+=l.price*l.hd; tk+=l.wt*l.hd; });
+  lots.forEach(l => { th+=l.hd; td+=lotDollars(l); tk+=l.wt*l.hd; });
 
   const byWay = {};
   lots.forEach(l => {
     const k = l.client || 'Self';
     if (!byWay[k]) byWay[k] = {hd:0, dol:0, kg:0, lots:[]};
-    byWay[k].hd += l.hd; byWay[k].dol += l.price*l.hd; byWay[k].kg += l.wt*l.hd;
+    byWay[k].hd += l.hd; byWay[k].dol += lotDollars(l); byWay[k].kg += l.wt*l.hd;
     byWay[k].lots.push(l);
   });
   const wayNames = Object.keys(byWay);
@@ -1667,6 +1851,8 @@ function editLot(id) {
   document.getElementById('lotHd').value = l.hd || '';
   document.getElementById('lotWt').value = l.wt || '';
   document.getElementById('lotBuyer').value = l.client || '';
+  const descEl = document.getElementById('lotDesc');
+  if (descEl) descEl.value = l.desc || '';
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ALL_FIELDS.slice();
   recStep = 0;
@@ -1790,29 +1976,28 @@ function xmlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/<
 function cell(v){ return '<Cell><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+xmlEsc(v)+'</Data></Cell>'; }
 function row(arr){ return '<Row>'+arr.map(cell).join('')+'</Row>'; }
 function exportExcel() {
-  const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier'];
+  const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
   const lotRows = [row(headers)];
   lots.forEach(l => {
-    const kg = l.wt ? (l.price/l.wt) : 0;
     lotRows.push(row([
       (l.t||'').slice(0,16).replace('T',' '),
-      l.sale||'', l.yard||'', l.pen||'', l.hd, l.wt, l.price,
-      Math.round(kg*100)/100, l.price*l.hd, l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||''
+      l.sale||'', l.yard||'', l.pen||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
+      Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
     ]));
   });
   let th=0, td=0, tk=0;
-  lots.forEach(l=>{ th+=l.hd; td+=l.price*l.hd; tk+=l.wt*l.hd; });
+  lots.forEach(l=>{ th+=l.hd; td+=lotDollars(l); tk+=l.wt*l.hd; });
   const byAgent = {};
   lots.forEach(l => {
     const k = l.agent||'Unknown';
     if (!byAgent[k]) byAgent[k] = {hd:0, dol:0};
-    byAgent[k].hd += l.hd; byAgent[k].dol += l.price*l.hd;
+    byAgent[k].hd += l.hd; byAgent[k].dol += lotDollars(l);
   });
   const byClient = {};
   lots.forEach(l => {
     const k = l.client||'Self';
     if (!byClient[k]) byClient[k] = {hd:0, dol:0};
-    byClient[k].hd += l.hd; byClient[k].dol += l.price*l.hd;
+    byClient[k].hd += l.hd; byClient[k].dol += lotDollars(l);
   });
   const sumRows = [
     row(['Metric','Value']),
@@ -1878,6 +2063,9 @@ function init() {
   if (document.getElementById('finExit')) document.getElementById('finExit').value = S.finExit || 'hd';
   applyExitMode();
   if (document.getElementById('useCarry')) document.getElementById('useCarry').value = String(S.useCarry == 0 ? 0 : 1);
+  document.getElementById('modeSpecial').classList.toggle('on', S.saleMode !== 'prime');
+  document.getElementById('modePrime').classList.toggle('on', S.saleMode === 'prime');
+  applyRecorderMode();
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); checkForUpdate();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); bindKp();
   restoreDraft();
@@ -1914,6 +2102,9 @@ window.addClient = addClient;
 window.delClient = delClient;
 window.saveWho = saveWho;
 window.openToolInfo = openToolInfo;
+window.setSaleMode = setSaleMode;
+window.togglePrimeRecord = togglePrimeRecord;
+window.primeSaveLot = primeSaveLot;
 window.closeToolInfo = closeToolInfo;
 window.exportExcel = exportExcel;
 window.copyPickup = copyPickup;
