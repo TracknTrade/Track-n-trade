@@ -298,6 +298,7 @@
       margin-bottom: 10px;
     }
     .prime-record-btn.listening { background: #dc2626; }
+    .prime-record-btn.arming { background: #b45309; }
     #primeSaveBtn:disabled { background: #64748b; opacity: .7; }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(15,23,42,.72); z-index: 210;
@@ -749,7 +750,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-01.9'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-01.10'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1612,7 +1613,7 @@ function primeResetUI() {
   if (primeTimeoutId) { clearTimeout(primeTimeoutId); primeTimeoutId = null; }
   primeReleaseWakeLock();
   const btn = document.getElementById('primeRecordBtn');
-  if (btn) { btn.textContent = '🎙 HOLD TO RECORD'; btn.classList.remove('listening'); }
+  if (btn) { btn.textContent = '🎙 HOLD TO RECORD'; btn.classList.remove('listening'); btn.classList.remove('arming'); }
 }
 function buildPrimeRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1664,16 +1665,42 @@ function clearPrimeFields() {
   document.getElementById('lotWt').value = '';
   resetMarkSelect();
 }
+const PRIME_ARM_DELAY_MS = 300;
+let primeArmTimeoutId = null;
+function primeBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.value = 0.18;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = function(){ try { ctx.close(); } catch(e) {} };
+  } catch(e) {}
+}
 function primeStartRecording() {
-  if (primeListening) return;
+  if (primeListening || primeArmTimeoutId) return;
+  const btn = document.getElementById('primeRecordBtn');
+  if (btn) btn.classList.add('arming');
+  primeArmTimeoutId = setTimeout(function(){
+    primeArmTimeoutId = null;
+    primeActuallyStart();
+  }, PRIME_ARM_DELAY_MS);
+}
+function primeActuallyStart() {
   clearPrimeFields();
   const btn = document.getElementById('primeRecordBtn');
   const st = document.getElementById('primeStatus');
+  if (btn) btn.classList.remove('arming');
   primeRecognition = buildPrimeRecognition();
   if (!primeRecognition) {
     if (st) st.textContent = 'Voice recording is not supported in this browser.';
     return;
   }
+  primeBeep();
   if (st) st.textContent = 'Listening… speak price, pen, head, weight, paint marks.';
   btn.textContent = 'LISTENING… (release to stop)';
   btn.classList.add('listening');
@@ -1689,6 +1716,12 @@ function primeStartRecording() {
   try { primeRecognition.start(); } catch(e) { primeResetUI(); }
 }
 function primeStopRecording() {
+  if (primeArmTimeoutId) {
+    clearTimeout(primeArmTimeoutId);
+    primeArmTimeoutId = null;
+    const btn = document.getElementById('primeRecordBtn');
+    if (btn) btn.classList.remove('arming');
+  }
   if (!primeListening) return;
   primeSetProcessing(true);
   if (primeRecognition) { try { primeRecognition.stop(); } catch(e) {} }
@@ -2307,7 +2340,12 @@ function init() {
         return;
       }
       const idx = recOrder.indexOf(id);
-      if (idx >= 0) { recStep = idx; recHighlight(); }
+      if (idx >= 0) {
+        recStep = idx;
+        if (id !== 'lotBuyer') el.value = '';
+        recHighlight();
+        saveDraft();
+      }
     });
   });
 }
