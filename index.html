@@ -181,7 +181,7 @@
     .lots-table .c-tick { width: 36px; text-align: center; padding-left: 4px; padding-right: 0; }
     .lots-table input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--green-2); }
     .lots-table .c-st { font-size: var(--fs-sm); font-weight: 800; }
-    .lots-table .sub { display: block; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); margin-top: 3px; }
+    .lots-table .sub { display: block; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); margin-top: 3px; white-space: normal; }
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .lots-table.compact th { padding: 9px 6px; font-size: 0.62rem; white-space: nowrap; }
     .lots-table.compact td { padding: 11px 6px; font-size: var(--fs-sm); white-space: nowrap; }
@@ -721,7 +721,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-01.5'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-01.7'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1402,6 +1402,7 @@ function recNext() {
   ALL_FIELDS.forEach(function(id){ if (id !== 'lotBuyer') document.getElementById(id).value = ''; });
   recHighlight();
   clearDraft();
+  applyRecorderMode();
 }
 
 /* sale mode: special vs prime (voice) */
@@ -1900,7 +1901,7 @@ function renderLots() {
       const st = l.sent ? '<span class="st-ok">✓</span>' : '<span class="st-no">✗</span>';
       return '<tr onclick="editLot('+l.id+')">'
         + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
-        + '<td>'+(l.pen||'—')+'</td>'
+        + '<td>'+(l.pen||'—')+(l.desc ? '<span class="sub">'+xmlEsc(l.desc)+'</span>' : '')+'</td>'
         + '<td>'+(l.hd||'—')+'</td>'
         + '<td>'+(l.wt||'—')+'</td>'
         + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
@@ -1929,6 +1930,8 @@ function editLot(id) {
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ALL_FIELDS.slice();
   recStep = 0;
+  document.getElementById('recBotSpecial').classList.remove('hidden');
+  document.getElementById('recBotPrime').classList.add('hidden');
   recHighlight();
   renderLots();
   saveDraft();
@@ -1973,7 +1976,7 @@ function pickupMessage(list) {
   lines.push('');
   list.forEach(l => {
     const live = Math.round(l.hd * l.wt);
-    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' hd @ '+l.wt+' kg = '+live.toLocaleString()+' kg');
+    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' hd @ '+l.wt+' kg = '+live.toLocaleString()+' kg' + (l.desc ? ' — '+l.desc : ''));
   });
   lines.push('');
   lines.push(S.smsTail || '');
