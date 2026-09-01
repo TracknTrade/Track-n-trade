@@ -298,6 +298,7 @@
       margin-bottom: 10px;
     }
     .prime-record-btn.listening { background: #dc2626; }
+    #primeSaveBtn:disabled { background: #64748b; opacity: .7; }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(15,23,42,.72); z-index: 210;
       display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -418,6 +419,23 @@
     </div>
   </div>
 
+  <div id="buyerWayModal" class="modal-overlay hidden" onclick="if(event.target===this) closeBuyerWayModal()">
+    <div class="modal-card">
+      <div class="modal-title">Buyer way</div>
+      <div class="buyer-pick" id="buyerPickModal"></div>
+      <button type="button" class="modal-cancel" style="margin-top:12px;" onclick="closeBuyerWayModal()">Close</button>
+    </div>
+  </div>
+
+  <div id="addMarkModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Add marking</div>
+      <input id="newMarkQuick" class="native" placeholder="Marking name" style="margin-bottom:12px;">
+      <button type="button" class="btn btn-g" style="margin-top:0;margin-bottom:8px;" onclick="confirmAddMark()">Add</button>
+      <button type="button" class="modal-cancel" onclick="closeAddMarkModal()">Cancel</button>
+    </div>
+  </div>
+
   <div id="toolInfoModal" class="modal-overlay hidden" onclick="if(event.target===this) closeToolInfo()">
     <div class="modal-card">
       <div class="modal-title" id="toolInfoTitle"></div>
@@ -527,11 +545,11 @@
                 <div><label>HD</label><input id="lotHd" class="rec-field" data-step="2" readonly></div>
                 <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
                 <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
-                <div class="wide"><label>BUYER-WAY</label>
-                  <input id="lotBuyer" class="rec-field native" data-step="4" readonly placeholder="buyer way">
+                <div><label>MARKINGS</label>
+                  <select id="lotDesc" class="rec-field native" onchange="handleMarkChange(this.value)"></select>
                 </div>
-                <div class="wide hidden" id="descField"><label>PAINT MARKS / DESCRIPTION</label>
-                  <input id="lotDesc" class="rec-field native" placeholder="none">
+                <div><label>BUYER-WAY</label>
+                  <input id="lotBuyer" class="rec-field native" data-step="4" readonly placeholder="buyer way">
                 </div>
               </div>
             </div>
@@ -712,6 +730,16 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="title">Markings</div>
+        <p class="note">Paint-mark options shown on the Purchase recorder, like Shoulder, Loin, Rump, Tail — or No Mark by default. Add more here, or on the fly from the recorder.</p>
+        <div id="markChips"></div>
+        <div class="grid-2">
+          <input id="newMark" class="native" placeholder="Marking name">
+          <button class="btn btn-g" style="margin-top:0;" onclick="addMarkSetting()">Add marking</button>
+        </div>
+      </div>
+
       <button class="btn btn-n" onclick="saveSettings(); showTab('yards');">SAVE AND BACK TO YARDS</button>
     </section>
   </main>
@@ -721,7 +749,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-01.7'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-01.9'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -733,6 +761,7 @@ const defaults = {
   smsTail: '',
   agents: ['Self', 'Agency/Staff Buyer'],
   clients: ['Self', 'Client 1', 'Client 2', 'Client 3', 'Client 4'],
+  markings: ['No Mark', 'Shoulder', 'Loin', 'Rump', 'Tail'],
   meAgent: 'Self',
   meClient: 'Self'
 };
@@ -904,6 +933,24 @@ function delClient(n) {
   S.clients = S.clients.filter(x => x !== n);
   if (S.meClient === n) S.meClient = S.clients[0];
   persist(); renderChips(); fillWho();
+}
+function renderMarkChips() {
+  const box = document.getElementById('markChips');
+  if (!box) return;
+  box.innerHTML = S.markings.map(a =>
+    '<span class="chip">' + a + ' <button class="btn-r" onclick="delMark(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
+  ).join('');
+}
+function addMarkSetting() {
+  const n = (document.getElementById('newMark').value || '').trim();
+  if (!n || S.markings.indexOf(n) >= 0) return;
+  S.markings.push(n); document.getElementById('newMark').value = '';
+  persist(); renderMarkChips(); fillMarkSelect();
+}
+function delMark(n) {
+  if (S.markings.length <= 1) return;
+  S.markings = S.markings.filter(x => x !== n);
+  persist(); renderMarkChips(); fillMarkSelect(); resetMarkSelect();
 }
 function fillWho() {
   const a = document.getElementById('meAgent');
@@ -1343,12 +1390,14 @@ function recHighlight() {
   fillBuyerPick();
 }
 function fillBuyerPick() {
-  const box = document.getElementById('buyerPick');
-  if (!box) return;
   const cur = document.getElementById('lotBuyer').value || S.meClient;
-  box.innerHTML = (S.clients||[]).map(function(a) {
+  const html = (S.clients||[]).map(function(a) {
     return '<button type="button" class="'+(a===cur?'on':'')+'" onclick="pickBuyer(\''+a.replace(/'/g,'')+'\')">'+a+'</button>';
   }).join('') + '<button type="button" class="add-buyer-tile" onclick="openAddBuyer()">+ Add</button>';
+  ['buyerPick','buyerPickModal'].forEach(function(id){
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = html;
+  });
 }
 function pickBuyer(name) {
   document.getElementById('lotBuyer').value = name;
@@ -1356,6 +1405,15 @@ function pickBuyer(name) {
   persist();
   fillBuyerPick();
   saveDraft();
+  closeBuyerWayModal();
+}
+function openBuyerWayModal() {
+  fillBuyerPick();
+  document.getElementById('buyerWayModal').classList.remove('hidden');
+}
+function closeBuyerWayModal() {
+  const m = document.getElementById('buyerWayModal');
+  if (m) m.classList.add('hidden');
 }
 function openAddBuyer() {
   document.getElementById('newBuyerQuick').value = '';
@@ -1373,6 +1431,69 @@ function confirmAddBuyer() {
   persist();
   renderChips();
   pickBuyer(n);
+}
+
+/* markings */
+let markSelectPrevValue = null;
+function fillMarkSelect() {
+  const sel = document.getElementById('lotDesc');
+  if (!sel) return;
+  sel.innerHTML = (S.markings||[]).map(function(m){
+    return '<option value="'+xmlEsc(m)+'">'+xmlEsc(m)+'</option>';
+  }).join('') + '<option value="__add__">+ Add new…</option>';
+}
+function resetMarkSelect() {
+  const sel = document.getElementById('lotDesc');
+  if (sel) sel.value = S.markings[0];
+  markSelectPrevValue = S.markings[0];
+}
+function handleMarkChange(val) {
+  if (val === '__add__') {
+    openAddMark();
+    return;
+  }
+  markSelectPrevValue = val;
+  saveDraft();
+}
+function openAddMark() {
+  document.getElementById('newMarkQuick').value = '';
+  document.getElementById('addMarkModal').classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('newMarkQuick').focus(); }, 50);
+}
+function closeAddMarkModal() {
+  document.getElementById('addMarkModal').classList.add('hidden');
+  const sel = document.getElementById('lotDesc');
+  if (sel) sel.value = markSelectPrevValue || S.markings[0];
+}
+function confirmAddMark() {
+  const n = (document.getElementById('newMarkQuick').value || '').trim();
+  if (!n) { closeAddMarkModal(); return; }
+  document.getElementById('addMarkModal').classList.add('hidden');
+  if (S.markings.indexOf(n) < 0) S.markings.push(n);
+  persist();
+  renderMarkChips();
+  fillMarkSelect();
+  document.getElementById('lotDesc').value = n;
+  markSelectPrevValue = n;
+  saveDraft();
+}
+function applyPrimeMark(spoken) {
+  const sel = document.getElementById('lotDesc');
+  if (!sel) return;
+  const text = (spoken || '').trim();
+  if (!text) { resetMarkSelect(); return; }
+  const existing = S.markings.find(function(m){ return m.toLowerCase() === text.toLowerCase(); });
+  if (existing) {
+    sel.value = existing;
+    markSelectPrevValue = existing;
+  } else {
+    S.markings.push(text);
+    persist();
+    renderMarkChips();
+    fillMarkSelect();
+    sel.value = text;
+    markSelectPrevValue = text;
+  }
 }
 function recType(k) {
   const inp = recActive();
@@ -1416,7 +1537,6 @@ function setSaleMode(mode) {
 function applyRecorderMode() {
   const prime = S.saleMode === 'prime';
   document.getElementById('lblPrice').textContent = prime ? '$/KG' : '$/HD';
-  document.getElementById('descField').classList.toggle('hidden', !prime);
   document.getElementById('recBotSpecial').classList.toggle('hidden', prime);
   document.getElementById('recBotPrime').classList.toggle('hidden', !prime);
   if (!prime && primeListening) {
@@ -1522,15 +1642,27 @@ function buildPrimeRecognition() {
   };
   rec.onend = function() {
     primeResetUI();
+    primeSetProcessing(false);
   };
   return rec;
+}
+let primeProcessing = false;
+let primeProcessingTimeoutId = null;
+function primeSetProcessing(on) {
+  primeProcessing = on;
+  const btn = document.getElementById('primeSaveBtn');
+  if (btn) btn.disabled = on;
+  if (primeProcessingTimeoutId) { clearTimeout(primeProcessingTimeoutId); primeProcessingTimeoutId = null; }
+  if (on) {
+    primeProcessingTimeoutId = setTimeout(function(){ primeSetProcessing(false); }, 4000);
+  }
 }
 function clearPrimeFields() {
   document.getElementById('lotPrice').value = '';
   document.getElementById('lotPen').value = '';
   document.getElementById('lotHd').value = '';
   document.getElementById('lotWt').value = '';
-  document.getElementById('lotDesc').value = '';
+  resetMarkSelect();
 }
 function primeStartRecording() {
   if (primeListening) return;
@@ -1558,10 +1690,11 @@ function primeStartRecording() {
 }
 function primeStopRecording() {
   if (!primeListening) return;
+  primeSetProcessing(true);
   if (primeRecognition) { try { primeRecognition.stop(); } catch(e) {} }
   primeResetUI();
   const st = document.getElementById('primeStatus');
-  if (st && st.textContent.indexOf('Listening') === 0) st.textContent = 'Processing…';
+  if (st) st.textContent = 'Processing…';
 }
 function initPrimeRecordButton() {
   const btn = document.getElementById('primeRecordBtn');
@@ -1582,13 +1715,18 @@ function applyPrimeTranscript(transcript) {
   if (parsed.pen != null) document.getElementById('lotPen').value = parsed.pen;
   if (parsed.hd != null) document.getElementById('lotHd').value = parsed.hd;
   if (parsed.wt != null) document.getElementById('lotWt').value = parsed.wt;
-  document.getElementById('lotDesc').value = parsed.desc || '';
+  applyPrimeMark(parsed.desc);
+  primeSetProcessing(false);
   const st = document.getElementById('primeStatus');
   if (st) st.textContent = 'Heard: "' + transcript + '" — check the fields, then Save Lot.';
   saveDraft();
 }
 function primeSaveLot() {
   const st = document.getElementById('primeStatus');
+  if (primeProcessing) {
+    if (st) st.textContent = 'Still processing what you said — one sec, then tap Save Lot again.';
+    return;
+  }
   if (addLot()) {
     if (st) st.textContent = 'Saved. Tap Record for the next lot.';
   } else {
@@ -1791,7 +1929,7 @@ function addLot() {
   if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need '+(priceUnit==='kg'?'$/kg':'$/hd')+' and pen.'; return false; }
   lots.push({
     id: nextLot++, price, hd, wt, pen, priceUnit,
-    desc: (priceUnit === 'kg' && descEl) ? descEl.value.trim() : '',
+    desc: descEl ? descEl.value : '',
     agent: S.meAgent, client: (document.getElementById('lotBuyer').value || S.meClient),
     sale: document.getElementById('saleName').value,
     yard: document.getElementById('pickupLoc').value,
@@ -1802,7 +1940,7 @@ function addLot() {
   document.getElementById('lotHd').value='';
   document.getElementById('lotWt').value='';
   document.getElementById('lotPen').value='';
-  if (descEl) descEl.value = '';
+  resetMarkSelect();
   renderLots();
   return true;
 }
@@ -1926,7 +2064,12 @@ function editLot(id) {
   document.getElementById('lotWt').value = l.wt || '';
   document.getElementById('lotBuyer').value = l.client || '';
   const descEl = document.getElementById('lotDesc');
-  if (descEl) descEl.value = l.desc || '';
+  if (descEl) {
+    const d = l.desc || S.markings[0];
+    if (S.markings.indexOf(d) < 0) { S.markings.push(d); persist(); renderMarkChips(); fillMarkSelect(); }
+    descEl.value = d;
+    markSelectPrevValue = d;
+  }
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ALL_FIELDS.slice();
   recStep = 0;
@@ -2143,6 +2286,7 @@ function init() {
   document.getElementById('modePrime').classList.toggle('on', S.saleMode === 'prime');
   applyRecorderMode();
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
+  fillMarkSelect(); resetMarkSelect(); renderMarkChips();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); bindKp();
   restoreDraft();
   recHighlight();
@@ -2158,6 +2302,10 @@ function init() {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('click', function(){
+      if (id === 'lotBuyer' && document.getElementById('recBotSpecial').classList.contains('hidden')) {
+        openBuyerWayModal();
+        return;
+      }
       const idx = recOrder.indexOf(id);
       if (idx >= 0) { recStep = idx; recHighlight(); }
     });
@@ -2178,6 +2326,12 @@ window.addClient = addClient;
 window.delClient = delClient;
 window.saveWho = saveWho;
 window.openToolInfo = openToolInfo;
+window.handleMarkChange = handleMarkChange;
+window.closeBuyerWayModal = closeBuyerWayModal;
+window.confirmAddMark = confirmAddMark;
+window.closeAddMarkModal = closeAddMarkModal;
+window.addMarkSetting = addMarkSetting;
+window.delMark = delMark;
 window.setSaleMode = setSaleMode;
 window.primeSaveLot = primeSaveLot;
 window.closeToolInfo = closeToolInfo;
