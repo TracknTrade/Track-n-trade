@@ -758,7 +758,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.16'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.17'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1597,7 +1597,7 @@ function parsePrimeSpeech(transcript) {
   }
 
   text = text.replace(/\b(?:a|per)\s+(?:kgs?|kilos?|kilograms?|head)\b/gi, ' ');
-  result.desc = text.replace(/\s+/g, ' ').trim();
+  result.desc = text.replace(/[.,;:!?]+/g, ' ').replace(/\s+/g, ' ').trim();
   return result;
 }
 
