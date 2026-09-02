@@ -612,6 +612,7 @@
           <input id="carrierPhoneNow" class="native" type="tel" placeholder="04xx xxx xxx">
           <button type="button" id="contactBtnSend" class="contact-btn hidden" onclick="pickContact('carrierPhoneNow')">Contacts</button>
         </div>
+        <p class="note" id="selectedLotsInfo">No lots selected.</p>
         <p class="note">Tick the lots above, pick the carrier, check the number, then send.</p>
         <button type="button" id="smsLink" class="btn btn-g">TEXT SELECTED LOTS</button>
         <button class="btn btn-d" onclick="copyPickup()">COPY SELECTED LOTS</button>
@@ -760,7 +761,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.19'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.20'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2113,6 +2114,7 @@ function renderLots() {
   updateMarketTrend();
 
   fillBuyerWaySelect(wayNames);
+  updateSelectedLotsInfo();
 
   if (!lots.length) {
     document.getElementById('lotsSummaryMoney').innerHTML = '<div class="note">No lots yet.</div>';
@@ -2192,16 +2194,25 @@ function fillBuyerWaySelect(names) {
   const sel = document.getElementById('buyerWaySelect');
   if (!sel) return;
   const cur = sel.value;
-  sel.innerHTML = '<option value="">All lots</option>' + names.map(function(n){ return '<option value="'+n.replace(/"/g,'')+'">'+n+'</option>'; }).join('');
+  sel.innerHTML = names.map(function(n){ return '<option value="'+n.replace(/"/g,'')+'">'+n+'</option>'; }).join('');
   if (names.indexOf(cur) >= 0) sel.value = cur;
 }
 function selectByBuyerWay(name) {
-  if (!name) { lots.forEach(function(l){ l.selected = true; }); }
-  else { lots.forEach(function(l){ l.selected = (l.client === name); }); }
+  if (!name) return;
+  lots.forEach(function(l){ l.selected = (l.client === name); });
   renderLots();
 }
 function toggleLot(id, on) {
   const l = lots.find(x => x.id === id); if (l) l.selected = !!on;
+  updateSelectedLotsInfo();
+}
+function updateSelectedLotsInfo() {
+  const el = document.getElementById('selectedLotsInfo');
+  if (!el) return;
+  const list = selectedLots();
+  if (!list.length) { el.textContent = 'No lots selected.'; return; }
+  const hd = list.reduce(function(sum, l){ return sum + (l.hd || 0); }, 0);
+  el.textContent = list.length + ' lot' + (list.length === 1 ? '' : 's') + ' selected · ' + hd + ' hd';
 }
 function selectedLots() { return lots.filter(l => l.selected); }
 function currentCarrier() {
