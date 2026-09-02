@@ -762,7 +762,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.25'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.26'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1553,24 +1553,11 @@ function parsePrimeSpeech(transcript) {
   let text = ' ' + transcript.trim() + ' ';
   const result = {price: null, pen: null, hd: null, wt: null};
 
-  const priceMatch = text.match(/\$\s*(\d+(?:\.\d+)?)/);
-  const dollarsMatch = !priceMatch && text.match(/(\d+)\s*dollars?\s*(?:and\s*)?(\d+)?\s*(?:cents?)?/i);
-  if (priceMatch) {
-    result.price = parseFloat(priceMatch[1]);
-    text = text.replace(priceMatch[0], ' ');
-  } else if (dollarsMatch) {
-    const dollars = parseInt(dollarsMatch[1], 10);
-    const cents = dollarsMatch[2] ? parseInt(dollarsMatch[2], 10) : 0;
-    result.price = dollars + cents / 100;
-    text = text.replace(dollarsMatch[0], ' ');
-  } else {
-    const firstNum = text.match(/(\d+(?:\.\d+)?)/);
-    if (firstNum) {
-      result.price = parseFloat(firstNum[1]);
-      text = text.replace(firstNum[0], ' ');
-    }
-  }
-
+  // Pen/head/weight each have their own unambiguous keyword, so claim their
+  // numbers first regardless of spoken order. Price is the only field with no
+  // reliable keyword when the phone doesn't say "$" or "dollars", so its
+  // fallback (grab the first leftover number) must run last, once everything
+  // else has already taken its own number out of the running.
   const penMatch = text.match(/pen\s*(?:number\s*)?(\d+)/i);
   if (penMatch) {
     result.pen = penMatch[1];
@@ -1587,6 +1574,24 @@ function parsePrimeSpeech(transcript) {
   if (wtMatch) {
     result.wt = parseFloat(wtMatch[1]);
     text = text.replace(wtMatch[0], ' ');
+  }
+
+  const priceMatch = text.match(/\$\s*(\d+(?:\.\d+)?)/);
+  const dollarsMatch = !priceMatch && text.match(/(\d+)\s*dollars?\s*(?:and\s*)?(\d+)?\s*(?:cents?)?/i);
+  if (priceMatch) {
+    result.price = parseFloat(priceMatch[1]);
+    text = text.replace(priceMatch[0], ' ');
+  } else if (dollarsMatch) {
+    const dollars = parseInt(dollarsMatch[1], 10);
+    const cents = dollarsMatch[2] ? parseInt(dollarsMatch[2], 10) : 0;
+    result.price = dollars + cents / 100;
+    text = text.replace(dollarsMatch[0], ' ');
+  } else {
+    const firstNum = text.match(/(\d+(?:\.\d+)?)/);
+    if (firstNum) {
+      result.price = parseFloat(firstNum[1]);
+      text = text.replace(firstNum[0], ' ');
+    }
   }
 
   return result;
