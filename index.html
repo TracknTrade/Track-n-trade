@@ -761,7 +761,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.20'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.21'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2175,9 +2175,20 @@ function editLot(id) {
   const descEl = document.getElementById('lotDesc');
   if (descEl) {
     const d = l.desc || S.markings[0];
-    if (S.markings.indexOf(d) < 0) { S.markings.push(d); persist(); renderMarkChips(); fillMarkSelect(); }
-    descEl.value = d;
-    markSelectPrevValue = d;
+    const existing = S.markings.find(function(m){ return m.toLowerCase() === d.toLowerCase(); });
+    removeTempMarkOption();
+    if (existing) {
+      descEl.value = existing;
+      markSelectPrevValue = existing;
+    } else {
+      const opt = document.createElement('option');
+      opt.setAttribute('data-temp', '1');
+      opt.value = d;
+      opt.textContent = d.length > 60 ? d.slice(0, 60) + '…' : d;
+      descEl.insertBefore(opt, descEl.firstChild);
+      descEl.value = d;
+      markSelectPrevValue = d;
+    }
   }
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ALL_FIELDS.slice();
