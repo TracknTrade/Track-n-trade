@@ -750,7 +750,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.13'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.14'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1667,7 +1667,8 @@ function buildPrimeRecognition() {
       else interimStr += e.results[i][0].transcript;
     }
     if (finalStr.trim()) {
-      applyPrimeTranscript(finalStr.trim());
+      primeLastTranscript = finalStr.trim();
+      applyPrimeTranscript(primeLastTranscript, false);
     } else if (interimStr) {
       const st = document.getElementById('primeStatus');
       if (st) st.textContent = 'Hearing: "' + interimStr + '"';
@@ -1679,11 +1680,13 @@ function buildPrimeRecognition() {
     primeResetUI();
   };
   rec.onend = function() {
+    if (primeLastTranscript) applyPrimeTranscript(primeLastTranscript, true);
     primeResetUI();
     primeSetProcessing(false);
   };
   return rec;
 }
+let primeLastTranscript = '';
 let primeProcessing = false;
 let primeProcessingTimeoutId = null;
 function primeSetProcessing(on) {
@@ -1731,6 +1734,7 @@ function primeStartRecording() {
 }
 function primeActuallyStart() {
   primeEditField = null;
+  primeLastTranscript = '';
   clearPrimeFields();
   const btn = document.getElementById('primeRecordBtn');
   const st = document.getElementById('primeStatus');
@@ -1784,13 +1788,13 @@ function initPrimeRecordButton() {
   btn.addEventListener('mouseup', stop);
   btn.addEventListener('mouseleave', function(e){ if (primeListening) stop(e); });
 }
-function applyPrimeTranscript(transcript) {
+function applyPrimeTranscript(transcript, isFinalChunk) {
   const parsed = parsePrimeSpeech(transcript);
   if (parsed.price != null) document.getElementById('lotPrice').value = parsed.price;
   if (parsed.pen != null) document.getElementById('lotPen').value = parsed.pen;
   if (parsed.hd != null) document.getElementById('lotHd').value = parsed.hd;
   if (parsed.wt != null) document.getElementById('lotWt').value = parsed.wt;
-  applyPrimeMark(parsed.desc);
+  if (isFinalChunk) applyPrimeMark(parsed.desc);
   primeSetProcessing(false);
   const st = document.getElementById('primeStatus');
   if (st) st.textContent = 'Heard: "' + transcript + '" — check the fields, then Save Lot.';
