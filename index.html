@@ -760,7 +760,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.18'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.19'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1454,6 +1454,7 @@ function fillMarkSelect() {
   }).join('') + '<option value="__add__">+ Add new…</option>';
 }
 function resetMarkSelect() {
+  removeTempMarkOption();
   const sel = document.getElementById('lotDesc');
   if (sel) sel.value = S.markings[0];
   markSelectPrevValue = S.markings[0];
@@ -1488,6 +1489,12 @@ function confirmAddMark() {
   markSelectPrevValue = n;
   saveDraft();
 }
+function removeTempMarkOption() {
+  const sel = document.getElementById('lotDesc');
+  if (!sel) return;
+  const opt = sel.querySelector('option[data-temp="1"]');
+  if (opt) opt.remove();
+}
 function applyPrimeMark(spoken) {
   const sel = document.getElementById('lotDesc');
   if (!sel) return;
@@ -1495,16 +1502,24 @@ function applyPrimeMark(spoken) {
   if (!text) { resetMarkSelect(); return; }
   const existing = S.markings.find(function(m){ return m.toLowerCase() === text.toLowerCase(); });
   if (existing) {
+    removeTempMarkOption();
     sel.value = existing;
     markSelectPrevValue = existing;
-  } else {
-    S.markings.push(text);
-    persist();
-    renderMarkChips();
-    fillMarkSelect();
-    sel.value = text;
-    markSelectPrevValue = text;
+    return;
   }
+  // Never seen before: use it for this lot only. Voice input never gets
+  // permanently saved to the Settings markings list — only "+ Add new…" does that.
+  const display = text.length > 60 ? text.slice(0, 60) + '…' : text;
+  let opt = sel.querySelector('option[data-temp="1"]');
+  if (!opt) {
+    opt = document.createElement('option');
+    opt.setAttribute('data-temp', '1');
+    sel.insertBefore(opt, sel.firstChild);
+  }
+  opt.value = text;
+  opt.textContent = display;
+  sel.value = text;
+  markSelectPrevValue = text;
 }
 function recType(k) {
   const inp = primeEditField ? document.getElementById(primeEditField) : recActive();
