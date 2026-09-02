@@ -194,11 +194,12 @@
     }
     .hidden { display: none !important; }
     .rec-split {
-      height: calc(100dvh - var(--header-h));
-      max-height: calc(100dvh - var(--header-h));
+      height: calc(100dvh - var(--header-h) - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100dvh - var(--header-h) - env(safe-area-inset-bottom, 0px));
       display: flex; flex-direction: column; gap: 4px;
       scroll-snap-align: start;
       overflow: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .rec-top {
       flex: 1 1 50%; min-height: 0;
@@ -274,7 +275,7 @@
     .rec-pad button.alt { background: #475569; }
     .rec-next-row {
       display: flex; gap: 8px; margin-top: 8px;
-      height: 58px; min-height: 58px; flex: 0 0 58px;
+      height: 52px; min-height: 52px; flex: 0 0 52px;
     }
     .rec-next {
       flex: 3 1 0; background: var(--green-2); color: #fff;
@@ -291,8 +292,8 @@
     .prime-status {
       font-size: var(--fs-sm); color: #cbd5e1; text-align: center;
       margin-bottom: 6px; line-height: 1.4; flex: 0 0 auto;
-      height: calc(1.4em * 2); overflow: hidden;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      height: calc(1.4em * 1); overflow: hidden;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
     }
     #primeNumPad.disabled { opacity: .35; pointer-events: none; }
     .prime-record-btn {
@@ -577,7 +578,7 @@
             </div>
           </div>
           <div class="rec-bot hidden" id="recBotPrime">
-            <div class="prime-status" id="primeStatus">Press and hold, say price, pen, head, weight, then release.</div>
+            <div class="prime-status" id="primeStatus">Hold to record price, pen, head, weight.</div>
             <div class="rec-pad" id="primeNumPad">
               <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
               <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
@@ -761,7 +762,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.22'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.23'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1853,7 +1854,7 @@ function startNewSale() {
     primeEditField = 'lotPrice';
     primeHighlightActiveField();
     const st = document.getElementById('primeStatus');
-    if (st) st.textContent = 'Press and hold, say price, pen, head, weight, then release.';
+    if (st) st.textContent = 'Hold to record price, pen, head, weight.';
   }
   clearDraft();
   renderLots();
