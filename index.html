@@ -762,7 +762,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.24'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.25'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1594,6 +1594,7 @@ function parsePrimeSpeech(transcript) {
 
 let primeRecognition = null;
 let primeListening = false;
+let primeButtonHeld = false;
 let primeWakeLock = null;
 let primeTimeoutId = null;
 let primeEditField = null;
@@ -1641,12 +1642,26 @@ function primeResetUI() {
   if (!primeEditField) primeEditField = 'lotPrice';
   primeHighlightActiveField();
 }
+function primeParseScore(parsed) {
+  return ['price', 'pen', 'hd', 'wt'].reduce(function(n, k){ return n + (parsed[k] != null ? 1 : 0); }, 0);
+}
+function primePickBestAlternative(result) {
+  let best = result[0].transcript;
+  let bestScore = primeParseScore(parsePrimeSpeech(best));
+  for (let a = 1; a < result.length; a++) {
+    const t = result[a].transcript;
+    const score = primeParseScore(parsePrimeSpeech(t));
+    if (score > bestScore) { bestScore = score; best = t; }
+  }
+  return best;
+}
 function buildPrimeRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
   const rec = new SR();
   rec.continuous = true;
   rec.interimResults = true;
+  rec.maxAlternatives = 3;
   rec.lang = 'en-AU';
   let lastTranscript = '';
   let accumulatedFinal = '';
@@ -1655,7 +1670,7 @@ function buildPrimeRecognition() {
     let interimStr = '';
     const startAt = (typeof e.resultIndex === 'number') ? e.resultIndex : 0;
     for (let i = startAt; i < e.results.length; i++) {
-      if (e.results[i].isFinal) accumulatedFinal += e.results[i][0].transcript + ' ';
+      if (e.results[i].isFinal) accumulatedFinal += primePickBestAlternative(e.results[i]) + ' ';
       else interimStr += e.results[i][0].transcript;
     }
     if (accumulatedFinal.trim()) {
@@ -1668,6 +1683,7 @@ function buildPrimeRecognition() {
   };
   rec.onerror = function(e) {
     if (rec !== primeRecognition) return;
+    if (e.error === 'no-speech' && primeButtonHeld) return;
     const st = document.getElementById('primeStatus');
     if (st) st.textContent = 'Mic error: ' + e.error + ' — tap Record to try again.';
     primeResetUI();
@@ -1675,8 +1691,12 @@ function buildPrimeRecognition() {
   rec.onend = function() {
     if (rec !== primeRecognition) return;
     if (lastTranscript) applyPrimeTranscript(lastTranscript);
-    primeResetUI();
-    primeSetProcessing(false);
+    if (primeButtonHeld) {
+      primeRestartRecognition();
+    } else {
+      primeResetUI();
+      primeSetProcessing(false);
+    }
   };
   return rec;
 }
@@ -1715,6 +1735,7 @@ function primeBeep() {
   } catch(e) {}
 }
 function primeStartRecording() {
+  primeButtonHeld = true;
   if (primeListening || primeArmTimeoutId) return;
   const btn = document.getElementById('primeRecordBtn');
   if (btn) btn.classList.add('arming');
@@ -1745,6 +1766,7 @@ function primeActuallyStart() {
   primeRequestWakeLock();
   primeTimeoutId = setTimeout(function(){
     if (primeListening && primeRecognition) {
+      primeButtonHeld = false;
       try { primeRecognition.stop(); } catch(e) {}
       primeResetUI();
       if (st) st.textContent = 'Stopped listening (timed out) — tap and hold Record to try again.';
@@ -1752,7 +1774,25 @@ function primeActuallyStart() {
   }, PRIME_LISTEN_TIMEOUT_MS);
   try { primeRecognition.start(); } catch(e) { primeResetUI(); }
 }
+function primeRestartRecognition() {
+  const st = document.getElementById('primeStatus');
+  primeRecognition = buildPrimeRecognition();
+  if (!primeRecognition) { primeResetUI(); primeSetProcessing(false); return; }
+  primeListening = true;
+  if (st) st.textContent = 'Still listening… speak price, pen, head, weight.';
+  if (primeTimeoutId) clearTimeout(primeTimeoutId);
+  primeTimeoutId = setTimeout(function(){
+    if (primeListening && primeRecognition) {
+      primeButtonHeld = false;
+      try { primeRecognition.stop(); } catch(e) {}
+      primeResetUI();
+      if (st) st.textContent = 'Stopped listening (timed out) — tap and hold Record to try again.';
+    }
+  }, PRIME_LISTEN_TIMEOUT_MS);
+  try { primeRecognition.start(); } catch(e) { primeResetUI(); primeSetProcessing(false); }
+}
 function primeStopRecording() {
+  primeButtonHeld = false;
   if (primeArmTimeoutId) {
     clearTimeout(primeArmTimeoutId);
     primeArmTimeoutId = null;
