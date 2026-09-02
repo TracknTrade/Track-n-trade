@@ -577,7 +577,7 @@
             </div>
           </div>
           <div class="rec-bot hidden" id="recBotPrime">
-            <div class="prime-status" id="primeStatus">Press and hold, say price, pen, head, weight, paint marks, then release.</div>
+            <div class="prime-status" id="primeStatus">Press and hold, say price, pen, head, weight, then release.</div>
             <div class="rec-pad" id="primeNumPad">
               <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
               <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
@@ -639,7 +639,7 @@
           <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">Special sale</button>
           <button type="button" id="modePrime" onclick="setSaleMode('prime')">Prime sale</button>
         </div>
-        <p class="note">Prime sale swaps the Purchase recorder for one-tap voice entry — record price ($/kg), pen, head, weight, and any paint marks in one go, check the fields, then Save Lot. Needs microphone access and works best in Safari on iPhone.</p>
+        <p class="note">Prime sale swaps the Purchase recorder for one-tap voice entry — record price ($/kg), pen, head and weight in one go, then tap Markings and Buyer-Way to set those, check the fields, then Save Lot. Needs microphone access and works best in Safari on iPhone.</p>
       </div>
 
       <div class="card">
@@ -761,7 +761,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.21'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.22'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1496,32 +1496,6 @@ function removeTempMarkOption() {
   const opt = sel.querySelector('option[data-temp="1"]');
   if (opt) opt.remove();
 }
-function applyPrimeMark(spoken) {
-  const sel = document.getElementById('lotDesc');
-  if (!sel) return;
-  const text = (spoken || '').trim();
-  if (!text) { resetMarkSelect(); return; }
-  const existing = S.markings.find(function(m){ return m.toLowerCase() === text.toLowerCase(); });
-  if (existing) {
-    removeTempMarkOption();
-    sel.value = existing;
-    markSelectPrevValue = existing;
-    return;
-  }
-  // Never seen before: use it for this lot only. Voice input never gets
-  // permanently saved to the Settings markings list — only "+ Add new…" does that.
-  const display = text.length > 60 ? text.slice(0, 60) + '…' : text;
-  let opt = sel.querySelector('option[data-temp="1"]');
-  if (!opt) {
-    opt = document.createElement('option');
-    opt.setAttribute('data-temp', '1');
-    sel.insertBefore(opt, sel.firstChild);
-  }
-  opt.value = text;
-  opt.textContent = display;
-  sel.value = text;
-  markSelectPrevValue = text;
-}
 function recType(k) {
   const inp = primeEditField ? document.getElementById(primeEditField) : recActive();
   if (!inp || (!primeEditField && recOrder[recStep] === 'lotBuyer')) return;
@@ -1576,7 +1550,7 @@ function applyRecorderMode() {
 
 function parsePrimeSpeech(transcript) {
   let text = ' ' + transcript.trim() + ' ';
-  const result = {price: null, pen: null, hd: null, wt: null, desc: ''};
+  const result = {price: null, pen: null, hd: null, wt: null};
 
   const priceMatch = text.match(/\$\s*(\d+(?:\.\d+)?)/);
   const dollarsMatch = !priceMatch && text.match(/(\d+)\s*dollars?\s*(?:and\s*)?(\d+)?\s*(?:cents?)?/i);
@@ -1614,8 +1588,6 @@ function parsePrimeSpeech(transcript) {
     text = text.replace(wtMatch[0], ' ');
   }
 
-  text = text.replace(/\b(?:a|per)\s+(?:kgs?|kilos?|kilograms?|head)\b/gi, ' ');
-  result.desc = text.replace(/[.,;:!?]+/g, ' ').replace(/\s+/g, ' ').trim();
   return result;
 }
 
@@ -1686,7 +1658,7 @@ function buildPrimeRecognition() {
     }
     if (finalStr.trim()) {
       lastTranscript = finalStr.trim();
-      applyPrimeTranscript(lastTranscript, false);
+      applyPrimeTranscript(lastTranscript);
     } else if (interimStr) {
       const st = document.getElementById('primeStatus');
       if (st) st.textContent = 'Hearing: "' + interimStr + '"';
@@ -1700,7 +1672,7 @@ function buildPrimeRecognition() {
   };
   rec.onend = function() {
     if (rec !== primeRecognition) return;
-    if (lastTranscript) applyPrimeTranscript(lastTranscript, true);
+    if (lastTranscript) applyPrimeTranscript(lastTranscript);
     primeResetUI();
     primeSetProcessing(false);
   };
@@ -1764,7 +1736,7 @@ function primeActuallyStart() {
     return;
   }
   primeBeep();
-  if (st) st.textContent = 'Listening… speak price, pen, head, weight, paint marks.';
+  if (st) st.textContent = 'Listening… speak price, pen, head, weight.';
   btn.textContent = '🔴 REC…';
   btn.classList.add('listening');
   primeListening = true;
@@ -1809,13 +1781,12 @@ function initPrimeRecordButton() {
   btn.addEventListener('mouseup', stop);
   btn.addEventListener('mouseleave', function(e){ if (primeListening) stop(e); });
 }
-function applyPrimeTranscript(transcript, isFinalChunk) {
+function applyPrimeTranscript(transcript) {
   const parsed = parsePrimeSpeech(transcript);
   if (parsed.price != null) document.getElementById('lotPrice').value = parsed.price;
   if (parsed.pen != null) document.getElementById('lotPen').value = parsed.pen;
   if (parsed.hd != null) document.getElementById('lotHd').value = parsed.hd;
   if (parsed.wt != null) document.getElementById('lotWt').value = parsed.wt;
-  if (isFinalChunk) applyPrimeMark(parsed.desc);
   primeSetProcessing(false);
   const st = document.getElementById('primeStatus');
   if (st) st.textContent = 'Heard: "' + transcript + '" — check the fields, then Save Lot.';
@@ -1882,7 +1853,7 @@ function startNewSale() {
     primeEditField = 'lotPrice';
     primeHighlightActiveField();
     const st = document.getElementById('primeStatus');
-    if (st) st.textContent = 'Press and hold, say price, pen, head, weight, paint marks, then release.';
+    if (st) st.textContent = 'Press and hold, say price, pen, head, weight, then release.';
   }
   clearDraft();
   renderLots();
