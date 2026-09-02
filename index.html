@@ -758,7 +758,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.15'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.16'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1657,7 +1657,9 @@ function buildPrimeRecognition() {
   rec.continuous = true;
   rec.interimResults = true;
   rec.lang = 'en-AU';
+  let lastTranscript = '';
   rec.onresult = function(e) {
+    if (rec !== primeRecognition) return;
     let finalStr = '';
     let interimStr = '';
     for (let i = 0; i < e.results.length; i++) {
@@ -1665,26 +1667,27 @@ function buildPrimeRecognition() {
       else interimStr += e.results[i][0].transcript;
     }
     if (finalStr.trim()) {
-      primeLastTranscript = finalStr.trim();
-      applyPrimeTranscript(primeLastTranscript, false);
+      lastTranscript = finalStr.trim();
+      applyPrimeTranscript(lastTranscript, false);
     } else if (interimStr) {
       const st = document.getElementById('primeStatus');
       if (st) st.textContent = 'Hearing: "' + interimStr + '"';
     }
   };
   rec.onerror = function(e) {
+    if (rec !== primeRecognition) return;
     const st = document.getElementById('primeStatus');
     if (st) st.textContent = 'Mic error: ' + e.error + ' — tap Record to try again.';
     primeResetUI();
   };
   rec.onend = function() {
-    if (primeLastTranscript) applyPrimeTranscript(primeLastTranscript, true);
+    if (rec !== primeRecognition) return;
+    if (lastTranscript) applyPrimeTranscript(lastTranscript, true);
     primeResetUI();
     primeSetProcessing(false);
   };
   return rec;
 }
-let primeLastTranscript = '';
 let primeProcessing = false;
 let primeProcessingTimeoutId = null;
 function primeSetProcessing(on) {
@@ -1733,7 +1736,6 @@ function primeStartRecording() {
   }, PRIME_ARM_DELAY_MS);
 }
 function primeActuallyStart() {
-  primeLastTranscript = '';
   clearPrimeFields();
   const btn = document.getElementById('primeRecordBtn');
   const st = document.getElementById('primeStatus');
