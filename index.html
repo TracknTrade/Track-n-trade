@@ -290,15 +290,17 @@
     #recBotPrime { display: flex; flex-direction: column; }
     .prime-status {
       font-size: var(--fs-sm); color: #cbd5e1; text-align: center;
-      margin-bottom: 12px; line-height: 1.4;
+      margin-bottom: 6px; line-height: 1.4; flex: 0 0 auto;
     }
+    #primeNumPad.disabled { opacity: .35; pointer-events: none; }
     .prime-record-btn {
-      flex: 1; width: 100%; min-height: 0; border: none; border-radius: 16px;
-      font-size: clamp(20px, 6vw, 30px); font-weight: 800; background: var(--green-2); color: #fff;
-      margin-bottom: 10px;
+      flex: 1.5 1 0; height: 100%; min-height: 0; border: none; border-radius: 12px;
+      font-size: clamp(13px, 3.6vw, 17px); font-weight: 800; background: var(--green-2); color: #fff;
+      line-height: 1.15;
     }
     .prime-record-btn.listening { background: #dc2626; }
     .prime-record-btn.arming { background: #b45309; }
+    #recBotPrime .rec-next { flex: 1.5 1 0; font-size: clamp(14px, 4vw, 22px); }
     #primeSaveBtn:disabled { background: #64748b; opacity: .7; }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(15,23,42,.72); z-index: 210;
@@ -574,9 +576,15 @@
           </div>
           <div class="rec-bot hidden" id="recBotPrime">
             <div class="prime-status" id="primeStatus">Press and hold, say price, pen, head, weight, paint marks, then release.</div>
-            <button type="button" class="prime-record-btn" id="primeRecordBtn">🎙 HOLD TO RECORD</button>
+            <div class="rec-pad" id="primeNumPad">
+              <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+              <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+              <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+              <button type="button" class="alt" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" class="alt" data-k="back">⌫</button>
+            </div>
             <div class="rec-next-row">
               <button type="button" class="rec-newsale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="prime-record-btn" id="primeRecordBtn">🎙 HOLD</button>
               <button type="button" class="rec-next" id="primeSaveBtn" onclick="primeSaveLot()">SAVE LOT</button>
             </div>
           </div>
@@ -750,7 +758,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.14'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.15'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1507,7 +1515,6 @@ function recType(k) {
   saveDraft();
 }
 function recNext() {
-  if (primeEditField) { primeExitFieldEdit(); return; }
   if (recStep < recOrder.length - 1) {
     recStep += 1;
     const nxt = recActive();
@@ -1539,10 +1546,10 @@ function setSaleMode(mode) {
 function applyRecorderMode() {
   const prime = S.saleMode === 'prime';
   if (!prime) primeEditField = null;
-  const editing = prime && !!primeEditField;
+  else if (!primeEditField) { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
   document.getElementById('lblPrice').textContent = prime ? '$/KG' : '$/HD';
-  document.getElementById('recBotSpecial').classList.toggle('hidden', prime && !editing);
-  document.getElementById('recBotPrime').classList.toggle('hidden', !prime || editing);
+  document.getElementById('recBotSpecial').classList.toggle('hidden', prime);
+  document.getElementById('recBotPrime').classList.toggle('hidden', !prime);
   if (!prime && primeListening) {
     if (primeRecognition) { try { primeRecognition.abort(); } catch(e) {} }
     primeResetUI();
@@ -1604,30 +1611,17 @@ const PRIME_LISTEN_TIMEOUT_MS = 20000;
 function primeFieldsLocked() {
   return primeListening || !!primeArmTimeoutId;
 }
-function primeEnterFieldEdit(id) {
+function primeHighlightActiveField() {
+  ALL_FIELDS.forEach(function(fid) {
+    const el = document.getElementById(fid);
+    if (el) el.classList.toggle('on-field', fid === primeEditField);
+  });
+}
+function primeSelectField(id) {
   if (primeFieldsLocked()) return;
   primeEditField = id;
   document.getElementById(id).value = '';
-  ALL_FIELDS.forEach(function(fid) {
-    const el = document.getElementById(fid);
-    if (el) el.classList.toggle('on-field', fid === id);
-  });
-  document.getElementById('numPad').classList.remove('hidden');
-  document.getElementById('buyerPad').classList.add('hidden');
-  document.getElementById('recBotSpecial').classList.remove('hidden');
-  document.getElementById('recBotPrime').classList.add('hidden');
-  const btn = document.getElementById('recNext');
-  if (btn) btn.textContent = 'DONE';
-  saveDraft();
-}
-function primeExitFieldEdit() {
-  if (!primeEditField) return;
-  primeEditField = null;
-  ALL_FIELDS.forEach(function(fid) {
-    const el = document.getElementById(fid);
-    if (el) el.classList.remove('on-field');
-  });
-  applyRecorderMode();
+  primeHighlightActiveField();
   saveDraft();
 }
 
@@ -1648,9 +1642,13 @@ function primeResetUI() {
   if (primeTimeoutId) { clearTimeout(primeTimeoutId); primeTimeoutId = null; }
   primeReleaseWakeLock();
   const btn = document.getElementById('primeRecordBtn');
-  if (btn) { btn.textContent = '🎙 HOLD TO RECORD'; btn.classList.remove('listening'); btn.classList.remove('arming'); }
+  if (btn) { btn.textContent = '🎙 HOLD'; btn.classList.remove('listening'); btn.classList.remove('arming'); }
   const markSel = document.getElementById('lotDesc');
   if (markSel) markSel.disabled = false;
+  const pad = document.getElementById('primeNumPad');
+  if (pad) pad.classList.remove('disabled');
+  if (!primeEditField) primeEditField = 'lotPrice';
+  primeHighlightActiveField();
 }
 function buildPrimeRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1727,13 +1725,14 @@ function primeStartRecording() {
   if (btn) btn.classList.add('arming');
   const markSel = document.getElementById('lotDesc');
   if (markSel) markSel.disabled = true;
+  const pad = document.getElementById('primeNumPad');
+  if (pad) pad.classList.add('disabled');
   primeArmTimeoutId = setTimeout(function(){
     primeArmTimeoutId = null;
     primeActuallyStart();
   }, PRIME_ARM_DELAY_MS);
 }
 function primeActuallyStart() {
-  primeEditField = null;
   primeLastTranscript = '';
   clearPrimeFields();
   const btn = document.getElementById('primeRecordBtn');
@@ -1746,7 +1745,7 @@ function primeActuallyStart() {
   }
   primeBeep();
   if (st) st.textContent = 'Listening… speak price, pen, head, weight, paint marks.';
-  btn.textContent = 'LISTENING… (release to stop)';
+  btn.textContent = '🔴 REC…';
   btn.classList.add('listening');
   primeListening = true;
   primeRequestWakeLock();
@@ -1767,6 +1766,8 @@ function primeStopRecording() {
     if (btn) btn.classList.remove('arming');
     const markSel = document.getElementById('lotDesc');
     if (markSel) markSel.disabled = false;
+    const pad = document.getElementById('primeNumPad');
+    if (pad) pad.classList.remove('disabled');
   }
   if (!primeListening) return;
   primeSetProcessing(true);
@@ -2021,6 +2022,7 @@ function addLot() {
   document.getElementById('lotWt').value='';
   document.getElementById('lotPen').value='';
   resetMarkSelect();
+  if (S.saleMode === 'prime') { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
   renderLots();
   return true;
 }
@@ -2378,6 +2380,15 @@ function init() {
       recType(b.getAttribute('data-k'));
     });
   }
+  const primePad = document.getElementById('primeNumPad');
+  if (primePad && !primePad.dataset.bound) {
+    primePad.dataset.bound = '1';
+    primePad.addEventListener('click', function(e) {
+      if (primeFieldsLocked()) return;
+      const b = e.target.closest('button'); if (!b) return;
+      recType(b.getAttribute('data-k'));
+    });
+  }
   ALL_FIELDS.forEach(function(id) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -2389,7 +2400,7 @@ function init() {
         return;
       }
       if (primeMode) {
-        primeEnterFieldEdit(id);
+        primeSelectField(id);
         return;
       }
       const idx = recOrder.indexOf(id);
