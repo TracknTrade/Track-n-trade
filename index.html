@@ -762,7 +762,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.23'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.24'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1649,16 +1649,17 @@ function buildPrimeRecognition() {
   rec.interimResults = true;
   rec.lang = 'en-AU';
   let lastTranscript = '';
+  let accumulatedFinal = '';
   rec.onresult = function(e) {
     if (rec !== primeRecognition) return;
-    let finalStr = '';
     let interimStr = '';
-    for (let i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalStr += e.results[i][0].transcript + ' ';
+    const startAt = (typeof e.resultIndex === 'number') ? e.resultIndex : 0;
+    for (let i = startAt; i < e.results.length; i++) {
+      if (e.results[i].isFinal) accumulatedFinal += e.results[i][0].transcript + ' ';
       else interimStr += e.results[i][0].transcript;
     }
-    if (finalStr.trim()) {
-      lastTranscript = finalStr.trim();
+    if (accumulatedFinal.trim()) {
+      lastTranscript = accumulatedFinal.trim();
       applyPrimeTranscript(lastTranscript);
     } else if (interimStr) {
       const st = document.getElementById('primeStatus');
