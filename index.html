@@ -241,6 +241,16 @@
     .rec-stats .stat-v {
       font-size: 1.05rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .edit-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #b45309; color: #fff; border-radius: 10px; padding: 8px 12px;
+      font-size: var(--fs-sm); font-weight: 700; flex: 0 0 auto;
+    }
+    .edit-banner button {
+      background: #fff; color: #b45309; border: none; border-radius: 8px;
+      padding: 4px 10px; font-weight: 800; font-size: var(--fs-xs);
+    }
+    .lots-table tr.editing-row td { background: #fef3c7; }
     .stats-by-buyer {
       display: flex; gap: 0; overflow-x: auto; background: var(--card);
       border: 2px solid var(--border); border-radius: 10px; flex: 0 0 auto;
@@ -545,6 +555,10 @@
               <div class="stat"><div class="stat-k">TOTAL</div><div class="stat-v" id="statTotal">$0</div></div>
             </div>
             <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
+            <div class="edit-banner hidden" id="editingBanner">
+              <span id="editingBannerText">Editing…</span>
+              <button type="button" onclick="cancelEditLot()">Cancel</button>
+            </div>
             <div class="card" style="margin-top:4px;">
               <div class="rec-fields">
                 <div><label id="lblPrice">$/HD</label><input id="lotPrice" class="rec-field" data-step="0" readonly></div>
@@ -762,7 +776,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.26'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-02.27'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -782,6 +796,7 @@ const defaults = {
 let S = JSON.parse(JSON.stringify(defaults));
 let classes = [{id:1,weight:260,buyPrice:0}];
 let nextId = 3, lots = [], nextLot = 1, watches = [], nextWatch = 1;
+let editingLotId = null;
 let activeIn = null, watchLast = 'kg', ringLock = false;
 
 function load() {
@@ -1892,6 +1907,7 @@ function startNewSale() {
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
   }
   lots = [];
+  editingLotId = null;
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   ALL_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
@@ -2052,15 +2068,27 @@ function addLot() {
   const priceUnit = (S.saleMode === 'prime') ? 'kg' : 'hd';
   const descEl = document.getElementById('lotDesc');
   if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need '+(priceUnit==='kg'?'$/kg':'$/hd')+' and pen.'; return false; }
-  lots.push({
-    id: nextLot++, price, hd, wt, pen, priceUnit,
-    desc: descEl ? descEl.value : '',
-    agent: S.meAgent, client: (document.getElementById('lotBuyer').value || S.meClient),
-    sale: document.getElementById('saleName').value,
-    yard: document.getElementById('pickupLoc').value,
-    t: new Date().toISOString(),
-    sent: false, carrier: '', selected: true
-  });
+  const desc = descEl ? descEl.value : '';
+  const client = document.getElementById('lotBuyer').value || S.meClient;
+  if (editingLotId != null) {
+    const existingLot = lots.find(function(x){ return x.id === editingLotId; });
+    if (existingLot) {
+      existingLot.price = price; existingLot.hd = hd; existingLot.wt = wt;
+      existingLot.pen = pen; existingLot.priceUnit = priceUnit;
+      existingLot.desc = desc; existingLot.client = client;
+    }
+    editingLotId = null;
+  } else {
+    lots.push({
+      id: nextLot++, price, hd, wt, pen, priceUnit,
+      desc,
+      agent: S.meAgent, client,
+      sale: document.getElementById('saleName').value,
+      yard: document.getElementById('pickupLoc').value,
+      t: new Date().toISOString(),
+      sent: false, carrier: '', selected: true
+    });
+  }
   document.getElementById('lotPrice').value='';
   document.getElementById('lotHd').value='';
   document.getElementById('lotWt').value='';
@@ -2114,15 +2142,25 @@ function renderLots() {
 
   const stdBar = document.getElementById('statsStandard');
   const bwBar = document.getElementById('statsByBuyer');
-  if (wayNames.length > 1) {
+  const editBanner = document.getElementById('editingBanner');
+  const editingLot = editingLotId != null ? lots.find(function(x){ return x.id === editingLotId; }) : null;
+  if (editingLot) {
     stdBar.classList.add('hidden');
-    bwBar.classList.remove('hidden');
-    bwBar.innerHTML = wayNames.map(function(n) {
-      return '<div class="bwc"><div class="stat-k">'+xmlEsc(n).toUpperCase()+'</div><div class="stat-v">'+(byWay[n].hd || '—')+' hd</div></div>';
-    }).join('');
-  } else {
-    stdBar.classList.remove('hidden');
     bwBar.classList.add('hidden');
+    editBanner.classList.remove('hidden');
+    document.getElementById('editingBannerText').textContent = 'Editing pen ' + (editingLot.pen || '—') + ' — still in the sale';
+  } else {
+    editBanner.classList.add('hidden');
+    if (wayNames.length > 1) {
+      stdBar.classList.add('hidden');
+      bwBar.classList.remove('hidden');
+      bwBar.innerHTML = wayNames.map(function(n) {
+        return '<div class="bwc"><div class="stat-k">'+xmlEsc(n).toUpperCase()+'</div><div class="stat-v">'+(byWay[n].hd || '—')+' hd</div></div>';
+      }).join('');
+    } else {
+      stdBar.classList.remove('hidden');
+      bwBar.classList.add('hidden');
+    }
   }
   const avgKgAll = weightedAvgKg(lots);
   document.getElementById('statHd').textContent = th || '—';
@@ -2164,7 +2202,7 @@ function renderLots() {
     const g = byWay[n];
     const rows = g.lots.map(function(l) {
       const st = l.sent ? '<span class="st-ok">✓</span>' : '<span class="st-no">✗</span>';
-      return '<tr onclick="editLot('+l.id+')">'
+      return '<tr class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
         + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
         + '<td>'+(l.pen||'—')+(l.desc ? '<span class="sub">'+xmlEsc(l.desc)+'</span>' : '')+'</td>'
         + '<td>'+(l.hd||'—')+'</td>'
@@ -2181,10 +2219,9 @@ function renderLots() {
   document.getElementById('lotsSummaryTrucking').innerHTML = truckHtml;
 }
 function editLot(id) {
-  const idx = lots.findIndex(function(x){ return x.id === id; });
-  if (idx < 0) return;
-  const l = lots[idx];
-  lots.splice(idx, 1);
+  const l = lots.find(function(x){ return x.id === id; });
+  if (!l) return;
+  editingLotId = id;
   document.getElementById('lotPrice').value = l.price || '';
   document.getElementById('lotPen').value = l.pen || '';
   document.getElementById('lotHd').value = l.hd || '';
@@ -2218,6 +2255,20 @@ function editLot(id) {
   saveDraft();
   const target = document.getElementById('recSplit');
   if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function cancelEditLot() {
+  editingLotId = null;
+  document.getElementById('lotPrice').value = '';
+  document.getElementById('lotHd').value = '';
+  document.getElementById('lotWt').value = '';
+  document.getElementById('lotPen').value = '';
+  document.getElementById('lotBuyer').value = '';
+  resetMarkSelect();
+  recStep = 0;
+  recOrder = ALL_FIELDS.slice();
+  recHighlight();
+  renderLots();
+  saveDraft();
 }
 function fillBuyerWaySelect(names) {
   const sel = document.getElementById('buyerWaySelect');
@@ -2519,6 +2570,7 @@ window.setExitMode = setExitMode;
 window.setFinExit = setFinExit;
 window.toggleCostInfo = toggleCostInfo;
 window.editLot = editLot;
+window.cancelEditLot = cancelEditLot;
 window.selectByBuyerWay = selectByBuyerWay;
 window.pickContact = pickContact;
 window.openNewSaleConfirm = openNewSaleConfirm;
