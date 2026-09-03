@@ -811,7 +811,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-03.28'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-03.29'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1401,6 +1401,7 @@ function sendWatchToRecorder(wt, hd) {
   document.getElementById('lotWt').value = wt;
   recOrder = ALL_FIELDS.filter(function(id){ return id !== 'lotPrice' && id !== 'lotWt'; });
   recStep = 0;
+  recFieldFresh = true;
   recHighlight();
   saveDraft();
   document.getElementById('wWt').value = '';
@@ -1444,6 +1445,7 @@ function buyFromWatchlist(id) {
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ALL_FIELDS.slice();
   recStep = 0;
+  recFieldFresh = true;
   document.getElementById('recBotSpecial').classList.remove('hidden');
   document.getElementById('recBotPrime').classList.add('hidden');
   recHighlight();
@@ -1606,10 +1608,12 @@ function removeTempMarkOption() {
   const opt = sel.querySelector('option[data-temp="1"]');
   if (opt) opt.remove();
 }
+let recFieldFresh = false;
 function recType(k) {
   const inp = primeEditField ? document.getElementById(primeEditField) : recActive();
   if (!inp || (!primeEditField && recOrder[recStep] === 'lotBuyer')) return;
   let v = String(inp.value || '');
+  if (recFieldFresh) { v = ''; recFieldFresh = false; }
   if (k === 'back') v = v.slice(0,-1);
   else if (k === '.') { if (v.indexOf('.') < 0) v = v === '' ? '0.' : v + '.'; }
   else if (v.length < 8) v += k;
@@ -1619,8 +1623,7 @@ function recType(k) {
 function recNext() {
   if (recStep < recOrder.length - 1) {
     recStep += 1;
-    const nxt = recActive();
-    if (nxt && recOrder[recStep] !== 'lotBuyer') nxt.value = '';
+    if (recOrder[recStep] !== 'lotBuyer') recFieldFresh = true;
     if (recOrder[recStep] === 'lotBuyer' && !document.getElementById('lotBuyer').value) {
       document.getElementById('lotBuyer').value = S.meClient || '';
     }
@@ -1726,7 +1729,7 @@ function primeHighlightActiveField() {
 function primeSelectField(id) {
   if (primeFieldsLocked()) return;
   primeEditField = id;
-  document.getElementById(id).value = '';
+  recFieldFresh = true;
   primeHighlightActiveField();
   saveDraft();
 }
@@ -2344,6 +2347,7 @@ function editLot(id) {
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ALL_FIELDS.slice();
   recStep = 0;
+  recFieldFresh = true;
   document.getElementById('recBotSpecial').classList.remove('hidden');
   document.getElementById('recBotPrime').classList.add('hidden');
   recHighlight();
@@ -2618,7 +2622,7 @@ function init() {
       const idx = recOrder.indexOf(id);
       if (idx >= 0) {
         recStep = idx;
-        if (id !== 'lotBuyer') el.value = '';
+        if (id !== 'lotBuyer') recFieldFresh = true;
         recHighlight();
         saveDraft();
       }
