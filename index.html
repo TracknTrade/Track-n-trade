@@ -759,6 +759,14 @@
       </div>
 
       <div class="card">
+        <div class="title">Team sync</div>
+        <p class="note">For paid team/district licences. Leave blank and nothing changes — the app works exactly as it does today.</p>
+        <label>Licence code</label>
+        <input id="s_licenseCode" class="native" placeholder="Leave blank if you don't have one">
+        <p class="note" id="syncStatusNote">No licence code entered.</p>
+      </div>
+
+      <div class="card">
         <div class="title">Livestock carriers</div>
         <p class="note">Add trucking companies. These will be selectable on the Yards Tab</p>
         <div id="carrierList"></div>
@@ -811,7 +819,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-03.29'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-03.31'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -825,7 +833,8 @@ const defaults = {
   clients: ['Self', 'Client 1', 'Client 2', 'Client 3', 'Client 4'],
   markings: ['No Mark', 'Shoulder', 'Loin', 'Rump', 'Tail'],
   meAgent: 'Self',
-  meClient: 'Self'
+  meClient: 'Self',
+  licenseCode: ''
 };
 
 let S = JSON.parse(JSON.stringify(defaults));
@@ -847,6 +856,52 @@ function persist() {
 function persistLots() {
   try { localStorage.setItem(LOTS_KEY, JSON.stringify(lots)); } catch(e) {}
 }
+
+/* Team sync — pushes lots to a shared spreadsheet for paid team/district
+   licences. Inert with no licence code entered: nothing about how a lot is
+   recorded or saved changes. Never blocks a save, never shows an error mid-sale
+   — a failed or offline push just stays queued and is retried later. */
+const SYNC_ENDPOINT_URL = '';
+let syncInFlight = false;
+function updateSyncStatusNote() {
+  const note = document.getElementById('syncStatusNote');
+  if (!note) return;
+  if (!S.licenseCode) { note.textContent = 'No licence code entered.'; return; }
+  const pending = lots.filter(function(l){ return !l.synced; }).length;
+  note.textContent = pending ? (pending + ' lot' + (pending === 1 ? '' : 's') + ' waiting to sync…') : 'All lots synced.';
+}
+function syncLotToSheet(lot) {
+  return fetch(SYNC_ENDPOINT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify({
+      code: S.licenseCode,
+      id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
+      pen: lot.pen, hd: lot.hd, wt: lot.wt,
+      priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
+      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc
+    })
+  });
+}
+function trySyncQueue() {
+  if (!SYNC_ENDPOINT_URL || !S.licenseCode || syncInFlight) { updateSyncStatusNote(); return; }
+  const pending = lots.filter(function(l){ return !l.synced; });
+  if (!pending.length) { updateSyncStatusNote(); return; }
+  syncInFlight = true;
+  const next = pending[0];
+  syncLotToSheet(next).then(function(){
+    next.synced = true;
+    persistLots();
+    syncInFlight = false;
+    updateSyncStatusNote();
+    if (pending.length > 1) trySyncQueue();
+  }).catch(function(){
+    syncInFlight = false;
+    updateSyncStatusNote();
+  });
+}
+window.addEventListener('online', trySyncQueue);
 function loadLots() {
   try {
     const raw = localStorage.getItem(LOTS_KEY);
@@ -907,6 +962,8 @@ function fillSettings() {
   document.getElementById('s_exitMode').value = (S.exitMode==='kg'||S.exitMode==='fin') ? S.exitMode : 'hd';
   document.getElementById('s_useCarry').value = String(S.useCarry == 0 ? 0 : 1);
   document.getElementById('s_smsTail').value = S.smsTail || '';
+  document.getElementById('s_licenseCode').value = S.licenseCode || '';
+  updateSyncStatusNote();
   renderCarriers();
   renderChips();
   fillWho();
@@ -961,9 +1018,11 @@ function saveSettings() {
   S.useCarry = document.getElementById('s_useCarry').value === '0' ? 0 : 1;
   document.getElementById('useCarry').value = String(S.useCarry);
   S.smsTail = document.getElementById('s_smsTail').value;
+  S.licenseCode = (document.getElementById('s_licenseCode').value || '').trim();
   persist();
   fillCarriers();
   calculate();
+  trySyncQueue();
 }
 
 function renderChips() {
@@ -1210,7 +1269,6 @@ function bindKp() {
       const lab = inp.parentElement && inp.parentElement.querySelector('label');
       openKp(inp, lab ? lab.textContent : 'Enter');
     };
-    inp.addEventListener('touchstart', openForInp, {passive:false});
     inp.addEventListener('mousedown', openForInp);
     inp.addEventListener('click', openForInp);
   });
@@ -2175,6 +2233,7 @@ function addLot() {
       existingLot.price = price; existingLot.hd = hd; existingLot.wt = wt;
       existingLot.pen = pen; existingLot.priceUnit = priceUnit;
       existingLot.desc = desc; existingLot.client = client;
+      existingLot.synced = false;
     }
     editingLotId = null;
   } else {
@@ -2185,7 +2244,7 @@ function addLot() {
       sale: document.getElementById('saleName').value,
       yard: document.getElementById('pickupLoc').value,
       t: new Date().toISOString(),
-      sent: false, carrier: '', selected: true
+      sent: false, carrier: '', selected: true, synced: false
     });
   }
   document.getElementById('lotPrice').value='';
@@ -2195,6 +2254,7 @@ function addLot() {
   resetMarkSelect();
   if (S.saleMode === 'prime') { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
   renderLots();
+  trySyncQueue();
   return true;
 }
 function updateMarketTrend() {
@@ -2586,6 +2646,7 @@ function init() {
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
+  trySyncQueue();
   restoreDraft();
   recHighlight();
   const pad = document.getElementById('recPad');
