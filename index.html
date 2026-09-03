@@ -256,6 +256,25 @@
       border: 2px solid var(--border); border-radius: 10px; flex: 0 0 auto;
       -webkit-overflow-scrolling: touch;
     }
+    .watchlist-cards {
+      display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      margin-top: 14px; padding-bottom: 4px;
+    }
+    .watchlist-card {
+      flex: 0 0 auto; width: 160px; background: var(--card); border: 2px solid var(--border);
+      border-radius: 12px; padding: 10px;
+    }
+    .watchlist-card .wl-pen { font-size: 1.2rem; font-weight: 800; }
+    .watchlist-card .wl-detail { font-size: 0.85rem; color: var(--muted); margin: 2px 0; }
+    .watchlist-card .wl-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .watchlist-card .wl-buy {
+      flex: 1; background: var(--green-2); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 2px; font-weight: 800; font-size: 0.8rem;
+    }
+    .watchlist-card .wl-skip {
+      flex: 1; background: #7f1d1d; color: #fff; border: none; border-radius: 8px;
+      padding: 8px 2px; font-weight: 800; font-size: 0.8rem;
+    }
     .stats-by-buyer .bwc {
       flex: 0 0 auto; min-width: 74px; text-align: center; padding: 7px 8px;
       border-right: 1px solid var(--border);
@@ -531,6 +550,21 @@
         <div id="watchList"></div>
       </div></div>
 
+      <div id="blockWatchlist" class="screen screen-tight"><div class="card">
+        <div class="title">Pen watchlist</div>
+        <p class="note">Walk the pens ahead of the sale, note your max price here, then come back once the sale catches up.</p>
+        <div class="grid-2">
+          <div><label>Pen</label><input id="wlPen" inputmode="numeric"></div>
+          <div><label>Head</label><input id="wlHd" inputmode="numeric"></div>
+        </div>
+        <div class="grid-2">
+          <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
+          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
+        </div>
+        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
+        <div id="watchlistCards" class="watchlist-cards"></div>
+      </div></div>
+
       <div class="screen screen-tight" id="blockMarketTrend">
         <div class="card">
           <div class="title">Last market</div>
@@ -663,6 +697,7 @@
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
+        <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
         <div class="toggle" onclick="flip('showRecorder')"><span>Purchase recorder <button type="button" class="info-btn" onclick="openToolInfo('showRecorder',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRecorder"><i></i></div></div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
       </div>
@@ -776,9 +811,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-02.27'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-03.28'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showRecorder: true, showText: true,
+  showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
@@ -797,6 +832,7 @@ let S = JSON.parse(JSON.stringify(defaults));
 let classes = [{id:1,weight:260,buyPrice:0}];
 let nextId = 3, lots = [], nextLot = 1, watches = [], nextWatch = 1;
 let editingLotId = null;
+let penWatch = [], nextPenWatch = 1;
 let activeIn = null, watchLast = 'kg', ringLock = false;
 
 function load() {
@@ -855,12 +891,13 @@ function applyFeatures() {
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockMarketTrend').classList.toggle('hidden', !S.showMarketTrend);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
+  document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
   document.getElementById('blockRecorder').classList.toggle('hidden', !S.showRecorder);
   document.getElementById('blockText').classList.toggle('hidden', !S.showText);
 }
 
 function fillSettings() {
-  ['showIndicator','showTradeAnalysis','showMarketTrend','showRing','showRecorder','showText'].forEach(k => {
+  ['showIndicator','showTradeAnalysis','showMarketTrend','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
@@ -1006,6 +1043,10 @@ const TOOL_INFO = {
   showRing: {
     title: 'Sales watch ring',
     body: "A quick price-per-kg calculator for tracking bids as they go past in the ring. Enter a weight and $/kg, tap Buy the moment you've bought and it's sent straight into the Purchase recorder."
+  },
+  showWatchlist: {
+    title: 'Pen watchlist',
+    body: "For walking the pens ahead of where the sale's up to. Note the pen number, head count, avg weight and your max $/hd for each one you're interested in — they sit here as cards until the sale reaches them. Mark a card Bought to send it straight into the Purchase recorder ready to finish off, or Not bought to drop it. Clears automatically when you start a new sale."
   },
   showRecorder: {
     title: 'Purchase recorder',
@@ -1371,6 +1412,59 @@ function renderWatches() {
   document.getElementById('watchList').innerHTML = watches.map(w =>
     '<div class="lot" style="color:#fff;border-color:rgba(255,255,255,.15)"><span>'+w.side+' • '+w.wt+'kg • $'+w.hd+'/hd • $'+Number(w.kg).toFixed(2)+'/kg</span><button class="btn-r" style="color:#a7f3d0" onclick="watches=watches.filter(x=>x.id!=='+w.id+');renderWatches()">x</button></div>'
   ).join('');
+}
+
+function addToWatchlist() {
+  const pen = (document.getElementById('wlPen').value || '').trim();
+  const hd = parseFloat(document.getElementById('wlHd').value) || 0;
+  const wt = parseFloat(document.getElementById('wlWt').value) || 0;
+  const price = parseFloat(document.getElementById('wlPrice').value) || 0;
+  if (!pen) return;
+  penWatch.push({id: nextPenWatch++, pen, hd, wt, price});
+  document.getElementById('wlPen').value = '';
+  document.getElementById('wlHd').value = '';
+  document.getElementById('wlWt').value = '';
+  document.getElementById('wlPrice').value = '';
+  renderWatchlist();
+}
+function removeFromWatchlist(id) {
+  penWatch = penWatch.filter(function(w){ return w.id !== id; });
+  renderWatchlist();
+}
+function buyFromWatchlist(id) {
+  const w = penWatch.find(function(x){ return x.id === id; });
+  if (!w) return;
+  penWatch = penWatch.filter(function(x){ return x.id !== id; });
+  renderWatchlist();
+  editingLotId = null;
+  document.getElementById('lotPen').value = w.pen || '';
+  document.getElementById('lotHd').value = w.hd || '';
+  document.getElementById('lotWt').value = w.wt || '';
+  document.getElementById('lotPrice').value = w.price || '';
+  const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
+  recOrder = missing.length ? missing : ALL_FIELDS.slice();
+  recStep = 0;
+  document.getElementById('recBotSpecial').classList.remove('hidden');
+  document.getElementById('recBotPrime').classList.add('hidden');
+  recHighlight();
+  saveDraft();
+  const target = document.getElementById('recSplit');
+  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderWatchlist() {
+  const box = document.getElementById('watchlistCards');
+  if (!box) return;
+  box.innerHTML = penWatch.map(function(w) {
+    return '<div class="watchlist-card">'
+      + '<div class="wl-pen">Pen ' + xmlEsc(w.pen) + '</div>'
+      + '<div class="wl-detail">' + (w.hd || '—') + ' hd</div>'
+      + '<div class="wl-detail">' + (w.wt || '—') + ' kg avg</div>'
+      + '<div class="wl-detail">$' + (w.price || 0).toFixed(2) + '/hd</div>'
+      + '<div class="wl-actions">'
+      + '<button type="button" class="wl-buy" onclick="buyFromWatchlist(' + w.id + ')">Bought</button>'
+      + '<button type="button" class="wl-skip" onclick="removeFromWatchlist(' + w.id + ')">Not bought</button>'
+      + '</div></div>';
+  }).join('');
 }
 
 
@@ -1908,6 +2002,8 @@ function startNewSale() {
   }
   lots = [];
   editingLotId = null;
+  penWatch = [];
+  renderWatchlist();
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   ALL_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
@@ -2485,7 +2581,7 @@ function init() {
   applyRecorderMode();
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
- applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); bindKp();
+ applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   restoreDraft();
   recHighlight();
   const pad = document.getElementById('recPad');
@@ -2571,6 +2667,9 @@ window.setFinExit = setFinExit;
 window.toggleCostInfo = toggleCostInfo;
 window.editLot = editLot;
 window.cancelEditLot = cancelEditLot;
+window.addToWatchlist = addToWatchlist;
+window.removeFromWatchlist = removeFromWatchlist;
+window.buyFromWatchlist = buyFromWatchlist;
 window.selectByBuyerWay = selectByBuyerWay;
 window.pickContact = pickContact;
 window.openNewSaleConfirm = openNewSaleConfirm;
