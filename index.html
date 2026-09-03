@@ -819,7 +819,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-03.31'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-03.32'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1041,7 +1041,7 @@ function addAgent() {
   persist(); renderChips(); fillWho();
 }
 function delAgent(n) {
-  if (S.agents.length <= 1) return;
+  if (S.agents.length <= 1) { alert('Add another agent first — there needs to be at least one.'); return; }
   S.agents = S.agents.filter(x => x !== n);
   if (S.meAgent === n) S.meAgent = S.agents[0];
   persist(); renderChips(); fillWho();
@@ -1053,7 +1053,7 @@ function addClient() {
   persist(); renderChips(); fillWho();
 }
 function delClient(n) {
-  if (S.clients.length <= 1) return;
+  if (S.clients.length <= 1) { alert('Add another buyer way first — there needs to be at least one.'); return; }
   S.clients = S.clients.filter(x => x !== n);
   if (S.meClient === n) S.meClient = S.clients[0];
   persist(); renderChips(); fillWho();
@@ -1072,7 +1072,7 @@ function addMarkSetting() {
   persist(); renderMarkChips(); fillMarkSelect();
 }
 function delMark(n) {
-  if (S.markings.length <= 1) return;
+  if (S.markings.length <= 1) { alert('Add another marking first — there needs to be at least one.'); return; }
   S.markings = S.markings.filter(x => x !== n);
   persist(); renderMarkChips(); fillMarkSelect(); resetMarkSelect();
 }
@@ -1146,7 +1146,7 @@ function addCarrier() {
   persist(); renderCarriers(); fillCarriers();
 }
 function delCarrier(i) {
-  if (!S.carriers || S.carriers.length<=1) return;
+  if (!S.carriers || S.carriers.length<=1) { alert('Add another carrier first — there needs to be at least one.'); return; }
   S.carriers.splice(i,1); persist(); renderCarriers(); fillCarriers();
 }
 function fillCarriers() {
