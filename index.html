@@ -128,6 +128,8 @@
     .trend-light {
       width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
       background: #cbd5e1; transition: background .2s;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.3rem; font-weight: 900; line-height: 1;
     }
     .trend-light.up { background: var(--green-2); }
     .trend-light.down { background: #A34400; }
@@ -573,7 +575,7 @@
             <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
           </div>
           <div class="trend-row">
-            <div class="trend-light" id="trendLight"></div>
+            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
             <div class="trend-diff" id="trendDiff">—</div>
           </div>
         </div>
@@ -819,7 +821,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-04.35'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-04.36'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2261,15 +2263,19 @@ function updateMarketTrend() {
   const mkt = parseFloat(document.getElementById('mktAvgKg').value) || 0;
   const recAvgKg = weightedAvgKg(lots);
   const light = document.getElementById('trendLight');
+  const arrow = document.getElementById('trendArrow');
   const diffEl = document.getElementById('trendDiff');
   light.classList.remove('up','down');
   if (!mkt || !recAvgKg) {
     diffEl.textContent = '—';
+    arrow.textContent = '';
+    light.setAttribute('aria-label', 'No comparison yet');
     return;
   }
   const diff = recAvgKg - mkt;
-  if (diff > 0) light.classList.add('up');
-  else if (diff < 0) light.classList.add('down');
+  if (diff > 0) { light.classList.add('up'); arrow.textContent = '▲'; light.setAttribute('aria-label', 'Above last market'); }
+  else if (diff < 0) { light.classList.add('down'); arrow.textContent = '▼'; light.setAttribute('aria-label', 'Below last market'); }
+  else { arrow.textContent = '–'; light.setAttribute('aria-label', 'Same as last market'); }
   const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
   diffEl.textContent = sign + '$' + Math.abs(diff).toFixed(2) + '/kg';
 }
