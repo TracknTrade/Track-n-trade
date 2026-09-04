@@ -685,6 +685,12 @@
         <button type="button" class="btn btn-g" style="margin-top:0;" onclick="showTab('yards')">BACK TO YARDS</button>
       </div>
       <div class="card">
+        <div class="title">Feedback</div>
+        <p class="note">Found a bug, or want something added? Tell us and we'll get onto it.</p>
+        <button type="button" class="btn" style="width:auto;min-height:auto;padding:10px 18px;font-size:var(--fs-sm);background:var(--muted-2);color:#fff;" onclick="sendFeedback()">Send feedback</button>
+      </div>
+
+      <div class="card">
         <div class="title">Sale mode</div>
         <div class="mode-sw">
           <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">Special sale</button>
@@ -821,7 +827,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-04.36'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-04.37'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -857,6 +863,23 @@ function persist() {
 }
 function persistLots() {
   try { localStorage.setItem(LOTS_KEY, JSON.stringify(lots)); } catch(e) {}
+}
+
+/* Feedback button — opens the user's mail app pre-filled with the app
+   version and device info. FEEDBACK_EMAIL is blank until a real support
+   address is set; the button stays visible but tells the user it's not
+   turned on yet rather than opening a blank, address-less email. */
+const FEEDBACK_EMAIL = '';
+function sendFeedback() {
+  if (!confirm('Send feedback about Track n Trade?')) return;
+  if (!FEEDBACK_EMAIL) {
+    alert("Feedback isn't turned on yet — this will be ready in an upcoming update.");
+    return;
+  }
+  const subject = 'Track n Trade feedback';
+  const body = 'App version: ' + APP_VERSION + '\nDevice: ' + navigator.userAgent +
+    '\n\nDescribe the issue or suggestion below:\n';
+  window.location.href = 'mailto:' + FEEDBACK_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 }
 
 /* Team sync — pushes lots to a shared spreadsheet for paid team/district
