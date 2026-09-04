@@ -20,7 +20,7 @@
       --bg: #f1f5f9;
       --card: #fff;
       --green: #065f46;
-      --green-2: #047857;
+      --green-2: #00695C;
       --fs-2xs: 0.76rem;
       --fs-xs: 0.84rem;
       --fs-sm: 0.94rem;
@@ -129,8 +129,8 @@
       width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
       background: #cbd5e1; transition: background .2s;
     }
-    .trend-light.up { background: #22c55e; }
-    .trend-light.down { background: #dc2626; }
+    .trend-light.up { background: var(--green-2); }
+    .trend-light.down { background: #A34400; }
     .trend-diff { font-size: var(--fs-lg); font-weight: 800; color: var(--ink); }
     .ring-btns { display: flex; flex-direction: column; gap: 12px; }
     .ring-btns button { background: var(--green-2); color: #fff; border: none; border-radius: 12px; width: 78px; height: 58px; font-weight: 800; font-size: var(--fs-sm); }
@@ -166,7 +166,7 @@
     .lot-row { display: flex; gap: 8px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--bg); font-size: var(--fs-sm); }
     .lot-row input[type=checkbox] { width: 22px; height: 22px; margin-top: 2px; flex: 0 0 22px; }
     .st-ok { color: var(--green-2); font-weight: 800; }
-    .st-no { color: #dc2626; font-weight: 800; }
+    .st-no { color: #A34400; font-weight: 800; }
     .lots-table { width: 100%; border-collapse: collapse; }
     .lots-table th {
       text-align: left; font-size: var(--fs-2xs); letter-spacing: .05em;
@@ -272,7 +272,7 @@
       padding: 8px 2px; font-weight: 800; font-size: 0.8rem;
     }
     .watchlist-card .wl-skip {
-      flex: 1; background: #7f1d1d; color: #fff; border: none; border-radius: 8px;
+      flex: 1; background: #A34400; color: #fff; border: none; border-radius: 8px;
       padding: 8px 2px; font-weight: 800; font-size: 0.8rem;
     }
     .stats-by-buyer .bwc {
@@ -313,10 +313,10 @@
     }
     .rec-next.rec-next-error { background: #dc2626; font-size: clamp(15px, 4.2vw, 20px); letter-spacing: .01em; }
     .rec-newsale {
-      flex: 1 1 0; background: #7f1d1d; color: #fff; border: none; border-radius: 12px;
+      flex: 1 1 0; background: #A34400; color: #fff; border: none; border-radius: 12px;
       font-weight: 800; font-size: clamp(11px, 3vw, 14px); line-height: 1.15;
     }
-    .rec-newsale:active { background: #991b1b; }
+    .rec-newsale:active { background: #B84D00; }
     #recBotPrime { display: flex; flex-direction: column; }
     .prime-status {
       font-size: var(--fs-sm); color: #cbd5e1; text-align: center;
@@ -343,7 +343,7 @@
       background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 380px;
       box-shadow: 0 10px 40px rgba(0,0,0,.35);
     }
-    .modal-title { font-size: var(--fs-lg); font-weight: 800; color: #7f1d1d; margin-bottom: 8px; }
+    .modal-title { font-size: var(--fs-lg); font-weight: 800; color: #A34400; margin-bottom: 8px; }
     .modal-body { font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; margin-bottom: 18px; }
     .slide-confirm {
       position: relative; height: 56px; border-radius: 28px; background: #fee2e2;
@@ -351,7 +351,7 @@
     }
     .slide-track {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      color: #7f1d1d; font-weight: 800; font-size: var(--fs-sm); letter-spacing: .02em;
+      color: #A34400; font-weight: 800; font-size: var(--fs-sm); letter-spacing: .02em;
     }
     .slide-knob {
       position: absolute; top: 3px; left: 3px; width: 50px; height: 50px; border-radius: 50%;
@@ -819,7 +819,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-04.34'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-04.35'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
