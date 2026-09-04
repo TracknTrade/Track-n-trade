@@ -827,7 +827,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-04.37'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-04.38'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1179,8 +1179,9 @@ function fillCarriers() {
   if (!sel) return;
   if (!S.carriers) S.carriers = [{name:'Main carrier', phone:''}];
   const cur = sel.value;
-  sel.innerHTML = S.carriers.map(c => '<option value="'+c.name+'">'+c.name+(c.phone?(' • '+c.phone):'')+'</option>').join('');
-  if (cur) sel.value = cur;
+  sel.innerHTML = '<option value="">— Select carrier —</option>' +
+    S.carriers.map(c => '<option value="'+c.name+'">'+c.name+(c.phone?(' • '+c.phone):'')+'</option>').join('');
+  sel.value = cur || '';
   syncCarrierPhone();
 }
 function syncCarrierPhone() {
@@ -1213,10 +1214,6 @@ function pickContact(targetId) {
     if (targetId === 'newCarrierPhone') {
       const nameEl = document.getElementById('newCarrierName');
       if (nameEl && !nameEl.value && c.name && c.name[0]) nameEl.value = c.name[0];
-    }
-    if (targetId === 'carrierPhoneNow' && tel) {
-      const car = currentCarrier();
-      if (car) car.phone = tel;
     }
   }).catch(function(){});
 }
@@ -2486,7 +2483,22 @@ function updateSelectedLotsInfo() {
 function selectedLots() { return lots.filter(l => l.selected); }
 function currentCarrier() {
   const name = (document.getElementById('carrierPick')||{}).value || '';
-  return (S.carriers||[]).find(c => c.name === name) || {name: name||'Carrier', phone:''};
+  return (S.carriers||[]).find(c => c.name === name) || {name: name, phone:''};
+}
+
+/* Only credit the selected carrier's name to a message if the number
+   actually being texted still matches that carrier's saved mobile.
+   If the phone box has been typed/overridden away from it (e.g. sending
+   to someone who isn't a saved carrier), treat it as an unnamed,
+   one-off recipient rather than leaking the real carrier's name to them. */
+function resolvedCarrier() {
+  const car = currentCarrier();
+  const typedPhone = String((document.getElementById('carrierPhoneNow')||{}).value || '').replace(/\s+/g,'');
+  const carPhone = String(car.phone || '').replace(/\s+/g,'');
+  if (car.name && carPhone && typedPhone && typedPhone !== carPhone) {
+    return {name: '', phone: typedPhone};
+  }
+  return {name: car.name, phone: typedPhone || car.phone || ''};
 }
 
 function pickupMessage(list) {
@@ -2496,7 +2508,7 @@ function pickupMessage(list) {
   list.forEach(l => { th += l.hd; tw += l.hd * l.wt; });
   const sale = document.getElementById('saleName').value.trim();
   const loc = document.getElementById('pickupLoc').value.trim();
-  const car = currentCarrier();
+  const car = resolvedCarrier();
   const lines = ['CATTLE PICKUP'];
   if (car.name) lines.push('Carrier: '+car.name);
   if (sale) lines.push('Sale: '+sale);
@@ -2515,10 +2527,10 @@ function pickupMessage(list) {
 function markSelectedSent() {
   const list = selectedLots();
   if (!list.length) { document.getElementById('smsStatus').textContent='Tick the lots to send.'; return; }
-  const car = currentCarrier();
+  const car = resolvedCarrier();
   list.forEach(l => { l.sent = true; l.carrier = car.name; l.selected = false; });
   renderLots();
-  document.getElementById('smsStatus').textContent = 'Marked sent to '+(car.name||'carrier')+'.';
+  document.getElementById('smsStatus').textContent = 'Marked sent to '+(car.name||'the number entered')+'.';
 }
 function smsUrl(phone, msg) {
   const body = encodeURIComponent(msg);
@@ -2546,10 +2558,8 @@ function textAgent(e) {
   const msg = pickupMessage(list);
   const status = document.getElementById('smsStatus');
   if (!msg) { status.textContent = 'Tick the lots to send.'; return false; }
-  const car = currentCarrier();
-  const typed = (document.getElementById('carrierPhoneNow')||{}).value || '';
-  const phone = String(typed || car.phone || '').replace(/\s+/g,'');
-  if (typed && car) car.phone = typed;
+  const car = resolvedCarrier();
+  const phone = car.phone;
   if (!phone) {
     status.textContent = 'Put the carrier mobile in first.';
     return false;
@@ -2557,7 +2567,7 @@ function textAgent(e) {
   openSms(smsUrl(phone, msg));
   list.forEach(l => { l.sent = true; l.carrier = car.name; l.selected = false; });
   renderLots();
-  status.textContent = 'Opening Messages to ' + phone + ' for ' + (car.name||'carrier') + '. If it does not open, tap Copy selected lots.';
+  status.textContent = 'Opening Messages to ' + phone + (car.name ? ' for '+car.name : '') + '. If it does not open, tap Copy selected lots.';
   return false;
 }
 document.getElementById('smsLink').addEventListener('click', textAgent);
