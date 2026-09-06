@@ -827,7 +827,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-04.38'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-06.39'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2587,19 +2587,156 @@ function copyPickup() {
   });
 }
 
-/* excel */
+/* excel — builds a genuine .xlsx (Open XML) file by hand, no library, so it
+   opens natively in Excel on Windows AND Mac, plus Apple Numbers and Google
+   Sheets. The old format here was Excel's legacy "SpreadsheetML" XML saved
+   with a .xls extension — real Excel tolerated that, but Numbers on Mac
+   often can't open it, which is exactly the gap this closes. */
 function xmlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function cell(v){ return '<Cell><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+xmlEsc(v)+'</Data></Cell>'; }
-function row(arr){ return '<Row>'+arr.map(cell).join('')+'</Row>'; }
+
+function xlsxColLetter(n){
+  let s = '';
+  while (n > 0) { const rem = (n-1) % 26; s = String.fromCharCode(65+rem) + s; n = Math.floor((n-1)/26); }
+  return s;
+}
+function xlsxCellXml(colIdx, rowIdx, v){
+  const ref = xlsxColLetter(colIdx) + rowIdx;
+  if (typeof v === 'number' && isFinite(v)) return '<c r="'+ref+'"><v>'+v+'</v></c>';
+  return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(v)+'</t></is></c>';
+}
+function xlsxSheetXml(rows){
+  const rowsXml = rows.map((arr, i) => '<row r="'+(i+1)+'">' + arr.map((v,j) => xlsxCellXml(j+1, i+1, v)).join('') + '</row>').join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + rowsXml + '</sheetData></worksheet>';
+}
+
+const CRC32_TABLE = (function(){
+  const table = [];
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(bytes){
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function zipBuild(files){
+  const enc = new TextEncoder();
+  let offset = 0;
+  const localParts = [], centralParts = [];
+  const DOS_TIME = 0, DOS_DATE = 0x21;
+  files.forEach(f => {
+    const nameBytes = enc.encode(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const localOffset = offset;
+
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, DOS_TIME, true);
+    lv.setUint16(12, DOS_DATE, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    localParts.push(local, data);
+    offset += local.length + data.length;
+
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(central.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, DOS_TIME, true);
+    cv.setUint16(14, DOS_DATE, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, localOffset, true);
+    central.set(nameBytes, 46);
+    centralParts.push(central);
+  });
+  const centralSize = centralParts.reduce((s,p) => s + p.length, 0);
+  const centralOffset = offset;
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, centralOffset, true);
+  return localParts.concat(centralParts, [eocd]);
+}
+function buildXlsxBlob(sheets){
+  const enc = new TextEncoder();
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+    + sheets.map((_,i) => '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')
+    + '</Types>';
+  const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+    + '</Relationships>';
+  const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    + '<sheets>' + sheets.map((s,i) => '<sheet name="'+xmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('') + '</sheets></workbook>';
+  const workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + sheets.map((s,i) => '<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')
+    + '<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    + '</Relationships>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
+    + '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>'
+    + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+    + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    + '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+    + '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+    + '</styleSheet>';
+
+  const files = [
+    {name:'[Content_Types].xml', data: enc.encode(contentTypes)},
+    {name:'_rels/.rels', data: enc.encode(rootRels)},
+    {name:'xl/workbook.xml', data: enc.encode(workbook)},
+    {name:'xl/_rels/workbook.xml.rels', data: enc.encode(workbookRels)},
+    {name:'xl/styles.xml', data: enc.encode(styles)}
+  ];
+  sheets.forEach((s,i) => files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml', data: enc.encode(xlsxSheetXml(s.rows))}));
+  return new Blob(zipBuild(files), {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
 function exportExcel() {
   const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
-  const lotRows = [row(headers)];
+  const lotRows = [headers];
   lots.forEach(l => {
-    lotRows.push(row([
+    lotRows.push([
       (l.t||'').slice(0,16).replace('T',' '),
       l.sale||'', l.yard||'', l.pen||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
       Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
-    ]));
+    ]);
   });
   let th=0, td=0;
   lots.forEach(l=>{ th+=l.hd; td+=lotDollars(l); });
@@ -2616,30 +2753,28 @@ function exportExcel() {
     byClient[k].hd += l.hd; byClient[k].dol += lotDollars(l);
   });
   const sumRows = [
-    row(['Metric','Value']),
-    row(['Total head', th]),
-    row(['Total $', Math.round(td)]),
-    row(['Average $/hd', th?Math.round(td/th):0]),
-    row(['Average $/kg', Math.round(weightedAvgKg(lots)*100)/100]),
-    row(['Lots', lots.length]),
-    row(['', '']),
-    row(['Agent','Head','Total $']),
-    ...Object.keys(byAgent).map(k => row([k, byAgent[k].hd, Math.round(byAgent[k].dol)])),
-    row(['', '']),
-    row(['Buyer way','Head','Total $']),
-    ...Object.keys(byClient).map(k => row([k, byClient[k].hd, Math.round(byClient[k].dol)]))
+    ['Metric','Value'],
+    ['Total head', th],
+    ['Total $', Math.round(td)],
+    ['Average $/hd', th?Math.round(td/th):0],
+    ['Average $/kg', Math.round(weightedAvgKg(lots)*100)/100],
+    ['Lots', lots.length],
+    ['', ''],
+    ['Agent','Head','Total $'],
+    ...Object.keys(byAgent).map(k => [k, byAgent[k].hd, Math.round(byAgent[k].dol)]),
+    ['', ''],
+    ['Buyer way','Head','Total $'],
+    ...Object.keys(byClient).map(k => [k, byClient[k].hd, Math.round(byClient[k].dol)])
   ];
-  const watchRows = [row(['Time','Side','Weight','$/hd','$/kg','Agent','Buyer way'])];
-  watches.forEach(w => watchRows.push(row([(w.t||'').slice(0,16).replace('T',' '), w.side, w.wt, w.hd, w.kg, w.agent||'', w.client||''])));
+  const watchRows = [['Time','Side','Weight','$/hd','$/kg','Agent','Buyer way']];
+  watches.forEach(w => watchRows.push([(w.t||'').slice(0,16).replace('T',' '), w.side, w.wt, w.hd, w.kg, w.agent||'', w.client||'']));
 
-  const xml = '<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>'
-    + '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'
-    + '<Worksheet ss:Name="Lots"><Table>' + lotRows.join('') + '</Table></Worksheet>'
-    + '<Worksheet ss:Name="Summary"><Table>' + sumRows.join('') + '</Table></Worksheet>'
-    + '<Worksheet ss:Name="Watch"><Table>' + watchRows.join('') + '</Table></Worksheet>'
-    + '</Workbook>';
-  const name = 'track-n-trade-' + new Date().toISOString().slice(0,10) + '.xls';
-  const blob = new Blob([xml], {type:'application/vnd.ms-excel'});
+  const blob = buildXlsxBlob([
+    {name:'Lots', rows: lotRows},
+    {name:'Summary', rows: sumRows},
+    {name:'Watch', rows: watchRows}
+  ]);
+  const name = 'track-n-trade-' + new Date().toISOString().slice(0,10) + '.xlsx';
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, name);
     return;
