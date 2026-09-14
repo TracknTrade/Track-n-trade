@@ -862,7 +862,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-14.40'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-14.41'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1425,7 +1425,7 @@ kpBox.addEventListener('touchend', pressK, {passive:false});
 
 function bindKp() {
   document.querySelectorAll('input').forEach(function(inp) {
-    if (inp.classList.contains('native') || inp.classList.contains('rec-field') || inp.type === 'tel' || inp.type === 'hidden') return;
+    if (inp.classList.contains('native') || inp.classList.contains('rec-field') || inp.type === 'tel' || inp.type === 'hidden' || inp.type === 'file' || inp.type === 'checkbox') return;
     if (inp.tagName === 'SELECT') return;
     inp.setAttribute('readonly','readonly');
     inp.setAttribute('inputmode','none');
