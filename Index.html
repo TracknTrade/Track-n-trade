@@ -1,0 +1,3096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Track n Trade" />
+  <meta name="theme-color" content="#065f46" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Track n Trade</title>
+  <style>
+    :root {
+      --header-h: 90px;
+      --ink: #1e293b;
+      --muted: #475569;
+      --muted-2: #64748b;
+      --border: #e2e8f0;
+      --bg: #f1f5f9;
+      --card: #fff;
+      --green: #065f46;
+      --green-2: #00695C;
+      --fs-2xs: 0.76rem;
+      --fs-xs: 0.84rem;
+      --fs-sm: 0.94rem;
+      --fs-base: 1rem;
+      --fs-md: 1.14rem;
+      --fs-lg: 1.3rem;
+      --fs-xl: 1.75rem;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--ink);
+      overflow: hidden; -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    header {
+      background: var(--green); color: #fff;
+      padding: 10px 12px 0;
+      position: sticky; top: 0; z-index: 90;
+      display: flex; flex-direction: column;
+    }
+    header h1 { font-size: 1.08rem; font-weight: 800; line-height: 1; padding: 4px 2px 10px; letter-spacing: .01em; }
+    header p { display: none; }
+    .tabs { display: flex; gap: 8px; width: 100%; }
+    .tab {
+      flex: 1; background: rgba(255,255,255,.14); color: #ecfdf5; border: none;
+      padding: 14px 8px; font-weight: 800; font-size: var(--fs-md);
+      border-radius: 12px 12px 0 0; min-height: 54px;
+    }
+    .tab.on { background: var(--bg); color: var(--green); }
+    @media (display-mode: browser), (display-mode: fullscreen) {
+      body { padding-top: 0; }
+    }
+    main {
+      max-width: 640px; margin: 0 auto;
+      height: calc(100dvh - var(--header-h));
+      overflow-y: auto;
+      padding: 0 10px 8px;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .screen {
+      min-height: calc(100dvh - var(--header-h));
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px 0 18px;
+    }
+    #ptrIndicator {
+      position: fixed; top: var(--header-h); left: 0; right: 0;
+      height: 50px; margin-top: -50px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); color: var(--muted); font-weight: 700; font-size: var(--fs-sm);
+      z-index: 70; pointer-events: none;
+    }
+    .screen-tight {
+      min-height: 0;
+      justify-content: flex-start;
+      padding: 6px 0;
+    }
+    .card { background: var(--card); border: 2px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 0; }
+    .title { font-size: var(--fs-md); font-weight: 700; margin-bottom: 10px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { font-size: var(--fs-xs); color: var(--muted); display: block; margin-bottom: 5px; font-weight: 700; }
+    button, a, input, select { touch-action: manipulation; }
+    input, select, textarea {
+      width: 100%; border: 2px solid var(--border); border-radius: 12px;
+      padding: 16px; font-size: 28px; font-weight: 700; background: #f8fafc;
+      min-height: 68px; text-align: center; color: var(--ink);
+    }
+    input.kp-active {
+      border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(45,157,110,.25);
+    }
+    textarea { min-height: 88px; text-align: left; font-weight: 500; font-size: var(--fs-sm); line-height: 1.4; }
+    .native { text-align: left; font-weight: 600; font-size: 1.05rem; }
+    select.native {
+      font-size: 0.94rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      padding-right: 10px;
+    }
+    .btn { width: 100%; border: none; border-radius: 12px; padding: 16px; font-weight: 800; min-height: 56px; margin-top: 10px; font-size: var(--fs-md); }
+    .btn-g { background: var(--green-2); color: #fff; }
+    .btn-n { background: #1e3a5f; color: #fff; }
+    .btn-d { background: #334155; color: #fff; }
+    .btn-r { background: none; border: none; color: #ef4444; font-size: var(--fs-xs); font-weight: 700; }
+    .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: var(--fs-sm); }
+    .muted { color: var(--muted); }
+    .max { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .max b { display: block; font-size: var(--fs-xl); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--card); border: 2px solid var(--border); border-radius: 12px 12px 0 0; overflow: hidden; }
+    .stat { text-align: center; padding: 10px 4px; border-right: 1px solid var(--border); }
+    .stat:last-child { border-right: none; }
+    .stat .stat-k { font-size: var(--fs-2xs); color: var(--muted); font-weight: 800; }
+    .stat .stat-v { font-size: var(--fs-lg); font-weight: 800; margin-top: 3px; }
+    .total { background: var(--card); border: 2px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; text-align: center; padding: 10px; font-weight: 800; margin-bottom: 12px; }
+    .watch { background: var(--green); color: #fff; border-radius: 16px; padding: 14px; margin: 16px 0; }
+    .watch label { color: #d1fae5; }
+    .watch input { background: #fff; color: #111; text-align: center; font-size: 2.2rem; min-height: 76px; }
+    .ring-row { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+    .trend-row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+    .trend-light {
+      width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+      background: #cbd5e1; transition: background .2s;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.3rem; font-weight: 900; line-height: 1;
+    }
+    .trend-light.up { background: var(--green-2); }
+    .trend-light.down { background: #A34400; }
+    .trend-diff { font-size: var(--fs-lg); font-weight: 800; color: var(--ink); }
+    .ring-btns { display: flex; flex-direction: column; gap: 12px; }
+    .ring-btns button { background: var(--green-2); color: #fff; border: none; border-radius: 12px; width: 78px; height: 58px; font-weight: 800; font-size: var(--fs-sm); }
+    .ring-wrap { position: relative; flex: 1; height: 200px; }
+    .ring { height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: y mandatory; text-align: center; }
+    .ring-item { height: 36px; line-height: 36px; scroll-snap-align: center; color: rgba(255,255,255,.5); font-weight: 600; font-size: var(--fs-sm); }
+    .ring-item.sel { color: #fff; font-size: 1.55rem; font-weight: 800; }
+    .ring-lines { pointer-events: none; position: absolute; left: 0; right: 0; top: 50%; height: 36px; margin-top: -18px; border-top: 2px solid rgba(255,255,255,.5); border-bottom: 2px solid rgba(255,255,255,.5); }
+    .lot { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--bg); font-size: var(--fs-sm); }
+    .toggle { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--bg); font-size: var(--fs-sm); font-weight: 600; }
+    .switch { width: 46px; height: 27px; background: #cbd5e1; border-radius: 99px; position: relative; flex: 0 0 46px; }
+    .switch.on { background: var(--green-2); }
+    .switch i { position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; background: #fff; border-radius: 50%; }
+    .switch.on i { left: 22px; }
+    .chip { display: inline-block; background: #ecfdf5; color: var(--green); border-radius: 99px; padding: 5px 11px; font-size: var(--fs-xs); font-weight: 700; margin: 3px 4px 3px 0; }
+    .info-btn {
+      width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; border: none;
+      background: var(--muted-2); color: #fff; font-size: 0.8rem; font-weight: 800;
+      font-style: italic; font-family: Georgia, 'Times New Roman', serif; line-height: 24px;
+      padding: 0; text-align: center;
+    }
+    .info-btn:active { background: var(--muted); }
+    .phone-row { display: flex; gap: 8px; align-items: stretch; }
+    .phone-row input { flex: 1; min-width: 0; }
+    .contact-btn {
+      flex: 0 0 auto; background: var(--green-2); color: #fff; border: none;
+      border-radius: 12px; padding: 0 14px; font-weight: 800; font-size: var(--fs-xs);
+      white-space: nowrap;
+    }
+    .contact-btn:active { background: var(--green); }
+    .cost-calc-out { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 4px; }
+    .cost-calc-out b { font-size: var(--fs-lg); }
+    .lot-row { display: flex; gap: 8px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--bg); font-size: var(--fs-sm); }
+    .lot-row input[type=checkbox] { width: 22px; height: 22px; margin-top: 2px; flex: 0 0 22px; }
+    .st-ok { color: var(--green-2); font-weight: 800; }
+    .st-no { color: #A34400; font-weight: 800; }
+    .lots-table { width: 100%; border-collapse: collapse; }
+    .lots-table th {
+      text-align: left; font-size: var(--fs-2xs); letter-spacing: .05em;
+      color: var(--muted); font-weight: 800; padding: 12px 8px;
+      background: #f8fafc; border-bottom: 1px solid var(--border);
+    }
+    .lots-table td {
+      padding: 16px 8px; border-bottom: 1px solid #eef2f7;
+      font-size: var(--fs-lg); font-weight: 700; vertical-align: middle;
+    }
+    .lots-table tr:last-child td { border-bottom: none; }
+    .lots-table .c-tick { width: 36px; text-align: center; padding-left: 4px; padding-right: 0; }
+    .lots-table input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--green-2); }
+    .lots-table .c-st { font-size: var(--fs-sm); font-weight: 800; }
+    .lots-table .sub { display: block; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); margin-top: 3px; white-space: normal; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .lots-table.compact th { padding: 9px 6px; font-size: 0.62rem; white-space: nowrap; }
+    .lots-table.compact td { padding: 11px 6px; font-size: var(--fs-sm); white-space: nowrap; }
+    #weightClasses .card { margin-bottom: 10px; position: relative; padding-top: 22px; }
+    .card-x {
+      position: absolute; top: 8px; left: 10px;
+      width: 34px; height: 34px; border: none; background: #fee2e2;
+      color: #dc2626; font-size: 1.25rem; font-weight: 800; border-radius: 8px;
+      line-height: 34px; padding: 0;
+    }
+    .hidden { display: none !important; }
+    .rec-split {
+      height: calc(100dvh - var(--header-h) - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100dvh - var(--header-h) - env(safe-area-inset-bottom, 0px));
+      display: flex; flex-direction: column; gap: 4px;
+      scroll-snap-align: start;
+      overflow: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .rec-top {
+      flex: 1 1 50%; min-height: 0;
+      display: flex; flex-direction: column;
+    }
+    .rec-top .card {
+      flex: 1; min-height: 0; display: flex; flex-direction: column;
+      margin-top: 4px; padding: 8px !important;
+    }
+    .rec-bot {
+      flex: 1 1 50%; min-height: 0; background: #1e293b; color: #fff;
+      border-radius: 14px; padding: 8px; display: flex; flex-direction: column;
+    }
+    .rec-fields {
+      display: grid; grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 8px; flex: 1; min-height: 0;
+    }
+    .rec-fields > div { display: flex; flex-direction: column; min-height: 0; }
+    .rec-fields .wide { grid-column: 1 / -1; }
+    .rec-fields label { margin-bottom: 2px; font-size: var(--fs-xs); letter-spacing: .04em; color: var(--muted-2); font-weight: 700; }
+    .rec-fields input, .rec-fields select {
+      flex: 1; min-height: 0; height: auto; width: 100%;
+      font-size: clamp(26px, 7.2vw, 44px); margin: 0; padding: 4px 8px;
+    }
+    .rec-fields .on-field {
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px #10b981;
+      background: #fff;
+    }
+    .rec-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr;
+      gap: 0; border-radius: 10px; overflow: hidden; flex: 0 0 auto;
+    }
+    .rec-stats .stat { padding: 7px 1px; min-width: 0; }
+    .rec-stats .stat-k {
+      font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rec-stats .stat-v {
+      font-size: 1.05rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .edit-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #b45309; color: #fff; border-radius: 10px; padding: 8px 12px;
+      font-size: var(--fs-sm); font-weight: 700; flex: 0 0 auto;
+    }
+    .edit-banner button {
+      background: #fff; color: #b45309; border: none; border-radius: 8px;
+      padding: 4px 10px; font-weight: 800; font-size: var(--fs-xs);
+    }
+    .lots-table tr.editing-row td { background: #fef3c7; }
+    .stats-by-buyer {
+      display: flex; gap: 0; overflow-x: auto; background: var(--card);
+      border: 2px solid var(--border); border-radius: 10px; flex: 0 0 auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .watchlist-cards {
+      display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      margin-top: 14px; padding-bottom: 4px;
+    }
+    .watchlist-card {
+      flex: 0 0 auto; width: 160px; background: var(--card); border: 2px solid var(--border);
+      border-radius: 12px; padding: 10px;
+    }
+    .watchlist-card .wl-pen { font-size: 1.2rem; font-weight: 800; }
+    .watchlist-card .wl-detail { font-size: 0.85rem; color: var(--muted); margin: 2px 0; }
+    .watchlist-card .wl-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .watchlist-card .wl-buy {
+      flex: 1; background: var(--green-2); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 2px; font-weight: 800; font-size: 0.8rem;
+    }
+    .watchlist-card .wl-skip {
+      flex: 1; background: #A34400; color: #fff; border: none; border-radius: 8px;
+      padding: 8px 2px; font-weight: 800; font-size: 0.8rem;
+    }
+    .stats-by-buyer .bwc {
+      flex: 0 0 auto; min-width: 74px; text-align: center; padding: 7px 8px;
+      border-right: 1px solid var(--border);
+    }
+    .stats-by-buyer .bwc:last-child { border-right: none; }
+    .stats-by-buyer .stat-k {
+      font-size: 0.68rem; font-weight: 800; color: var(--muted); white-space: nowrap;
+    }
+    .stats-by-buyer .stat-v { font-size: 1.05rem; font-weight: 800; margin-top: 3px; white-space: nowrap; }
+    .way-group { margin-bottom: 14px; }
+    .way-group:last-child { margin-bottom: 0; }
+    .way-group-h {
+      font-size: var(--fs-xs); font-weight: 800; color: var(--green);
+      text-transform: uppercase; letter-spacing: .04em; padding: 6px 0;
+    }
+    #numPad { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .rec-pad {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 8px; flex: 1; min-height: 0;
+    }
+    .rec-pad button {
+      background: #334155; color: #fff; border: none; border-radius: 12px;
+      font-size: clamp(28px, 9vw, 52px); font-weight: 800; min-height: 0; height: 100%;
+      padding: 0;
+    }
+    .rec-pad button.alt { background: #475569; }
+    .rec-next-row {
+      display: flex; gap: 8px; margin-top: 8px;
+      height: 52px; min-height: 52px; flex: 0 0 52px;
+    }
+    .rec-next {
+      flex: 3 1 0; background: var(--green-2); color: #fff;
+      border: none; border-radius: 12px; font-weight: 800;
+      font-size: clamp(20px, 5vw, 32px); height: 100%; min-height: 0;
+    }
+    .rec-next.rec-next-error { background: #dc2626; font-size: clamp(15px, 4.2vw, 20px); letter-spacing: .01em; }
+    .rec-newsale {
+      flex: 1 1 0; background: #A34400; color: #fff; border: none; border-radius: 12px;
+      font-weight: 800; font-size: clamp(11px, 3vw, 14px); line-height: 1.15;
+    }
+    .rec-newsale:active { background: #B84D00; }
+    .rec-cam {
+      flex: 0.9 1 0; background: #1e3a5f; color: #fff; border: none; border-radius: 12px;
+      font-size: clamp(20px, 5.5vw, 28px); line-height: 1; position: relative;
+    }
+    .rec-cam:active { background: #2c4f7c; }
+    .rec-cam.has-photo::after {
+      content: "✓"; position: absolute; top: 4px; right: 6px;
+      font-size: 0.55em; font-weight: 800; color: #a7f3d0;
+    }
+    .lot-thumb {
+      width: 44px; height: 44px; object-fit: cover; border-radius: 6px;
+      border: 1px solid var(--border); display: block; background: #e2e8f0;
+    }
+    .lots-table td.c-thumb { width: 52px; padding-left: 4px; padding-right: 4px; }
+    .lot-incomplete { color: #b45309; font-weight: 800; font-size: var(--fs-2xs); display: block; margin-top: 3px; white-space: nowrap; }
+    .incomplete-note {
+      background: #fef3c7; color: #92400e; border-radius: 8px; padding: 8px 12px;
+      font-size: var(--fs-sm); font-weight: 700; margin-bottom: 8px;
+    }
+    .photo-modal {
+      position: fixed; inset: 0; background: rgba(15,23,42,.92); z-index: 220;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .photo-modal img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+    .photo-modal .photo-close {
+      position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; border-radius: 50%;
+      border: none; background: rgba(255,255,255,.18); color: #fff; font-size: 1.4rem; font-weight: 800;
+    }
+    #recBotPrime { display: flex; flex-direction: column; }
+    .prime-status {
+      font-size: var(--fs-sm); color: #cbd5e1; text-align: center;
+      margin-bottom: 6px; line-height: 1.4; flex: 0 0 auto;
+      height: calc(1.4em * 1); overflow: hidden;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+    }
+    #primeNumPad.disabled { opacity: .35; pointer-events: none; }
+    .prime-record-btn {
+      flex: 1.5 1 0; height: 100%; min-height: 0; border: none; border-radius: 12px;
+      font-size: clamp(13px, 3.6vw, 17px); font-weight: 800; background: var(--green-2); color: #fff;
+      line-height: 1.15;
+    }
+    .prime-record-btn.listening { background: #dc2626; }
+    .prime-record-btn.arming { background: #b45309; }
+    #recBotPrime .rec-next { flex: 1.5 1 0; font-size: clamp(14px, 4vw, 22px); }
+    #primeSaveBtn:disabled { background: #64748b; opacity: .7; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.72); z-index: 210;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.hidden { display: none !important; }
+    .modal-card {
+      background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 380px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    }
+    .modal-title { font-size: var(--fs-lg); font-weight: 800; color: #A34400; margin-bottom: 8px; }
+    .modal-body { font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; margin-bottom: 18px; }
+    .slide-confirm {
+      position: relative; height: 56px; border-radius: 28px; background: #fee2e2;
+      overflow: hidden; margin-bottom: 12px; touch-action: none; user-select: none;
+    }
+    .slide-track {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #A34400; font-weight: 800; font-size: var(--fs-sm); letter-spacing: .02em;
+    }
+    .slide-knob {
+      position: absolute; top: 3px; left: 3px; width: 50px; height: 50px; border-radius: 50%;
+      background: #fff; color: #fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.15rem; box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    .modal-cancel {
+      width: 100%; background: #f1f5f9; color: var(--ink); border: none; border-radius: 12px;
+      padding: 14px; font-weight: 800; font-size: var(--fs-sm);
+    }
+    .buyer-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+    .buyer-pick button {
+      flex: 1; min-width: 30%; background: #334155; color: #fff; border: 2px solid transparent;
+      border-radius: 10px; padding: 12px 8px; font-weight: 800; font-size: var(--fs-sm);
+    }
+    .buyer-pick button.on { border-color: #34d399; background: var(--green); }
+    .buyer-pick button.add-buyer-tile { background: transparent; border: 2px dashed #64748b; color: #cbd5e1; }
+    body.kp-open header { padding-top: 2px; pointer-events: none; }
+    body.kp-open main {
+      height: calc((100svh - var(--header-h)) / 2) !important;
+      max-height: calc((100svh - var(--header-h)) / 2);
+      padding-bottom: 4px;
+      scroll-snap-type: none;
+    }
+    body.kp-locked main { overflow: hidden; }
+    #keypad {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc((100svh - var(--header-h)) / 2); background: #1e293b; color: #fff; z-index: 80;
+      display: none; padding-bottom: env(safe-area-inset-bottom, 8px);
+    }
+    #keypad.show { display: flex; flex-direction: column; }
+    .kp-in {
+      max-width: 520px; width: 100%; margin: 0 auto; padding: 8px 10px;
+      flex: 1; display: flex; flex-direction: column; min-height: 0;
+    }
+    .kp-g {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat(4, 1fr);
+      gap: 8px; flex: 1; min-height: 0;
+    }
+    .k {
+      background: #334155; color: #fff; border: none;
+      font-size: clamp(28px, 9vw, 52px); font-weight: 800;
+      border-radius: 12px; min-height: 0; height: 100%; padding: 0;
+    }
+    .k.alt { background: #475569; }
+    .kp-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      flex: 0 0 56px; margin-top: 8px;
+    }
+    .kp-actions button {
+      border: none; border-radius: 12px; font-weight: 800; font-size: var(--fs-md);
+      color: #fff; min-height: 56px;
+    }
+    .kp-clear { background: #475569; }
+    .kp-done { background: var(--green-2); }
+    .note { font-size: var(--fs-xs); color: var(--muted); margin-top: 8px; line-height: 1.45; }
+    .mode-sw { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .mode-sw button {
+      border: 2px solid var(--green); background: #fff; color: var(--green);
+      border-radius: 12px; padding: 10px 6px; font-weight: 800; font-size: var(--fs-xs);
+      line-height: 1.2; min-height: 54px;
+    }
+    .mode-sw button.on { background: var(--green); color: #fff; }
+  </style>
+</head>
+<body>
+  <div id="keypad">
+    <div class="kp-in">
+      <div class="kp-g" id="kpBtns">
+        <button class="k" data-k="1">1</button><button class="k" data-k="2">2</button><button class="k" data-k="3">3</button>
+        <button class="k" data-k="4">4</button><button class="k" data-k="5">5</button><button class="k" data-k="6">6</button>
+        <button class="k" data-k="7">7</button><button class="k" data-k="8">8</button><button class="k" data-k="9">9</button>
+        <button class="k alt" data-k=".">.</button><button class="k" data-k="0">0</button><button class="k alt" data-k="back">⌫</button>
+      </div>
+      <div class="kp-actions">
+        <button type="button" class="kp-clear k alt" data-k="clear">Clear</button>
+        <button type="button" class="kp-done" onclick="closeKp()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="newSaleModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Start a new sale?</div>
+      <div class="modal-body" id="newSaleModalBody">This archives the current lots and clears the list for a fresh sale.</div>
+      <div class="slide-confirm" id="slideConfirm">
+        <div class="slide-track">Slide to confirm</div>
+<div class="slide-knob" id="slideKnob"><img src="data:image/png;base64,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" alt="" style="width:44px;height:auto;display:block;"></div>
+      </div>
+      <button type="button" class="modal-cancel" onclick="closeNewSaleConfirm()">Cancel</button>
+    </div>
+  </div>
+
+  <div id="addBuyerModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Add buyer way</div>
+      <input id="newBuyerQuick" class="native" placeholder="Buyer way name" style="margin-bottom:12px;">
+      <button type="button" class="btn btn-g" style="margin-top:0;margin-bottom:8px;" onclick="confirmAddBuyer()">Add</button>
+      <button type="button" class="modal-cancel" onclick="closeAddBuyerModal()">Cancel</button>
+    </div>
+  </div>
+
+  <div id="buyerWayModal" class="modal-overlay hidden" onclick="if(event.target===this) closeBuyerWayModal()">
+    <div class="modal-card">
+      <div class="modal-title">Buyer way</div>
+      <div class="buyer-pick" id="buyerPickModal"></div>
+      <button type="button" class="modal-cancel" style="margin-top:12px;" onclick="closeBuyerWayModal()">Close</button>
+    </div>
+  </div>
+
+  <div id="addMarkModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Add marking</div>
+      <input id="newMarkQuick" class="native" placeholder="Marking name" style="margin-bottom:12px;">
+      <button type="button" class="btn btn-g" style="margin-top:0;margin-bottom:8px;" onclick="confirmAddMark()">Add</button>
+      <button type="button" class="modal-cancel" onclick="closeAddMarkModal()">Cancel</button>
+    </div>
+  </div>
+
+  <div id="toolInfoModal" class="modal-overlay hidden" onclick="if(event.target===this) closeToolInfo()">
+    <div class="modal-card">
+      <div class="modal-title" id="toolInfoTitle"></div>
+      <div class="modal-body" id="toolInfoBody"></div>
+      <button type="button" class="modal-cancel" onclick="closeToolInfo()">Close</button>
+    </div>
+  </div>
+
+  <header>
+    <h1>Track n Trade</h1>
+    <p>Yards tool • Agency ready</p>
+    <div class="tabs">
+      <button class="tab on" id="tabYards" onclick="showTab('yards')">Yards</button>
+      <button class="tab" id="tabSettings" onclick="showTab('settings')">Settings</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- YARDS -->
+    <section id="pageYards">
+      <div id="blockIndicator">
+        <div class="screen">
+        <div class="card">
+          <div class="title">Buy indicator</div>
+          <div class="mode-sw">
+            <button type="button" id="modeHd" class="on" onclick="setExitMode('hd')">Last sale $/hd</button>
+            <button type="button" id="modeKg" onclick="setExitMode('kg')">Expected $/kg</button>
+            <button type="button" id="modeFin" onclick="setExitMode('fin')">Financed</button>
+          </div>
+          <div class="grid-2">
+            <div><label>Target kg</label><input id="targetWt" inputmode="decimal"></div>
+            <div><label>ADG kg/day</label><input id="adg" inputmode="decimal"></div>
+            <div id="wrapBench"><label>Last sale $/hd</label><input id="saleBench" inputmode="decimal"></div>
+            <div id="wrapSaleKg" class="hidden"><label>Expected sale $/kg</label><input id="saleKg" inputmode="decimal"></div>
+            <div id="wrapRate" class="hidden"><label>Interest % p.a.</label><input id="interestRate" inputmode="decimal"></div>
+            <div id="wrapFinExit" class="hidden">
+              <label>Financed exit</label>
+              <select id="finExit" class="native" onchange="setFinExit(this.value)">
+                <option value="hd">Use last sale $/hd</option>
+                <option value="kg">Use expected $/kg</option>
+              </select>
+            </div>
+            <div><label>Head to buy</label><input id="headCount" inputmode="decimal"></div>
+            <div><label>Agistment $/wk</label><input id="agistRate" inputmode="decimal"></div>
+            <div><label>Fixed costs $/hd</label><input id="fixedCosts" inputmode="decimal"></div>
+            <div><label>Net profit $/hd</label><input id="targetProfit" inputmode="decimal"></div>
+            <div>
+              <label>Use carry costs</label>
+              <select id="useCarry" class="native" onchange="calculate()">
+                <option value="1">Yes, include CoC</option>
+                <option value="0">No, Gross Profit only</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-g" onclick="addWeight()">+ Add weight class</button>
+        </div>
+        </div>
+      </div>
+      <div class="screen" id="blockTradeAnalysis">
+        <div class="title">Trade Analysis</div>
+        <div id="weightClasses"></div>
+      </div>
+
+      <div id="blockRing" class="screen"><div class="watch">
+        <div class="title" style="text-align:center;color:#fff;">Sales watch</div>
+        <div class="grid-2">
+          <div><label>Weight</label><input id="wWt" inputmode="decimal"></div>
+          <div><label>$/Kg</label><input id="wKg" inputmode="decimal"></div>
+        </div>
+        <input type="hidden" id="wHd">
+        <div class="ring-row">
+          <div class="ring-btns">
+            <button type="button" onclick="logWatch('Buy')">Buy</button>
+          </div>
+          <div class="ring-wrap"><div class="ring" id="priceRing"></div><div class="ring-lines"></div></div>
+        </div>
+        <div id="watchList"></div>
+      </div></div>
+
+      <div id="blockWatchlist" class="screen screen-tight"><div class="card">
+        <div class="title">Pen watchlist</div>
+        <p class="note">Walk the pens ahead of the sale, note your max price here, then come back once the sale catches up.</p>
+        <div class="grid-2">
+          <div><label>Pen</label><input id="wlPen" inputmode="numeric"></div>
+          <div><label>Head</label><input id="wlHd" inputmode="numeric"></div>
+        </div>
+        <div class="grid-2">
+          <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
+          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
+        </div>
+        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
+        <div id="watchlistCards" class="watchlist-cards"></div>
+      </div></div>
+
+      <div class="screen screen-tight" id="blockMarketTrend">
+        <div class="card">
+          <div class="title">Last market</div>
+          <div class="grid-2">
+            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
+            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
+            <div class="trend-diff" id="trendDiff">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="blockRecorder">
+        <div class="rec-split" id="recSplit">
+          <div class="rec-top">
+            <div class="rec-stats stats" id="statsStandard">
+              <div class="stat"><div class="stat-k">HD</div><div class="stat-v" id="statHd">0</div></div>
+              <div class="stat"><div class="stat-k">AVG $/HD</div><div class="stat-v" id="statAvgHd">$0</div></div>
+              <div class="stat"><div class="stat-k">AVG $/KG</div><div class="stat-v" id="statAvgKg">$0.00</div></div>
+              <div class="stat"><div class="stat-k">TOTAL</div><div class="stat-v" id="statTotal">$0</div></div>
+            </div>
+            <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
+            <div class="edit-banner hidden" id="editingBanner">
+              <span id="editingBannerText">Editing…</span>
+              <button type="button" onclick="cancelEditLot()">Cancel</button>
+            </div>
+            <div class="card" style="margin-top:4px;">
+              <div class="rec-fields">
+                <div><label id="lblPrice">$/HD</label><input id="lotPrice" class="rec-field" data-step="0" readonly></div>
+                <div><label>HD</label><input id="lotHd" class="rec-field" data-step="2" readonly></div>
+                <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
+                <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
+                <div><label>MARKINGS</label>
+                  <select id="lotDesc" class="rec-field native" onchange="handleMarkChange(this.value)"></select>
+                </div>
+                <div><label>BUYER-WAY</label>
+                  <input id="lotBuyer" class="rec-field native" data-step="4" readonly placeholder="buyer way">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rec-bot" id="recBotSpecial">
+            <div id="numPad">
+              <div class="rec-pad" id="recPad">
+                <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+                <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+                <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+                <button type="button" class="alt" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" class="alt" data-k="back">⌫</button>
+              </div>
+            </div>
+            <div id="buyerPad" class="hidden">
+              <div class="buyer-pick" id="buyerPick"></div>
+            </div>
+            <div class="rec-next-row">
+              <button type="button" class="rec-newsale" id="recNewSale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="rec-cam" id="recCamSpecial" onclick="openPenCardCamera()" aria-label="Photograph pen card">📷</button>
+              <button type="button" class="rec-next" id="recNext" onclick="recNext()">NEXT</button>
+            </div>
+          </div>
+          <div class="rec-bot hidden" id="recBotPrime">
+            <div class="prime-status" id="primeStatus">Hold to record price, pen, head, weight.</div>
+            <div class="rec-pad" id="primeNumPad">
+              <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+              <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+              <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+              <button type="button" class="alt" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" class="alt" data-k="back">⌫</button>
+            </div>
+            <div class="rec-next-row">
+              <button type="button" class="rec-newsale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="rec-cam" id="recCamPrime" onclick="openPenCardCamera()" aria-label="Photograph pen card">📷</button>
+              <button type="button" class="prime-record-btn" id="primeRecordBtn">🎙 HOLD</button>
+              <button type="button" class="rec-next" id="primeSaveBtn" onclick="primeSaveLot()">SAVE LOT</button>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="penCardInput" accept="image/*" capture="environment" style="display:none" onchange="onPenCardPicked(this)">
+        <div class="photo-modal hidden" id="photoModal" onclick="closePhoto()">
+          <button type="button" class="photo-close" aria-label="Close">✕</button>
+          <img id="photoModalImg" alt="Pen card">
+        </div>
+        <div class="screen screen-tight" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
+        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
+      </div>
+
+      <div id="blockText" class="screen screen-tight"><div class="card">
+        <div class="title">Send selected lots</div>
+        <label>Select by buyer way</label>
+        <select id="buyerWaySelect" class="native" onchange="selectByBuyerWay(this.value)" style="margin-bottom:8px;">
+          <option value="">All lots</option>
+        </select>
+        <div class="grid-2">
+          <div><label>Sale</label><input id="saleName" class="native" placeholder="Sale name"></div>
+          <div><label>Yard</label><input id="pickupLoc" class="native" placeholder="Yard / location"></div>
+        </div>
+        <label style="margin-top:8px;">Livestock carrier</label>
+        <select id="carrierPick" class="native" onchange="syncCarrierPhone()"></select>
+        <label style="margin-top:8px;">Carrier mobile</label>
+        <div class="phone-row">
+          <input id="carrierPhoneNow" class="native" type="tel" placeholder="04xx xxx xxx">
+          <button type="button" id="contactBtnSend" class="contact-btn hidden" onclick="pickContact('carrierPhoneNow')">Contacts</button>
+        </div>
+        <p class="note" id="selectedLotsInfo">No lots selected.</p>
+        <p class="note">Tick the lots above, pick the carrier, check the number, then send.</p>
+        <button type="button" id="smsLink" class="btn btn-g">TEXT SELECTED LOTS</button>
+        <button class="btn btn-d" onclick="copyPickup()">COPY SELECTED LOTS</button>
+        <button class="btn btn-n" onclick="markSelectedSent()">MARK SELECTED AS SENT</button>
+        <p class="note" id="smsStatus"></p>
+      </div></div>
+
+      <div class="screen screen-tight">
+        <div class="card">
+        <button class="btn btn-n" onclick="exportExcel()">EXPORT TO EXCEL</button>
+        <p class="note">One workbook: Lots sheet + Summary sheet. Excel, Sheets and most offices open it. On phones that support it, this opens your share sheet so you can email or send it straight to the office.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="pageSettings" class="hidden">
+      <div style="padding:10px 0 0;">
+        <button type="button" class="btn btn-g" style="margin-top:0;" onclick="showTab('yards')">BACK TO YARDS</button>
+      </div>
+      <div class="card">
+        <div class="title">Feedback</div>
+        <p class="note">Found a bug, or want something added? Tell us and we'll get onto it.</p>
+        <button type="button" class="btn" style="width:auto;min-height:auto;padding:10px 18px;font-size:var(--fs-sm);background:var(--muted-2);color:#fff;" onclick="sendFeedback()">Send feedback</button>
+      </div>
+
+      <div class="card">
+        <div class="title">Sale mode</div>
+        <div class="mode-sw">
+          <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">Special sale</button>
+          <button type="button" id="modePrime" onclick="setSaleMode('prime')">Prime sale</button>
+        </div>
+        <p class="note">Prime sale swaps the Purchase recorder for one-tap voice entry — record price ($/kg), pen, head and weight in one go, then tap Markings and Buyer-Way to set those, check the fields, then Save Lot. Needs microphone access and works best in Safari on iPhone.</p>
+      </div>
+
+      <div class="card">
+        <div class="title">Show or hide tools</div>
+        <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
+        <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
+        <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
+        <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
+        <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
+        <div class="toggle" onclick="flip('showRecorder')"><span>Purchase recorder <button type="button" class="info-btn" onclick="openToolInfo('showRecorder',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRecorder"><i></i></div></div>
+        <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
+      </div>
+
+      <div class="card">
+        <div class="title">Buy indicator defaults</div>
+        <p class="note">Same fields as the Yards screen. Change them here and they become the starting numbers.</p>
+        <div class="grid-2">
+          <div><label>Target kg</label><input id="s_targetWt" inputmode="decimal"></div>
+          <div><label>ADG kg/day</label><input id="s_adg" inputmode="decimal"></div>
+          <div>
+            <label>Exit mode</label>
+            <select id="s_exitMode" class="native">
+              <option value="hd">Last sale $/hd</option>
+              <option value="kg">Expected sale $/kg</option>
+              <option value="fin">Financed</option>
+            </select>
+          </div>
+          <div><label>Last sale $/hd</label><input id="s_saleBench" inputmode="decimal"></div>
+          <div><label>Expected sale $/kg</label><input id="s_saleKg" inputmode="decimal"></div>
+          <div><label>Interest % p.a.</label><input id="s_interestRate" inputmode="decimal"></div>
+          <div><label>Head to buy</label><input id="s_headCount" inputmode="decimal"></div>
+          <div><label>Agistment $/wk</label><input id="s_agistRate" inputmode="decimal"></div>
+          <div><label>Fixed costs $/hd</label><input id="s_fixedCosts" inputmode="decimal"></div>
+          <div><label>Net profit $/hd</label><input id="s_targetProfit" inputmode="decimal"></div>
+          <div>
+            <label>Use carry costs</label>
+            <select id="s_useCarry" class="native">
+              <option value="1">Yes, include CoC</option>
+              <option value="0">No, Gross Profit only</option>
+            </select>
+          </div>
+        </div>
+        <p class="note">Set carry costs to No, if you know your desired gross margin/gross profit.</p>
+      </div>
+
+      <div class="card">
+        <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Agistment cost calculator</span>
+          <button type="button" class="info-btn" onclick="toggleCostInfo()" aria-label="What does this calculator do?">i</button>
+        </div>
+        <p class="note">Optional — work this out if you don't already know your $/wk agistment-equivalent cost.</p>
+        <p class="note hidden" id="costInfoNote">Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
+        <div class="grid-2">
+          <div><label>Farm operating cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
+          <div><label>Head sold/run per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
+        </div>
+        <div class="cost-calc-out">
+          <span class="muted">Cost per head, per week</span>
+          <b id="s_costPerHeadWk">—</b>
+        </div>
+        <p class="note hidden" id="agistFilledNote">↑ Filled into Agistment $/wk above</p>
+      </div>
+
+      <div class="card">
+        <div class="title">Delivery / SMS sign-off</div>
+        <label>Message/Notes/delivery address for carrier</label>
+        <textarea id="s_smsTail" class="native"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="title">Team sync</div>
+        <p class="note">For paid team/district licences. Leave blank and nothing changes — the app works exactly as it does today.</p>
+        <label>Licence code</label>
+        <input id="s_licenseCode" class="native" placeholder="Leave blank if you don't have one">
+        <p class="note" id="syncStatusNote">No licence code entered.</p>
+      </div>
+
+      <div class="card">
+        <div class="title">Livestock carriers</div>
+        <p class="note">Add trucking companies. These will be selectable on the Yards Tab</p>
+        <div id="carrierList"></div>
+        <input id="newCarrierName" class="native" style="margin-top:8px;" placeholder="Carrier name">
+        <div class="phone-row" style="margin-top:8px;">
+          <input id="newCarrierPhone" class="native" type="tel" placeholder="Mobile">
+          <button type="button" id="contactBtnNew" class="contact-btn hidden" onclick="pickContact('newCarrierPhone')">Contacts</button>
+        </div>
+        <button class="btn btn-g" onclick="addCarrier()">Add carrier</button>
+      </div>
+
+      <div class="card">
+        <div class="title">Agency/Staff Buyers</div>
+        <p class="note">Use this to facilitate multiple buyers, buying multiple ways for the one organisation</p>
+        <label>I am Individual or Agency/Staff buyer</label>
+        <select id="meAgent" class="native" onchange="saveWho()" style="margin-bottom:12px;"></select>
+        <div id="agentChips"></div>
+        <div class="grid-2">
+          <input id="newAgent" class="native" placeholder="Agent name">
+          <button class="btn btn-g" style="margin-top:0;" onclick="addAgent()">Add agent</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">Buyer Way</div>
+        <p class="note">Buyer Ways, like Client 1, Client 2, etc — or Self if you're buying direct. A buyer way can be assigned to a lot on the Purchase Recorder.</p>
+        <div id="clientChips"></div>
+        <div class="grid-2">
+          <input id="newClient" class="native" placeholder="Buyer way">
+          <button class="btn btn-g" style="margin-top:0;" onclick="addClient()">Add buyer way</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">Markings</div>
+        <p class="note">Paint-mark options shown on the Purchase recorder, like Shoulder, Loin, Rump, Tail — or No Mark by default. Add more here, or on the fly from the recorder.</p>
+        <div id="markChips"></div>
+        <div class="grid-2">
+          <input id="newMark" class="native" placeholder="Marking name">
+          <button class="btn btn-g" style="margin-top:0;" onclick="addMarkSetting()">Add marking</button>
+        </div>
+      </div>
+
+      <button class="btn btn-n" onclick="saveSettings(); showTab('yards');">SAVE AND BACK TO YARDS</button>
+    </section>
+  </main>
+
+<script>
+const KEY = 'cbpro_v1';
+const LOTS_KEY = 'cbpro_lots';
+const HISTORY_KEY = 'cbpro_history';
+const HISTORY_CAP = 8;
+const APP_VERSION = '2026-09-14.41'; // bump this string on every deploy so update-checking can detect a new version
+const defaults = {
+  showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  saleMode: 'special',
+  targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
+  opCost: 0, headPerYr: 0,
+  mktAvgKg: 0, mktAvgWt: 0,
+  agentPhone: '',
+  carriers: [{name:'Main carrier', phone:''}],
+  smsTail: '',
+  agents: ['Self', 'Agency/Staff Buyer'],
+  clients: ['Self', 'Client 1', 'Client 2', 'Client 3', 'Client 4'],
+  markings: ['No Mark', 'Shoulder', 'Loin', 'Rump', 'Tail'],
+  meAgent: 'Self',
+  meClient: 'Self',
+  licenseCode: ''
+};
+
+let S = JSON.parse(JSON.stringify(defaults));
+let classes = [{id:1,weight:260,buyPrice:0}];
+let nextId = 3, lots = [], nextLot = 1, watches = [], nextWatch = 1;
+let editingLotId = null;
+let penWatch = [], nextPenWatch = 1;
+let activeIn = null, watchLast = 'kg', ringLock = false;
+
+/* Pen card photos — stored in IndexedDB keyed by lot id, never in
+   localStorage (a 40-lot sale would blow the ~5MB cap). Downscaled hard at
+   capture: a pen card only needs to be readable on a phone later. An
+   in-memory cache keeps rendering synchronous. */
+const PHOTO_DB = 'tnt_photos', PHOTO_STORE = 'photos';
+const PHOTO_MAX_W = 800, PHOTO_QUALITY = 0.7;
+let photoCache = {};
+let pendingPhoto = null;
+function photoDb() {
+  return new Promise(function(resolve, reject) {
+    if (!window.indexedDB) { reject(new Error('no idb')); return; }
+    const req = indexedDB.open(PHOTO_DB, 1);
+    req.onupgradeneeded = function(){ req.result.createObjectStore(PHOTO_STORE); };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+function photoPut(id, dataUrl) {
+  photoCache[id] = dataUrl;
+  return photoDb().then(function(db){
+    return new Promise(function(resolve){
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      tx.objectStore(PHOTO_STORE).put(dataUrl, id);
+      tx.oncomplete = resolve; tx.onerror = resolve;
+    });
+  }).catch(function(){});
+}
+function photoDel(id) {
+  delete photoCache[id];
+  return photoDb().then(function(db){
+    return new Promise(function(resolve){
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      tx.objectStore(PHOTO_STORE).delete(id);
+      tx.oncomplete = resolve; tx.onerror = resolve;
+    });
+  }).catch(function(){});
+}
+function photoLoadAll() {
+  return photoDb().then(function(db){
+    return new Promise(function(resolve){
+      const tx = db.transaction(PHOTO_STORE, 'readonly');
+      const req = tx.objectStore(PHOTO_STORE).openCursor();
+      req.onsuccess = function(){
+        const c = req.result;
+        if (c) { photoCache[c.key] = c.value; c.continue(); } else resolve();
+      };
+      req.onerror = resolve;
+    });
+  }).catch(function(){});
+}
+function downscaleImage(file) {
+  return new Promise(function(resolve, reject) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function(){
+      const scale = Math.min(1, PHOTO_MAX_W / img.width);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', PHOTO_QUALITY));
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+function openPenCardCamera() {
+  document.getElementById('penCardInput').click();
+}
+function onPenCardPicked(inp) {
+  const file = inp.files && inp.files[0];
+  inp.value = '';
+  if (!file) return;
+  downscaleImage(file).then(function(dataUrl){
+    if (editingLotId != null) {
+      const l = lots.find(function(x){ return x.id === editingLotId; });
+      if (l) { l.hasPhoto = true; photoPut(l.id, dataUrl); renderLots(); }
+    } else {
+      pendingPhoto = dataUrl;
+    }
+    updateCamButtons();
+  }).catch(function(){
+    flashRecError('Photo failed — try again');
+    const st = document.getElementById('primeStatus');
+    if (st && S.saleMode === 'prime') st.textContent = 'Photo failed — try again.';
+  });
+}
+function updateCamButtons() {
+  let has = !!pendingPhoto;
+  if (editingLotId != null) {
+    const l = lots.find(function(x){ return x.id === editingLotId; });
+    has = !!(l && l.hasPhoto);
+  }
+  ['recCamSpecial','recCamPrime'].forEach(function(id){
+    const b = document.getElementById(id);
+    if (b) b.classList.toggle('has-photo', has);
+  });
+}
+function openPhoto(id) {
+  const src = photoCache[id];
+  if (!src) return;
+  document.getElementById('photoModalImg').src = src;
+  document.getElementById('photoModal').classList.remove('hidden');
+}
+function closePhoto() {
+  document.getElementById('photoModal').classList.add('hidden');
+  document.getElementById('photoModalImg').src = '';
+}
+function lotIncomplete(l) { return !!(l.hasPhoto && (!l.hd || !l.wt)); }
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) S = Object.assign({}, defaults, JSON.parse(raw));
+  } catch(e) {}
+}
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+}
+function persistLots() {
+  try { localStorage.setItem(LOTS_KEY, JSON.stringify(lots)); } catch(e) {}
+}
+
+/* Feedback button — opens the user's mail app pre-filled with the app
+   version and device info. FEEDBACK_EMAIL is blank until a real support
+   address is set; the button stays visible but tells the user it's not
+   turned on yet rather than opening a blank, address-less email. */
+const FEEDBACK_EMAIL = '';
+function sendFeedback() {
+  if (!confirm('Send feedback about Track n Trade?')) return;
+  if (!FEEDBACK_EMAIL) {
+    alert("Feedback isn't turned on yet — this will be ready in an upcoming update.");
+    return;
+  }
+  const subject = 'Track n Trade feedback';
+  const body = 'App version: ' + APP_VERSION + '\nDevice: ' + navigator.userAgent +
+    '\n\nDescribe the issue or suggestion below:\n';
+  window.location.href = 'mailto:' + FEEDBACK_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+/* Team sync — pushes lots to a shared spreadsheet for paid team/district
+   licences. Inert with no licence code entered: nothing about how a lot is
+   recorded or saved changes. Never blocks a save, never shows an error mid-sale
+   — a failed or offline push just stays queued and is retried later. */
+const SYNC_ENDPOINT_URL = '';
+let syncInFlight = false;
+function updateSyncStatusNote() {
+  const note = document.getElementById('syncStatusNote');
+  if (!note) return;
+  if (!S.licenseCode) { note.textContent = 'No licence code entered.'; return; }
+  const pending = lots.filter(function(l){ return !l.synced; }).length;
+  note.textContent = pending ? (pending + ' lot' + (pending === 1 ? '' : 's') + ' waiting to sync…') : 'All lots synced.';
+}
+function syncLotToSheet(lot) {
+  return fetch(SYNC_ENDPOINT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify({
+      code: S.licenseCode,
+      id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
+      pen: lot.pen, hd: lot.hd, wt: lot.wt,
+      priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
+      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc
+    })
+  });
+}
+function trySyncQueue() {
+  if (!SYNC_ENDPOINT_URL || !S.licenseCode || syncInFlight) { updateSyncStatusNote(); return; }
+  const pending = lots.filter(function(l){ return !l.synced; });
+  if (!pending.length) { updateSyncStatusNote(); return; }
+  syncInFlight = true;
+  const next = pending[0];
+  syncLotToSheet(next).then(function(){
+    next.synced = true;
+    persistLots();
+    syncInFlight = false;
+    updateSyncStatusNote();
+    if (pending.length > 1) trySyncQueue();
+  }).catch(function(){
+    syncInFlight = false;
+    updateSyncStatusNote();
+  });
+}
+window.addEventListener('online', trySyncQueue);
+function loadLots() {
+  try {
+    const raw = localStorage.getItem(LOTS_KEY);
+    if (raw) {
+      lots = JSON.parse(raw) || [];
+      nextLot = lots.reduce(function(m, l){ return Math.max(m, (l.id||0) + 1); }, 1);
+    }
+  } catch(e) {}
+}
+
+function syncHeaderH() {
+  const h = document.querySelector('header');
+  if (!h) return;
+  document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+}
+window.addEventListener('resize', syncHeaderH);
+window.addEventListener('orientationchange', syncHeaderH);
+
+let yardsScrollTop = 0;
+function showTab(name) {
+  closeKp();
+  const main = document.querySelector('main');
+  if (main && !document.getElementById('pageYards').classList.contains('hidden')) {
+    yardsScrollTop = main.scrollTop;
+  }
+  document.getElementById('pageYards').classList.toggle('hidden', name !== 'yards');
+  document.getElementById('pageSettings').classList.toggle('hidden', name !== 'settings');
+  document.getElementById('tabYards').classList.toggle('on', name === 'yards');
+  document.getElementById('tabSettings').classList.toggle('on', name === 'settings');
+  if (name === 'settings') {
+    fillSettings();
+    if (main) main.scrollTop = 0;
+  }
+  if (name === 'yards') {
+    applyFeatures();
+    if (main) main.scrollTop = yardsScrollTop;
+  }
+}
+
+function applyFeatures() {
+  document.getElementById('blockIndicator').classList.toggle('hidden', !S.showIndicator);
+  document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
+  document.getElementById('blockMarketTrend').classList.toggle('hidden', !S.showMarketTrend);
+  document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
+  document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
+  document.getElementById('blockRecorder').classList.toggle('hidden', !S.showRecorder);
+  document.getElementById('blockText').classList.toggle('hidden', !S.showText);
+}
+
+function fillSettings() {
+  ['showIndicator','showTradeAnalysis','showMarketTrend','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
+    document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
+  });
+  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
+    const el = document.getElementById('s_'+k);
+    if (el) el.value = S[k];
+  });
+  document.getElementById('s_exitMode').value = (S.exitMode==='kg'||S.exitMode==='fin') ? S.exitMode : 'hd';
+  document.getElementById('s_useCarry').value = String(S.useCarry == 0 ? 0 : 1);
+  document.getElementById('s_smsTail').value = S.smsTail || '';
+  document.getElementById('s_licenseCode').value = S.licenseCode || '';
+  updateSyncStatusNote();
+  renderCarriers();
+  renderChips();
+  fillWho();
+  document.getElementById('agistFilledNote').classList.add('hidden');
+  refreshAgistCalcDisplay();
+}
+
+function agistCalcValue() {
+  const cost = parseFloat(document.getElementById('s_opCost').value) || 0;
+  const head = parseFloat(document.getElementById('s_headPerYr').value) || 0;
+  return (!cost || !head) ? null : (cost / head) / 52;
+}
+function refreshAgistCalcDisplay() {
+  const el = document.getElementById('s_costPerHeadWk');
+  if (!el) return;
+  const v = agistCalcValue();
+  el.textContent = v === null ? '—' : '$' + v.toFixed(2);
+}
+function applyAgistCalc() {
+  refreshAgistCalcDisplay();
+  const v = agistCalcValue();
+  const note = document.getElementById('agistFilledNote');
+  if (v === null) { if (note) note.classList.add('hidden'); return; }
+  const agistEl = document.getElementById('s_agistRate');
+  if (agistEl) agistEl.value = v.toFixed(2);
+  if (note) note.classList.remove('hidden');
+}
+function toggleCostInfo() {
+  const n = document.getElementById('costInfoNote');
+  if (n) n.classList.toggle('hidden');
+}
+['s_opCost','s_headPerYr'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', applyAgistCalc);
+});
+
+function flip(k) {
+  S[k] = !S[k];
+  document.getElementById('sw_'+k).classList.toggle('on', S[k]);
+  persist();
+}
+
+function saveSettings() {
+  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
+    S[k] = parseFloat(document.getElementById('s_'+k).value) || 0;
+    const el = document.getElementById(k);
+    if (el) el.value = S[k];
+  });
+  const em = document.getElementById('s_exitMode').value;
+  S.exitMode = (em==='kg'||em==='fin') ? em : 'hd';
+  applyExitMode();
+  S.useCarry = document.getElementById('s_useCarry').value === '0' ? 0 : 1;
+  document.getElementById('useCarry').value = String(S.useCarry);
+  S.smsTail = document.getElementById('s_smsTail').value;
+  S.licenseCode = (document.getElementById('s_licenseCode').value || '').trim();
+  persist();
+  fillCarriers();
+  calculate();
+  trySyncQueue();
+}
+
+function renderChips() {
+  document.getElementById('agentChips').innerHTML = S.agents.map(a =>
+    '<span class="chip">' + a + ' <button class="btn-r" onclick="delAgent(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
+  ).join('');
+  document.getElementById('clientChips').innerHTML = S.clients.map(a =>
+    '<span class="chip">' + a + ' <button class="btn-r" onclick="delClient(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
+  ).join('');
+}
+
+function addAgent() {
+  const n = (document.getElementById('newAgent').value || '').trim();
+  if (!n || S.agents.indexOf(n) >= 0) return;
+  S.agents.push(n); document.getElementById('newAgent').value = '';
+  persist(); renderChips(); fillWho();
+}
+function delAgent(n) {
+  if (S.agents.length <= 1) { alert('Add another agent first — there needs to be at least one.'); return; }
+  S.agents = S.agents.filter(x => x !== n);
+  if (S.meAgent === n) S.meAgent = S.agents[0];
+  persist(); renderChips(); fillWho();
+}
+function addClient() {
+  const n = (document.getElementById('newClient').value || '').trim();
+  if (!n || S.clients.indexOf(n) >= 0) return;
+  S.clients.push(n); document.getElementById('newClient').value = '';
+  persist(); renderChips(); fillWho();
+}
+function delClient(n) {
+  if (S.clients.length <= 1) { alert('Add another buyer way first — there needs to be at least one.'); return; }
+  S.clients = S.clients.filter(x => x !== n);
+  if (S.meClient === n) S.meClient = S.clients[0];
+  persist(); renderChips(); fillWho();
+}
+function renderMarkChips() {
+  const box = document.getElementById('markChips');
+  if (!box) return;
+  box.innerHTML = S.markings.map(a =>
+    '<span class="chip">' + a + ' <button class="btn-r" onclick="delMark(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
+  ).join('');
+}
+function addMarkSetting() {
+  const n = (document.getElementById('newMark').value || '').trim();
+  if (!n || S.markings.indexOf(n) >= 0) return;
+  S.markings.push(n); document.getElementById('newMark').value = '';
+  persist(); renderMarkChips(); fillMarkSelect();
+}
+function delMark(n) {
+  if (S.markings.length <= 1) { alert('Add another marking first — there needs to be at least one.'); return; }
+  S.markings = S.markings.filter(x => x !== n);
+  persist(); renderMarkChips(); fillMarkSelect(); resetMarkSelect();
+}
+function fillWho() {
+  const a = document.getElementById('meAgent');
+  a.innerHTML = S.agents.map(x => '<option>' + x + '</option>').join('');
+  a.value = S.meAgent;
+}
+function saveWho() {
+  S.meAgent = document.getElementById('meAgent').value;
+  persist();
+}
+
+const TOOL_INFO = {
+  showIndicator: {
+    title: 'Buy indicator',
+    body: "Calculates the maximum you can pay per head, for a given weight, based on your target sale price, costs, and desired margin. Switch between Last sale $/hd, Expected $/kg, or Financed depending on what you know about the sale ahead."
+  },
+  showTradeAnalysis: {
+    title: 'Trade analysis',
+    body: "Shows how a purchase plays out over time — days on feed, expected sale value, cost of carry, and net return — for one or more weight classes side by side. Handy for comparing a few buying scenarios before you commit."
+  },
+  showMarketTrend: {
+    title: 'Last market',
+    body: "Type in the last market's Avg $/kg and Avg kg once you know them, and this compares it to what you're actually paying today. Green means you're buying above last market, red means you're paying below it."
+  },
+  showRing: {
+    title: 'Sales watch ring',
+    body: "A quick price-per-kg calculator for tracking bids as they go past in the ring. Enter a weight and $/kg, tap Buy the moment you've bought and it's sent straight into the Purchase recorder."
+  },
+  showWatchlist: {
+    title: 'Pen watchlist',
+    body: "For walking the pens ahead of where the sale's up to. Note the pen number, head count, avg weight and your max $/hd for each one you're interested in — they sit here as cards until the sale reaches them. Mark a card Bought to send it straight into the Purchase recorder ready to finish off, or Not bought to drop it. Clears automatically when you start a new sale."
+  },
+  showRecorder: {
+    title: 'Purchase recorder',
+    body: "Rapid lot-by-lot entry with a big on-screen numpad — $/hd, head, pen, weight, and buyer way for each lot. Builds the running tally and lot summaries used for dispatch."
+  },
+  showText: {
+    title: 'Text trucking agent',
+    body: "Tick the lots to send, pick the carrier, and text, copy, or export the pickup details straight from here — no re-typing pen numbers over the phone."
+  }
+};
+function openToolInfo(key, ev) {
+  if (ev) ev.stopPropagation();
+  const info = TOOL_INFO[key];
+  if (!info) return;
+  document.getElementById('toolInfoTitle').textContent = info.title;
+  document.getElementById('toolInfoBody').textContent = info.body;
+  document.getElementById('toolInfoModal').classList.remove('hidden');
+}
+function closeToolInfo() {
+  document.getElementById('toolInfoModal').classList.add('hidden');
+}
+function renderCarriers() {
+  if (!S.carriers) S.carriers = [{name:'Main carrier', phone:''}];
+  const box = document.getElementById('carrierList');
+  if (!box) return;
+  box.innerHTML = S.carriers.map((c,i) =>
+    '<div class="lot"><span><b>'+c.name+'</b><br><span class="muted">'+(c.phone||'no number')+'</span></span><button class="btn-r" onclick="delCarrier('+i+')">Remove</button></div>'
+  ).join('') || '<div class="note">No carriers yet.</div>';
+}
+function addCarrier() {
+  const name = (document.getElementById('newCarrierName').value||'').trim();
+  const phone = (document.getElementById('newCarrierPhone').value||'').trim();
+  if (!name) return;
+  if (!S.carriers) S.carriers = [];
+  S.carriers.push({name, phone});
+  document.getElementById('newCarrierName').value='';
+  document.getElementById('newCarrierPhone').value='';
+  persist(); renderCarriers(); fillCarriers();
+}
+function delCarrier(i) {
+  if (!S.carriers || S.carriers.length<=1) { alert('Add another carrier first — there needs to be at least one.'); return; }
+  S.carriers.splice(i,1); persist(); renderCarriers(); fillCarriers();
+}
+function fillCarriers() {
+  const sel = document.getElementById('carrierPick');
+  if (!sel) return;
+  if (!S.carriers) S.carriers = [{name:'Main carrier', phone:''}];
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select carrier —</option>' +
+    S.carriers.map(c => '<option value="'+c.name+'">'+c.name+(c.phone?(' • '+c.phone):'')+'</option>').join('');
+  sel.value = cur || '';
+  syncCarrierPhone();
+}
+function syncCarrierPhone() {
+  const car = currentCarrier();
+  const inp = document.getElementById('carrierPhoneNow');
+  if (inp) inp.value = car.phone || '';
+}
+
+function contactPickerSupported() {
+  return !!(navigator.contacts && navigator.contacts.select);
+}
+function initContactPicker() {
+  const supported = contactPickerSupported();
+  ['contactBtnSend','contactBtnNew'].forEach(function(id){
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !supported);
+  });
+}
+function pickContact(targetId) {
+  if (!contactPickerSupported()) return;
+  navigator.contacts.select(['tel','name'], {multiple:false}).then(function(contacts){
+    if (!contacts || !contacts.length) return;
+    const c = contacts[0];
+    const tel = (c.tel && c.tel[0]) || '';
+    const el = document.getElementById(targetId);
+    if (tel && el) {
+      el.value = tel;
+      el.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    if (targetId === 'newCarrierPhone') {
+      const nameEl = document.getElementById('newCarrierName');
+      if (nameEl && !nameEl.value && c.name && c.name[0]) nameEl.value = c.name[0];
+    }
+  }).catch(function(){});
+}
+
+/* keypad */
+function showKpVal() {}
+function openKp(inp, label) {
+  if (!inp) return;
+  if (activeIn && activeIn !== inp) activeIn.classList.remove('kp-active');
+  activeIn = inp;
+  activeIn.classList.add('kp-active');
+  inp.value = '';
+  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  document.getElementById('keypad').classList.add('show');
+  document.body.classList.add('kp-open');
+  document.body.classList.remove('kp-locked');
+  setTimeout(function(){
+    try {
+      inp.scrollIntoView({ block: 'center', behavior: 'auto' });
+    } catch(e) {}
+    document.body.classList.add('kp-locked');
+  }, 40);
+}
+function closeKp() {
+  document.getElementById('keypad').classList.remove('show');
+  document.body.classList.remove('kp-open');
+  document.body.classList.remove('kp-locked');
+  const inp = activeIn;
+  if (inp) {
+    inp.classList.remove('kp-active');
+    inp.dispatchEvent(new Event('input', {bubbles:true}));
+    try {
+      const scr = inp.closest('.screen, .rec-split');
+      if (scr) scr.scrollIntoView({ block: 'start', behavior: 'auto' });
+    } catch(e) {}
+  }
+  activeIn = null;
+  showKpVal();
+}
+function handleK(k) {
+  if (!activeIn) return;
+  let v = String(activeIn.value || '');
+  if (k === 'clear') v = '';
+  else if (k === 'back') v = v.slice(0,-1);
+  else if (k === '.') { if (v.indexOf('.') < 0) v = v === '' ? '0.' : v + '.'; }
+  else if (v.length < 8) v += k;
+  activeIn.value = v;
+  showKpVal();
+  activeIn.dispatchEvent(new Event('input', {bubbles:true}));
+}
+let lastK = 0;
+function pressK(e) {
+  const b = e.target.closest('.k'); if (!b || !activeIn) return;
+  e.preventDefault();
+  const now = Date.now();
+  if (now - lastK < 180) return;
+  lastK = now;
+  handleK(b.getAttribute('data-k'));
+}
+const kpBox = document.getElementById('keypad');
+kpBox.addEventListener('click', pressK);
+kpBox.addEventListener('touchend', pressK, {passive:false});
+
+function bindKp() {
+  document.querySelectorAll('input').forEach(function(inp) {
+    if (inp.classList.contains('native') || inp.classList.contains('rec-field') || inp.type === 'tel' || inp.type === 'hidden' || inp.type === 'file' || inp.type === 'checkbox') return;
+    if (inp.tagName === 'SELECT') return;
+    inp.setAttribute('readonly','readonly');
+    inp.setAttribute('inputmode','none');
+    if (inp.dataset.kp === '1') return;
+    inp.dataset.kp = '1';
+    const openForInp = function(e) {
+      e.preventDefault();
+      if (activeIn === inp && document.getElementById('keypad').classList.contains('show')) return;
+      const lab = inp.parentElement && inp.parentElement.querySelector('label');
+      openKp(inp, lab ? lab.textContent : 'Enter');
+    };
+    inp.addEventListener('mousedown', openForInp);
+    inp.addEventListener('click', openForInp);
+  });
+}
+
+/* indicator */
+function addWeight() {
+  classes.push({id: nextId++, weight: 300, buyPrice: 0});
+  renderClasses(); calculate();
+}
+function removeClass(id) {
+  if (classes.length <= 1) return;
+  classes = classes.filter(c => c.id !== id);
+  renderClasses(); calculate();
+}
+function updateClass(id, field, val) {
+  const c = classes.find(x => x.id === id); if (!c) return;
+  c[field] = parseFloat(val) || 0; calculate();
+}
+function renderClasses() {
+  const box = document.getElementById('weightClasses');
+  box.innerHTML = '';
+  classes.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'card'; d.id = 'card'+c.id;
+    d.innerHTML = (classes.length>1?'<button type="button" class="card-x" onclick="removeClass('+c.id+')">x</button>':'') + '<div><label>Buying weight</label><input class="wt" value="'+c.weight+'" oninput="updateClass('+c.id+',\'weight\',this.value)"></div>'
+      + '<label>Purchase $/hd</label><input value="'+c.buyPrice+'" oninput="updateClass('+c.id+',\'buyPrice\',this.value)">'
+      + '<div class="row"><span class="muted">Days</span><span id="days'+c.id+'">—</span></div>'
+      + '<div class="row"><span class="muted">Exit</span><span id="exit'+c.id+'">—</span></div>'
+      + '<div class="row"><span class="muted">CoC</span><span id="coc'+c.id+'">—</span></div>'
+      + '<div class="row"><span class="muted">Sale value</span><span id="sval'+c.id+'">—</span></div>'
+      + '<div class="row"><span class="muted">Gain</span><span id="gain'+c.id+'">—</span></div>'
+      + '<div class="row"><span class="muted">Interest</span><span id="int'+c.id+'">—</span></div>'
+      + '<div class="row"><span>Gross</span><b id="gross'+c.id+'">—</b></div>'
+      + '<div class="row"><span>Net</span><b id="net'+c.id+'">—</b></div>'
+      + '<div class="max"><span class="muted" id="maxlab'+c.id+'">Max buy</span><b id="max'+c.id+'">—</b></div>';
+    box.appendChild(d);
+  });
+  bindKp();
+}
+
+function applyExitMode() {
+  const mode = S.exitMode || 'hd';
+  const hdBtn = document.getElementById('modeHd');
+  const kgBtn = document.getElementById('modeKg');
+  const finBtn = document.getElementById('modeFin');
+  if (hdBtn) hdBtn.classList.toggle('on', mode === 'hd');
+  if (kgBtn) kgBtn.classList.toggle('on', mode === 'kg');
+  if (finBtn) finBtn.classList.toggle('on', mode === 'fin');
+  const wrapB = document.getElementById('wrapBench');
+  const wrapK = document.getElementById('wrapSaleKg');
+  const wrapR = document.getElementById('wrapRate');
+  const wrapF = document.getElementById('wrapFinExit');
+  if (wrapB) wrapB.classList.toggle('hidden', mode === 'kg');
+  if (wrapK) wrapK.classList.toggle('hidden', mode === 'hd');
+  if (wrapR) wrapR.classList.toggle('hidden', mode !== 'fin');
+  if (wrapF) wrapF.classList.toggle('hidden', mode !== 'fin');
+  if (mode === 'fin') {
+    if (wrapB) wrapB.classList.remove('hidden');
+    if (wrapK) wrapK.classList.remove('hidden');
+  }
+}
+function setExitMode(mode) {
+  S.exitMode = (mode === 'kg' || mode === 'fin') ? mode : 'hd';
+  persist();
+  applyExitMode();
+  calculate();
+}
+function setFinExit(mode) {
+  S.finExit = (mode === 'kg') ? 'kg' : 'hd';
+  persist();
+  calculate();
+}
+
+function calculate() {
+  const target = parseFloat(document.getElementById('targetWt').value) || S.targetWt;
+  const adg = parseFloat(document.getElementById('adg').value) || S.adg;
+  const benchHd = parseFloat(document.getElementById('saleBench').value) || S.saleBench;
+  const saleKg = parseFloat(document.getElementById('saleKg').value) || S.saleKg || 0;
+  const mode = S.exitMode || 'hd';
+  const kgMode = mode === 'kg' || (mode === 'fin' && ((document.getElementById('finExit')||{}).value === 'kg'));
+  const bench = kgMode ? Math.round(target * saleKg) : benchHd;
+  const rate = (parseFloat((document.getElementById('interestRate')||{}).value) || S.interestRate || 0) / 100;
+  const financed = mode === 'fin';
+  const ag = parseFloat(document.getElementById('agistRate').value) || 0;
+  const fix = parseFloat(document.getElementById('fixedCosts').value) || 0;
+  const want = parseFloat(document.getElementById('targetProfit').value);
+  const profit = isNaN(want) ? (S.targetProfit || 0) : want;
+  const useCarry = (document.getElementById('useCarry')||{}).value !== '0';
+  classes.forEach(c => {
+    const buy = Math.round(c.buyPrice)||0;
+    const gainKg = Math.max(0, target - c.weight);
+    const days = adg>0 ? Math.round(gainKg/adg) : 0;
+    const coc = useCarry ? Math.round(fix + ag*(days/7)) : 0;
+    const factor = financed ? (1 + rate * (days/365)) : 1;
+    const maxBuy = Math.round((bench - coc - profit) / factor);
+    const intOnBuy = financed ? Math.round((buy || maxBuy) * rate * (days/365)) : 0;
+    const gross = bench - buy;
+    const net = gross - coc - intOnBuy;
+    const exit = new Date(); exit.setDate(exit.getDate()+days);
+    const el = id => document.getElementById(id);
+    if (el('days'+c.id)) {
+      el('days'+c.id).textContent = days+' days';
+      el('exit'+c.id).textContent = exit.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+      el('coc'+c.id).textContent = '$'+coc;
+      if (el('sval'+c.id)) el('sval'+c.id).textContent = '$'+Math.round(bench).toLocaleString()+(kgMode?(' @ $'+Number(saleKg).toFixed(2)+'/kg'):'');
+      el('gross'+c.id).textContent = '$'+gross.toLocaleString();
+      el('net'+c.id).textContent = '$'+net.toLocaleString();
+      if (el('gain'+c.id)) el('gain'+c.id).textContent = Math.round(gainKg)+' kg';
+      if (el('int'+c.id)) el('int'+c.id).textContent = financed ? ('$'+intOnBuy+' @ '+(rate*100).toFixed(1)+'%') : '—';
+      el('max'+c.id).textContent = '$'+maxBuy.toLocaleString();
+      if (el('maxlab'+c.id)) el('maxlab'+c.id).textContent = financed
+        ? ('Max buy after interest, $'+Math.round(profit).toLocaleString()+' profit')
+        : ('Max buy for $'+Math.round(profit).toLocaleString()+' profit');
+    }
+  });
+}
+
+['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', calculate);
+});
+
+/* ring */
+function buildRing() {
+  const ring = document.getElementById('priceRing');
+  if (ring.dataset.built) return;
+  let h = '';
+  for (let i=0;i<4;i++) h += '<div class="ring-item" style="visibility:hidden">0</div>';
+  for (let p=4500;p>=400;p-=5) h += '<div class="ring-item" data-p="'+p+'">'+p+'</div>';
+  for (let i=0;i<4;i++) h += '<div class="ring-item" style="visibility:hidden">0</div>';
+  ring.innerHTML = h; ring.dataset.built = '1';
+  ring.addEventListener('scroll', onRing, {passive:true});
+  scrollRing(1720);
+}
+function nearest() {
+  const ring = document.getElementById('priceRing');
+  const items = ring.querySelectorAll('[data-p]');
+  const mid = ring.scrollTop + ring.clientHeight/2;
+  let best=null, bd=1e9;
+  items.forEach(it => {
+    const c = it.offsetTop + it.offsetHeight/2;
+    const d = Math.abs(c-mid); if (d<bd){bd=d;best=it;}
+  });
+  return best;
+}
+function onRing() {
+  if (ringLock) return;
+  const it = nearest(); if (!it) return;
+  document.querySelectorAll('#priceRing .sel').forEach(x=>x.classList.remove('sel'));
+  it.classList.add('sel');
+  const hd = parseInt(it.getAttribute('data-p'),10);
+  document.getElementById('wHd').value = hd;
+  const wt = parseFloat(document.getElementById('wWt').value)||0;
+  if (wt) document.getElementById('wKg').value = (hd/wt).toFixed(2);
+}
+function scrollRing(price) {
+  const snap = Math.round(price/5)*5;
+  const it = document.querySelector('#priceRing [data-p="'+snap+'"]');
+  if (!it) return;
+  ringLock = true; it.classList.add('sel');
+  it.scrollIntoView({block:'center', behavior:'auto'});
+  document.getElementById('wHd').value = snap;
+  setTimeout(()=>{ringLock=false;},160);
+}
+function calcWatch() {
+  const wt = parseFloat(document.getElementById('wWt').value)||0;
+  const kg = parseFloat(document.getElementById('wKg').value);
+  if (wt && !isNaN(kg)) scrollRing(Math.round(wt*kg));
+}
+document.getElementById('wKg').addEventListener('input', calcWatch);
+document.getElementById('wWt').addEventListener('input', calcWatch);
+
+function logWatch(side) {
+  const wt = parseFloat(document.getElementById('wWt').value)||0;
+  const hd = parseFloat(document.getElementById('wHd').value)||0;
+  const kg = parseFloat(document.getElementById('wKg').value)||0;
+  if (!wt || !hd) return;
+  if (side === 'Buy') {
+    sendWatchToRecorder(wt, hd);
+    return;
+  }
+  watches.unshift({id:nextWatch++, side, wt, hd, kg, agent:S.meAgent, client:S.meClient, t:new Date().toISOString()});
+  renderWatches();
+}
+function sendWatchToRecorder(wt, hd) {
+  document.getElementById('lotPrice').value = hd;
+  document.getElementById('lotWt').value = wt;
+  recOrder = ALL_FIELDS.filter(function(id){ return id !== 'lotPrice' && id !== 'lotWt'; });
+  recStep = 0;
+  recFieldFresh = true;
+  recHighlight();
+  saveDraft();
+  document.getElementById('wWt').value = '';
+  document.getElementById('wKg').value = '';
+  const target = document.getElementById('recSplit');
+  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderWatches() {
+  document.getElementById('watchList').innerHTML = watches.map(w =>
+    '<div class="lot" style="color:#fff;border-color:rgba(255,255,255,.15)"><span>'+w.side+' • '+w.wt+'kg • $'+w.hd+'/hd • $'+Number(w.kg).toFixed(2)+'/kg</span><button class="btn-r" style="color:#a7f3d0" onclick="watches=watches.filter(x=>x.id!=='+w.id+');renderWatches()">x</button></div>'
+  ).join('');
+}
+
+function addToWatchlist() {
+  const pen = (document.getElementById('wlPen').value || '').trim();
+  const hd = parseFloat(document.getElementById('wlHd').value) || 0;
+  const wt = parseFloat(document.getElementById('wlWt').value) || 0;
+  const price = parseFloat(document.getElementById('wlPrice').value) || 0;
+  if (!pen) return;
+  penWatch.push({id: nextPenWatch++, pen, hd, wt, price});
+  document.getElementById('wlPen').value = '';
+  document.getElementById('wlHd').value = '';
+  document.getElementById('wlWt').value = '';
+  document.getElementById('wlPrice').value = '';
+  renderWatchlist();
+}
+function removeFromWatchlist(id) {
+  penWatch = penWatch.filter(function(w){ return w.id !== id; });
+  renderWatchlist();
+}
+function buyFromWatchlist(id) {
+  const w = penWatch.find(function(x){ return x.id === id; });
+  if (!w) return;
+  penWatch = penWatch.filter(function(x){ return x.id !== id; });
+  renderWatchlist();
+  editingLotId = null;
+  document.getElementById('lotPen').value = w.pen || '';
+  document.getElementById('lotHd').value = w.hd || '';
+  document.getElementById('lotWt').value = w.wt || '';
+  document.getElementById('lotPrice').value = w.price || '';
+  const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
+  recOrder = missing.length ? missing : ALL_FIELDS.slice();
+  recStep = 0;
+  recFieldFresh = true;
+  document.getElementById('recBotSpecial').classList.remove('hidden');
+  document.getElementById('recBotPrime').classList.add('hidden');
+  recHighlight();
+  saveDraft();
+  const target = document.getElementById('recSplit');
+  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderWatchlist() {
+  const box = document.getElementById('watchlistCards');
+  if (!box) return;
+  box.innerHTML = penWatch.map(function(w) {
+    return '<div class="watchlist-card">'
+      + '<div class="wl-pen">Pen ' + xmlEsc(w.pen) + '</div>'
+      + '<div class="wl-detail">' + (w.hd || '—') + ' hd</div>'
+      + '<div class="wl-detail">' + (w.wt || '—') + ' kg avg</div>'
+      + '<div class="wl-detail">$' + (w.price || 0).toFixed(2) + '/hd</div>'
+      + '<div class="wl-actions">'
+      + '<button type="button" class="wl-buy" onclick="buyFromWatchlist(' + w.id + ')">Bought</button>'
+      + '<button type="button" class="wl-skip" onclick="removeFromWatchlist(' + w.id + ')">Not bought</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+
+const ALL_FIELDS = ['lotPrice','lotHd','lotPen','lotWt','lotBuyer'];
+let recOrder = ALL_FIELDS.slice();
+let recStep = 0;
+const DRAFT_KEY = 'cbpro_draft';
+function saveDraft() {
+  try {
+    const d = {recOrder: recOrder, recStep: recStep};
+    ALL_FIELDS.forEach(function(id){ const el = document.getElementById(id); if (el) d[id] = el.value; });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch(e) {}
+}
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    ALL_FIELDS.forEach(function(id){
+      if (d[id]) { const el = document.getElementById(id); if (el) el.value = d[id]; }
+    });
+    if (Array.isArray(d.recOrder) && d.recOrder.length) recOrder = d.recOrder;
+    if (typeof d.recStep === 'number') recStep = d.recStep;
+  } catch(e) {}
+}
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+document.addEventListener('visibilitychange', function(){ if (document.hidden) saveDraft(); });
+function recActive() { return document.getElementById(recOrder[recStep]); }
+function recHighlight() {
+  ALL_FIELDS.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('on-field');
+  });
+  const activeId = recOrder[recStep];
+  const activeEl = document.getElementById(activeId);
+  if (activeEl) activeEl.classList.add('on-field');
+  const buyer = activeId === 'lotBuyer';
+  document.getElementById('numPad').classList.toggle('hidden', buyer);
+  document.getElementById('buyerPad').classList.toggle('hidden', !buyer);
+  const btn = document.getElementById('recNext');
+  if (btn) btn.textContent = (recStep === recOrder.length - 1) ? 'SAVE LOT' : 'NEXT';
+  fillBuyerPick();
+}
+function fillBuyerPick() {
+  const cur = document.getElementById('lotBuyer').value || S.meClient;
+  const html = (S.clients||[]).map(function(a) {
+    return '<button type="button" class="'+(a===cur?'on':'')+'" onclick="pickBuyer(\''+a.replace(/'/g,'')+'\')">'+a+'</button>';
+  }).join('') + '<button type="button" class="add-buyer-tile" onclick="openAddBuyer()">+ Add</button>';
+  ['buyerPick','buyerPickModal'].forEach(function(id){
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = html;
+  });
+}
+function pickBuyer(name) {
+  document.getElementById('lotBuyer').value = name;
+  S.meClient = name;
+  persist();
+  fillBuyerPick();
+  saveDraft();
+  closeBuyerWayModal();
+}
+function openBuyerWayModal() {
+  fillBuyerPick();
+  document.getElementById('buyerWayModal').classList.remove('hidden');
+}
+function closeBuyerWayModal() {
+  const m = document.getElementById('buyerWayModal');
+  if (m) m.classList.add('hidden');
+}
+function openAddBuyer() {
+  document.getElementById('newBuyerQuick').value = '';
+  document.getElementById('addBuyerModal').classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('newBuyerQuick').focus(); }, 50);
+}
+function closeAddBuyerModal() {
+  document.getElementById('addBuyerModal').classList.add('hidden');
+}
+function confirmAddBuyer() {
+  const n = (document.getElementById('newBuyerQuick').value || '').trim();
+  closeAddBuyerModal();
+  if (!n) return;
+  if (S.clients.indexOf(n) < 0) S.clients.push(n);
+  persist();
+  renderChips();
+  pickBuyer(n);
+}
+
+/* markings */
+let markSelectPrevValue = null;
+function fillMarkSelect() {
+  const sel = document.getElementById('lotDesc');
+  if (!sel) return;
+  sel.innerHTML = (S.markings||[]).map(function(m){
+    return '<option value="'+xmlEsc(m)+'">'+xmlEsc(m)+'</option>';
+  }).join('') + '<option value="__add__">+ Add new…</option>';
+}
+function resetMarkSelect() {
+  removeTempMarkOption();
+  const sel = document.getElementById('lotDesc');
+  if (sel) sel.value = S.markings[0];
+  markSelectPrevValue = S.markings[0];
+}
+function handleMarkChange(val) {
+  if (val === '__add__') {
+    openAddMark();
+    return;
+  }
+  markSelectPrevValue = val;
+  saveDraft();
+}
+function openAddMark() {
+  document.getElementById('newMarkQuick').value = '';
+  document.getElementById('addMarkModal').classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('newMarkQuick').focus(); }, 50);
+}
+function closeAddMarkModal() {
+  document.getElementById('addMarkModal').classList.add('hidden');
+  const sel = document.getElementById('lotDesc');
+  if (sel) sel.value = markSelectPrevValue || S.markings[0];
+}
+function confirmAddMark() {
+  const n = (document.getElementById('newMarkQuick').value || '').trim();
+  if (!n) { closeAddMarkModal(); return; }
+  document.getElementById('addMarkModal').classList.add('hidden');
+  if (S.markings.indexOf(n) < 0) S.markings.push(n);
+  persist();
+  renderMarkChips();
+  fillMarkSelect();
+  document.getElementById('lotDesc').value = n;
+  markSelectPrevValue = n;
+  saveDraft();
+}
+function removeTempMarkOption() {
+  const sel = document.getElementById('lotDesc');
+  if (!sel) return;
+  const opt = sel.querySelector('option[data-temp="1"]');
+  if (opt) opt.remove();
+}
+let recFieldFresh = false;
+function recType(k) {
+  const inp = primeEditField ? document.getElementById(primeEditField) : recActive();
+  if (!inp || (!primeEditField && recOrder[recStep] === 'lotBuyer')) return;
+  let v = String(inp.value || '');
+  if (recFieldFresh) { v = ''; recFieldFresh = false; }
+  if (k === 'back') v = v.slice(0,-1);
+  else if (k === '.') { if (v.indexOf('.') < 0) v = v === '' ? '0.' : v + '.'; }
+  else if (v.length < 8) v += k;
+  inp.value = v;
+  saveDraft();
+}
+function recNext() {
+  if (recStep < recOrder.length - 1) {
+    recStep += 1;
+    if (recOrder[recStep] !== 'lotBuyer') recFieldFresh = true;
+    if (recOrder[recStep] === 'lotBuyer' && !document.getElementById('lotBuyer').value) {
+      document.getElementById('lotBuyer').value = S.meClient || '';
+    }
+    recHighlight();
+    saveDraft();
+    return;
+  }
+  if (!addLot()) { flashRecError('NEED $/HD + PEN'); return; }
+  recStep = 0;
+  recOrder = ALL_FIELDS.slice();
+  ALL_FIELDS.forEach(function(id){ if (id !== 'lotBuyer') document.getElementById(id).value = ''; });
+  recHighlight();
+  clearDraft();
+  applyRecorderMode();
+}
+
+/* sale mode: special vs prime (voice) */
+function setSaleMode(mode) {
+  S.saleMode = mode;
+  persist();
+  document.getElementById('modeSpecial').classList.toggle('on', mode === 'special');
+  document.getElementById('modePrime').classList.toggle('on', mode === 'prime');
+  applyRecorderMode();
+}
+function applyRecorderMode() {
+  const prime = S.saleMode === 'prime';
+  if (!prime) primeEditField = null;
+  else if (!primeEditField) { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
+  document.getElementById('lblPrice').textContent = prime ? '$/KG' : '$/HD';
+  document.getElementById('recBotSpecial').classList.toggle('hidden', prime);
+  document.getElementById('recBotPrime').classList.toggle('hidden', !prime);
+  if (!prime && primeListening) {
+    if (primeRecognition) { try { primeRecognition.abort(); } catch(e) {} }
+    primeResetUI();
+  }
+}
+
+function parsePrimeSpeech(transcript) {
+  let text = ' ' + transcript.trim() + ' ';
+  const result = {price: null, pen: null, hd: null, wt: null};
+
+  // Pen/head/weight each have their own unambiguous keyword, so claim their
+  // numbers first regardless of spoken order. Price is the only field with no
+  // reliable keyword when the phone doesn't say "$" or "dollars", so its
+  // fallback (grab the first leftover number) must run last, once everything
+  // else has already taken its own number out of the running.
+  const penMatch = text.match(/pen\s*(?:number\s*)?(\d+)/i);
+  if (penMatch) {
+    result.pen = penMatch[1];
+    text = text.replace(penMatch[0], ' ');
+  }
+
+  const headMatch = text.match(/(\d+)\s*head/i);
+  if (headMatch) {
+    result.hd = parseFloat(headMatch[1]);
+    text = text.replace(headMatch[0], ' ');
+  }
+
+  const wtMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:kgs?|kilos?|kilograms?)/i);
+  if (wtMatch) {
+    result.wt = parseFloat(wtMatch[1]);
+    text = text.replace(wtMatch[0], ' ');
+  }
+
+  const priceMatch = text.match(/\$\s*(\d+(?:\.\d+)?)/);
+  const dollarsMatch = !priceMatch && text.match(/(\d+)\s*dollars?\s*(?:and\s*)?(\d+)?\s*(?:cents?)?/i);
+  if (priceMatch) {
+    result.price = parseFloat(priceMatch[1]);
+    text = text.replace(priceMatch[0], ' ');
+  } else if (dollarsMatch) {
+    const dollars = parseInt(dollarsMatch[1], 10);
+    const cents = dollarsMatch[2] ? parseInt(dollarsMatch[2], 10) : 0;
+    result.price = dollars + cents / 100;
+    text = text.replace(dollarsMatch[0], ' ');
+  } else {
+    const firstNum = text.match(/(\d+(?:\.\d+)?)/);
+    if (firstNum) {
+      result.price = parseFloat(firstNum[1]);
+      text = text.replace(firstNum[0], ' ');
+    }
+  }
+
+  return result;
+}
+
+let primeRecognition = null;
+let primeListening = false;
+let primeButtonHeld = false;
+let primeWakeLock = null;
+let primeTimeoutId = null;
+let primeEditField = null;
+const PRIME_LISTEN_TIMEOUT_MS = 20000;
+
+function primeFieldsLocked() {
+  return primeListening || !!primeArmTimeoutId;
+}
+function primeHighlightActiveField() {
+  ALL_FIELDS.forEach(function(fid) {
+    const el = document.getElementById(fid);
+    if (el) el.classList.toggle('on-field', fid === primeEditField);
+  });
+}
+function primeSelectField(id) {
+  if (primeFieldsLocked()) return;
+  primeEditField = id;
+  recFieldFresh = true;
+  primeHighlightActiveField();
+  saveDraft();
+}
+
+function primeRequestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(function(lock){ primeWakeLock = lock; }).catch(function(){});
+    }
+  } catch(e) {}
+}
+function primeReleaseWakeLock() {
+  try {
+    if (primeWakeLock) { primeWakeLock.release().catch(function(){}); primeWakeLock = null; }
+  } catch(e) {}
+}
+function primeResetUI() {
+  primeListening = false;
+  if (primeTimeoutId) { clearTimeout(primeTimeoutId); primeTimeoutId = null; }
+  primeReleaseWakeLock();
+  const btn = document.getElementById('primeRecordBtn');
+  if (btn) { btn.textContent = '🎙 HOLD'; btn.classList.remove('listening'); btn.classList.remove('arming'); }
+  const markSel = document.getElementById('lotDesc');
+  if (markSel) markSel.disabled = false;
+  const pad = document.getElementById('primeNumPad');
+  if (pad) pad.classList.remove('disabled');
+  if (!primeEditField) primeEditField = 'lotPrice';
+  primeHighlightActiveField();
+}
+function primeParseScore(parsed) {
+  return ['price', 'pen', 'hd', 'wt'].reduce(function(n, k){ return n + (parsed[k] != null ? 1 : 0); }, 0);
+}
+function primePickBestAlternative(result) {
+  let best = result[0].transcript;
+  let bestScore = primeParseScore(parsePrimeSpeech(best));
+  for (let a = 1; a < result.length; a++) {
+    const t = result[a].transcript;
+    const score = primeParseScore(parsePrimeSpeech(t));
+    if (score > bestScore) { bestScore = score; best = t; }
+  }
+  return best;
+}
+function buildPrimeRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const rec = new SR();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 3;
+  rec.lang = 'en-AU';
+  let lastTranscript = '';
+  let accumulatedFinal = '';
+  rec.onresult = function(e) {
+    if (rec !== primeRecognition) return;
+    let interimStr = '';
+    const startAt = (typeof e.resultIndex === 'number') ? e.resultIndex : 0;
+    for (let i = startAt; i < e.results.length; i++) {
+      if (e.results[i].isFinal) accumulatedFinal += primePickBestAlternative(e.results[i]) + ' ';
+      else interimStr += e.results[i][0].transcript;
+    }
+    if (accumulatedFinal.trim()) {
+      lastTranscript = accumulatedFinal.trim();
+      applyPrimeTranscript(lastTranscript);
+    } else if (interimStr) {
+      const st = document.getElementById('primeStatus');
+      if (st) st.textContent = 'Hearing: "' + interimStr + '"';
+    }
+  };
+  rec.onerror = function(e) {
+    if (rec !== primeRecognition) return;
+    if (e.error === 'no-speech' && primeButtonHeld) return;
+    const st = document.getElementById('primeStatus');
+    if (st) st.textContent = 'Mic error: ' + e.error + ' — tap Record to try again.';
+    primeResetUI();
+  };
+  rec.onend = function() {
+    if (rec !== primeRecognition) return;
+    if (lastTranscript) applyPrimeTranscript(lastTranscript);
+    if (primeButtonHeld) {
+      primeRestartRecognition();
+    } else {
+      primeResetUI();
+      primeSetProcessing(false);
+    }
+  };
+  return rec;
+}
+let primeProcessing = false;
+let primeProcessingTimeoutId = null;
+function primeSetProcessing(on) {
+  primeProcessing = on;
+  const btn = document.getElementById('primeSaveBtn');
+  if (btn) btn.disabled = on;
+  if (primeProcessingTimeoutId) { clearTimeout(primeProcessingTimeoutId); primeProcessingTimeoutId = null; }
+  if (on) {
+    primeProcessingTimeoutId = setTimeout(function(){ primeSetProcessing(false); }, 4000);
+  }
+}
+function clearPrimeFields() {
+  document.getElementById('lotPrice').value = '';
+  document.getElementById('lotPen').value = '';
+  document.getElementById('lotHd').value = '';
+  document.getElementById('lotWt').value = '';
+  resetMarkSelect();
+}
+const PRIME_ARM_DELAY_MS = 300;
+let primeArmTimeoutId = null;
+function primeBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.value = 0.18;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = function(){ try { ctx.close(); } catch(e) {} };
+  } catch(e) {}
+}
+function primeStartRecording() {
+  primeButtonHeld = true;
+  if (primeListening || primeArmTimeoutId) return;
+  const btn = document.getElementById('primeRecordBtn');
+  if (btn) btn.classList.add('arming');
+  const markSel = document.getElementById('lotDesc');
+  if (markSel) markSel.disabled = true;
+  const pad = document.getElementById('primeNumPad');
+  if (pad) pad.classList.add('disabled');
+  primeArmTimeoutId = setTimeout(function(){
+    primeArmTimeoutId = null;
+    primeActuallyStart();
+  }, PRIME_ARM_DELAY_MS);
+}
+function primeActuallyStart() {
+  clearPrimeFields();
+  const btn = document.getElementById('primeRecordBtn');
+  const st = document.getElementById('primeStatus');
+  if (btn) btn.classList.remove('arming');
+  primeRecognition = buildPrimeRecognition();
+  if (!primeRecognition) {
+    if (st) st.textContent = 'Voice recording is not supported in this browser.';
+    return;
+  }
+  primeBeep();
+  if (st) st.textContent = 'Listening… speak price, pen, head, weight.';
+  btn.textContent = '🔴 REC…';
+  btn.classList.add('listening');
+  primeListening = true;
+  primeRequestWakeLock();
+  primeTimeoutId = setTimeout(function(){
+    if (primeListening && primeRecognition) {
+      primeButtonHeld = false;
+      try { primeRecognition.stop(); } catch(e) {}
+      primeResetUI();
+      if (st) st.textContent = 'Stopped listening (timed out) — tap and hold Record to try again.';
+    }
+  }, PRIME_LISTEN_TIMEOUT_MS);
+  try { primeRecognition.start(); } catch(e) { primeResetUI(); }
+}
+function primeRestartRecognition() {
+  const st = document.getElementById('primeStatus');
+  primeRecognition = buildPrimeRecognition();
+  if (!primeRecognition) { primeResetUI(); primeSetProcessing(false); return; }
+  primeListening = true;
+  if (st) st.textContent = 'Still listening… speak price, pen, head, weight.';
+  if (primeTimeoutId) clearTimeout(primeTimeoutId);
+  primeTimeoutId = setTimeout(function(){
+    if (primeListening && primeRecognition) {
+      primeButtonHeld = false;
+      try { primeRecognition.stop(); } catch(e) {}
+      primeResetUI();
+      if (st) st.textContent = 'Stopped listening (timed out) — tap and hold Record to try again.';
+    }
+  }, PRIME_LISTEN_TIMEOUT_MS);
+  try { primeRecognition.start(); } catch(e) { primeResetUI(); primeSetProcessing(false); }
+}
+function primeStopRecording() {
+  primeButtonHeld = false;
+  if (primeArmTimeoutId) {
+    clearTimeout(primeArmTimeoutId);
+    primeArmTimeoutId = null;
+    const btn = document.getElementById('primeRecordBtn');
+    if (btn) btn.classList.remove('arming');
+    const markSel = document.getElementById('lotDesc');
+    if (markSel) markSel.disabled = false;
+    const pad = document.getElementById('primeNumPad');
+    if (pad) pad.classList.remove('disabled');
+  }
+  if (!primeListening) return;
+  primeSetProcessing(true);
+  if (primeRecognition) { try { primeRecognition.stop(); } catch(e) {} }
+  primeResetUI();
+  const st = document.getElementById('primeStatus');
+  if (st) st.textContent = 'Processing…';
+}
+function initPrimeRecordButton() {
+  const btn = document.getElementById('primeRecordBtn');
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
+  function start(e) { e.preventDefault(); primeStartRecording(); }
+  function stop(e) { e.preventDefault(); primeStopRecording(); }
+  btn.addEventListener('touchstart', start, {passive:false});
+  btn.addEventListener('touchend', stop);
+  btn.addEventListener('touchcancel', stop);
+  btn.addEventListener('mousedown', start);
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', function(e){ if (primeListening) stop(e); });
+}
+function applyPrimeTranscript(transcript) {
+  const parsed = parsePrimeSpeech(transcript);
+  if (parsed.price != null) document.getElementById('lotPrice').value = parsed.price;
+  if (parsed.pen != null) document.getElementById('lotPen').value = parsed.pen;
+  if (parsed.hd != null) document.getElementById('lotHd').value = parsed.hd;
+  if (parsed.wt != null) document.getElementById('lotWt').value = parsed.wt;
+  primeSetProcessing(false);
+  const st = document.getElementById('primeStatus');
+  if (st) st.textContent = 'Heard: "' + transcript + '" — check the fields, then Save Lot.';
+  saveDraft();
+}
+function primeSaveLot() {
+  const st = document.getElementById('primeStatus');
+  if (primeProcessing) {
+    if (st) st.textContent = 'Still processing what you said — one sec, then tap Save Lot again.';
+    return;
+  }
+  if (addLot()) {
+    if (st) st.textContent = 'Saved. Tap Record for the next lot.';
+  } else {
+    if (st) st.textContent = 'Missing $/kg or pen — check the fields, then Save Lot.';
+  }
+}
+
+let recErrorTimer = null;
+function flashRecError(msg) {
+  const btn = document.getElementById('recNext');
+  if (!btn) return;
+  if (recErrorTimer) { clearTimeout(recErrorTimer); recErrorTimer = null; }
+  if (!btn.dataset.origText) btn.dataset.origText = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('rec-next-error');
+  recErrorTimer = setTimeout(function(){
+    btn.textContent = btn.dataset.origText;
+    btn.classList.remove('rec-next-error');
+    recErrorTimer = null;
+  }, 1800);
+}
+
+/* new sale */
+function openNewSaleConfirm() {
+  const total = lots.length;
+  const unsent = lots.filter(function(l){ return !l.sent; }).length;
+  let msg = total
+    ? ('This archives the current ' + total + ' lot' + (total === 1 ? '' : 's') + ' and clears the list for a fresh sale.')
+    : 'No lots entered yet — this just resets the entry fields.';
+  if (total && unsent) msg += ' ' + unsent + ' lot' + (unsent === 1 ? '' : 's') + ' not yet sent to a carrier.';
+  document.getElementById('newSaleModalBody').textContent = msg;
+  resetSlideConfirm();
+  document.getElementById('newSaleModal').classList.remove('hidden');
+}
+function closeNewSaleConfirm() {
+  document.getElementById('newSaleModal').classList.add('hidden');
+  resetSlideConfirm();
+}
+function startNewSale() {
+  if (lots.length) {
+    let hist = [];
+    try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { hist = []; }
+    hist.push({ t: new Date().toISOString(), lots: lots });
+    if (hist.length > HISTORY_CAP) hist = hist.slice(hist.length - HISTORY_CAP);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
+    lots.forEach(function(l){ if (l.hasPhoto) photoDel(l.id); });
+  }
+  pendingPhoto = null;
+  lots = [];
+  editingLotId = null;
+  penWatch = [];
+  renderWatchlist();
+  recStep = 0;
+  recOrder = ALL_FIELDS.slice();
+  ALL_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
+  recHighlight();
+  if (S.saleMode === 'prime') {
+    primeEditField = 'lotPrice';
+    primeHighlightActiveField();
+    const st = document.getElementById('primeStatus');
+    if (st) st.textContent = 'Hold to record price, pen, head, weight.';
+  }
+  clearDraft();
+  updateCamButtons();
+  renderLots();
+  closeNewSaleConfirm();
+}
+let slideDragging = false, slideStartX = 0, slideMax = 0;
+function resetSlideConfirm() {
+  const knob = document.getElementById('slideKnob');
+  if (knob) knob.style.transform = 'translateX(0px)';
+}
+function initSlideConfirm() {
+  const knob = document.getElementById('slideKnob');
+  const track = document.getElementById('slideConfirm');
+  if (!knob || !track || knob.dataset.bound === '1') return;
+  knob.dataset.bound = '1';
+  function down(e) {
+    slideDragging = true;
+    slideStartX = (e.touches ? e.touches[0].clientX : e.clientX);
+    slideMax = track.clientWidth - knob.offsetWidth - 6;
+    knob.style.transition = '';
+    e.preventDefault();
+  }
+  function move(e) {
+    if (!slideDragging) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    const dx = Math.min(Math.max(x - slideStartX, 0), slideMax);
+    knob.style.transform = 'translateX(' + dx + 'px)';
+    if (dx >= slideMax - 2) {
+      slideDragging = false;
+      startNewSale();
+    }
+  }
+  function up() {
+    if (!slideDragging) return;
+    slideDragging = false;
+    knob.style.transition = 'transform .2s';
+    knob.style.transform = 'translateX(0px)';
+  }
+  knob.addEventListener('touchstart', down, {passive:false});
+  knob.addEventListener('touchmove', move, {passive:false});
+  knob.addEventListener('touchend', up);
+  knob.addEventListener('mousedown', down);
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
+/* auto-update on open */
+function freshUrl() {
+  return location.pathname + '?v=' + Date.now();
+}
+function checkForUpdate() {
+  try {
+    if (location.protocol === 'file:') return;
+    if (sessionStorage.getItem('cbpro_just_updated')) {
+      sessionStorage.removeItem('cbpro_just_updated');
+      return;
+    }
+    fetch(freshUrl(), {cache: 'no-store'})
+      .then(function(r){ return r.ok ? r.text() : null; })
+      .then(function(html){
+        if (!html) return;
+        const m = html.match(/APP_VERSION\s*=\s*'([^']+)'/);
+        if (m && m[1] && m[1] !== APP_VERSION) {
+          sessionStorage.setItem('cbpro_just_updated', '1');
+          location.href = freshUrl();
+        }
+      })
+      .catch(function(){});
+  } catch(e) {}
+}
+
+/* pull to refresh */
+function initPullToRefresh() {
+  if (/Android/i.test(navigator.userAgent || '')) return;
+  const main = document.querySelector('main');
+  if (!main || main.dataset.ptrBound) return;
+  main.dataset.ptrBound = '1';
+  const indicator = document.createElement('div');
+  indicator.id = 'ptrIndicator';
+  indicator.textContent = 'Pull to refresh';
+  document.body.appendChild(indicator);
+
+  const THRESHOLD = 70;
+  let startY = 0, pulling = false, dist = 0;
+
+  main.addEventListener('touchstart', function(e){
+    if (main.scrollTop <= 0 && !document.body.classList.contains('kp-open')) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+      dist = 0;
+    } else {
+      pulling = false;
+    }
+  }, {passive:true});
+
+  main.addEventListener('touchmove', function(e){
+    if (!pulling) return;
+    dist = e.touches[0].clientY - startY;
+    if (dist > 0 && main.scrollTop <= 0) {
+      e.preventDefault();
+      const pull = Math.min(dist * 0.5, 100);
+      indicator.style.transform = 'translateY(' + pull + 'px)';
+      indicator.textContent = pull >= THRESHOLD ? 'Release to refresh' : 'Pull to refresh';
+    } else {
+      pulling = false;
+      indicator.style.transform = 'translateY(0px)';
+    }
+  }, {passive:false});
+
+  main.addEventListener('touchend', function(){
+    if (!pulling) return;
+    pulling = false;
+    const pull = Math.min(Math.max(dist,0) * 0.5, 100);
+    if (pull >= THRESHOLD) {
+      indicator.textContent = 'Refreshing…';
+      indicator.style.transform = 'translateY(60px)';
+      setTimeout(function(){ location.href = freshUrl(); }, 200);
+    } else {
+      indicator.style.transform = 'translateY(0px)';
+    }
+  });
+}
+
+/* lots */
+function lotDollars(l) {
+  return (l.priceUnit === 'kg') ? (l.price||0)*(l.wt||0)*(l.hd||0) : (l.price||0)*(l.hd||0);
+}
+function lotPriceHd(l) {
+  if (l.priceUnit === 'kg') return l.wt ? l.price*l.wt : 0;
+  return l.price || 0;
+}
+function lotPriceKg(l) {
+  if (l.priceUnit === 'kg') return l.price || 0;
+  return l.wt ? (l.price/l.wt) : 0;
+}
+function weightedAvgKg(list) {
+  let sum = 0, hd = 0;
+  list.forEach(function(l){
+    const pk = lotPriceKg(l);
+    if (pk && l.hd) { sum += pk * l.hd; hd += l.hd; }
+  });
+  return hd ? sum/hd : 0;
+}
+function addLot() {
+  const price = parseFloat(document.getElementById('lotPrice').value)||0;
+  const hd = parseFloat(document.getElementById('lotHd').value)||0;
+  const wt = parseFloat(document.getElementById('lotWt').value)||0;
+  const pen = (document.getElementById('lotPen').value||'').trim();
+  const priceUnit = (S.saleMode === 'prime') ? 'kg' : 'hd';
+  const descEl = document.getElementById('lotDesc');
+  if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need '+(priceUnit==='kg'?'$/kg':'$/hd')+' and pen.'; return false; }
+  const desc = descEl ? descEl.value : '';
+  const client = document.getElementById('lotBuyer').value || S.meClient;
+  if (editingLotId != null) {
+    const existingLot = lots.find(function(x){ return x.id === editingLotId; });
+    if (existingLot) {
+      existingLot.price = price; existingLot.hd = hd; existingLot.wt = wt;
+      existingLot.pen = pen; existingLot.priceUnit = priceUnit;
+      existingLot.desc = desc; existingLot.client = client;
+      existingLot.synced = false;
+    }
+    editingLotId = null;
+  } else {
+    const newLot = {
+      id: nextLot++, price, hd, wt, pen, priceUnit,
+      desc,
+      agent: S.meAgent, client,
+      sale: document.getElementById('saleName').value,
+      yard: document.getElementById('pickupLoc').value,
+      t: new Date().toISOString(),
+      sent: false, carrier: '', selected: true, synced: false,
+      hasPhoto: !!pendingPhoto
+    };
+    lots.push(newLot);
+    if (pendingPhoto) { photoPut(newLot.id, pendingPhoto); pendingPhoto = null; }
+  }
+  updateCamButtons();
+  document.getElementById('lotPrice').value='';
+  document.getElementById('lotHd').value='';
+  document.getElementById('lotWt').value='';
+  document.getElementById('lotPen').value='';
+  resetMarkSelect();
+  if (S.saleMode === 'prime') { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
+  renderLots();
+  trySyncQueue();
+  return true;
+}
+function updateMarketTrend() {
+  const mkt = parseFloat(document.getElementById('mktAvgKg').value) || 0;
+  const recAvgKg = weightedAvgKg(lots);
+  const light = document.getElementById('trendLight');
+  const arrow = document.getElementById('trendArrow');
+  const diffEl = document.getElementById('trendDiff');
+  light.classList.remove('up','down');
+  if (!mkt || !recAvgKg) {
+    diffEl.textContent = '—';
+    arrow.textContent = '';
+    light.setAttribute('aria-label', 'No comparison yet');
+    return;
+  }
+  const diff = recAvgKg - mkt;
+  if (diff > 0) { light.classList.add('up'); arrow.textContent = '▲'; light.setAttribute('aria-label', 'Above last market'); }
+  else if (diff < 0) { light.classList.add('down'); arrow.textContent = '▼'; light.setAttribute('aria-label', 'Below last market'); }
+  else { arrow.textContent = '–'; light.setAttribute('aria-label', 'Same as last market'); }
+  const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+  diffEl.textContent = sign + '$' + Math.abs(diff).toFixed(2) + '/kg';
+}
+function saveMarketAvgKg() {
+  S.mktAvgKg = parseFloat(document.getElementById('mktAvgKg').value) || 0;
+  persist();
+  updateMarketTrend();
+}
+function saveMarketAvgWt() {
+  S.mktAvgWt = parseFloat(document.getElementById('mktAvgWt').value) || 0;
+  persist();
+}
+document.getElementById('mktAvgKg').addEventListener('input', saveMarketAvgKg);
+document.getElementById('mktAvgWt').addEventListener('input', saveMarketAvgWt);
+
+function renderLots() {
+  persistLots();
+  let th=0, td=0;
+  lots.forEach(l => { th+=l.hd; td+=lotDollars(l); });
+
+  const byWay = {};
+  lots.forEach(l => {
+    const k = l.client || 'Self';
+    if (!byWay[k]) byWay[k] = {hd:0, dol:0, kg:0, lots:[]};
+    byWay[k].hd += l.hd; byWay[k].dol += lotDollars(l); byWay[k].kg += l.wt*l.hd;
+    byWay[k].lots.push(l);
+  });
+  const wayNames = Object.keys(byWay);
+
+  const stdBar = document.getElementById('statsStandard');
+  const bwBar = document.getElementById('statsByBuyer');
+  const editBanner = document.getElementById('editingBanner');
+  const editingLot = editingLotId != null ? lots.find(function(x){ return x.id === editingLotId; }) : null;
+  if (editingLot) {
+    stdBar.classList.add('hidden');
+    bwBar.classList.add('hidden');
+    editBanner.classList.remove('hidden');
+    document.getElementById('editingBannerText').textContent = 'Editing pen ' + (editingLot.pen || '—') + ' — still in the sale';
+  } else {
+    editBanner.classList.add('hidden');
+    if (wayNames.length > 1) {
+      stdBar.classList.add('hidden');
+      bwBar.classList.remove('hidden');
+      bwBar.innerHTML = wayNames.map(function(n) {
+        return '<div class="bwc"><div class="stat-k">'+xmlEsc(n).toUpperCase()+'</div><div class="stat-v">'+(byWay[n].hd || '—')+' hd</div></div>';
+      }).join('');
+    } else {
+      stdBar.classList.remove('hidden');
+      bwBar.classList.add('hidden');
+    }
+  }
+  const avgKgAll = weightedAvgKg(lots);
+  document.getElementById('statHd').textContent = th || '—';
+  document.getElementById('statAvgHd').textContent = th ? ('$'+Math.round(td/th).toLocaleString()) : '—';
+  document.getElementById('statAvgKg').textContent = avgKgAll ? ('$'+avgKgAll.toFixed(2)) : '—';
+  document.getElementById('statTotal').textContent = th ? ('$'+Math.round(td).toLocaleString()) : '—';
+  updateMarketTrend();
+
+  fillBuyerWaySelect(wayNames);
+  updateSelectedLotsInfo();
+
+  if (!lots.length) {
+    document.getElementById('lotsSummaryMoney').innerHTML = '<div class="note">No lots yet.</div>';
+    document.getElementById('lotsSummaryTrucking').innerHTML = '<div class="note">No lots yet.</div>';
+    return;
+  }
+
+  const moneyRows = wayNames.map(function(n) {
+    const g = byWay[n];
+    const hasHd = g.hd > 0;
+    const avgHd = hasHd ? Math.round(g.dol/g.hd) : 0;
+    const avgKg = weightedAvgKg(g.lots);
+    const avgWt = hasHd ? Math.round(g.kg/g.hd) : 0;
+    return '<tr>'
+      + '<td>'+xmlEsc(n)+'</td>'
+      + '<td>'+(hasHd ? g.hd : '—')+'</td>'
+      + '<td>'+(hasHd ? '$'+avgHd.toLocaleString() : '—')+'</td>'
+      + '<td>'+(avgKg ? '$'+avgKg.toFixed(2) : '—')+'</td>'
+      + '<td>'+(hasHd ? avgWt : '—')+'</td>'
+      + '<td>'+(hasHd ? '$'+Math.round(g.dol).toLocaleString() : '—')+'</td>'
+      + '</tr>';
+  }).join('');
+  document.getElementById('lotsSummaryMoney').innerHTML =
+    '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
+    + '<th>BUYER WAY</th><th>HD</th><th>AVG $/HD</th><th>AVG $/KG</th><th>AVG KG</th><th>TOTAL $</th>'
+    + '</tr></thead><tbody>'+moneyRows+'</tbody></table></div>';
+
+  const incompleteCount = lots.filter(lotIncomplete).length;
+  const incompleteNote = incompleteCount
+    ? '<div class="incomplete-note">'+incompleteCount+' lot'+(incompleteCount===1?'':'s')+' to complete — tap the row, read head &amp; weight off the photo, type them in.</div>'
+    : '';
+  const truckHtml = incompleteNote + wayNames.map(function(n) {
+    const g = byWay[n];
+    const rows = g.lots.map(function(l) {
+      const st = l.sent ? '<span class="st-ok">✓</span>' : '<span class="st-no">✗</span>';
+      const thumb = l.hasPhoto && photoCache[l.id]
+        ? '<img class="lot-thumb" src="'+photoCache[l.id]+'" alt="Pen card" onclick="event.stopPropagation(); openPhoto('+l.id+')">'
+        : '';
+      const incomplete = lotIncomplete(l) ? '<span class="lot-incomplete">to complete</span>' : '';
+      return '<tr class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
+        + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
+        + '<td class="c-thumb">'+thumb+'</td>'
+        + '<td>'+(l.pen||'—')+(l.desc ? '<span class="sub">'+xmlEsc(l.desc)+'</span>' : '')+incomplete+'</td>'
+        + '<td>'+(l.hd||'—')+'</td>'
+        + '<td>'+(l.wt||'—')+'</td>'
+        + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
+        + '<td class="c-st">'+st+'</td>'
+        + '</tr>';
+    }).join('');
+    return '<div class="way-group"><div class="way-group-h">'+xmlEsc(n)+'</div>'
+      + '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
+      + '<th class="c-tick"></th><th class="c-thumb"></th><th>PEN</th><th>HD</th><th>KG/HD</th><th>TOTAL KG</th><th></th>'
+      + '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+  document.getElementById('lotsSummaryTrucking').innerHTML = truckHtml;
+}
+function editLot(id) {
+  const l = lots.find(function(x){ return x.id === id; });
+  if (!l) return;
+  editingLotId = id;
+  pendingPhoto = null;
+  updateCamButtons();
+  document.getElementById('lotPrice').value = l.price || '';
+  document.getElementById('lotPen').value = l.pen || '';
+  document.getElementById('lotHd').value = l.hd || '';
+  document.getElementById('lotWt').value = l.wt || '';
+  document.getElementById('lotBuyer').value = l.client || '';
+  const descEl = document.getElementById('lotDesc');
+  if (descEl) {
+    const d = l.desc || S.markings[0];
+    const existing = S.markings.find(function(m){ return m.toLowerCase() === d.toLowerCase(); });
+    removeTempMarkOption();
+    if (existing) {
+      descEl.value = existing;
+      markSelectPrevValue = existing;
+    } else {
+      const opt = document.createElement('option');
+      opt.setAttribute('data-temp', '1');
+      opt.value = d;
+      opt.textContent = d.length > 60 ? d.slice(0, 60) + '…' : d;
+      descEl.insertBefore(opt, descEl.firstChild);
+      descEl.value = d;
+      markSelectPrevValue = d;
+    }
+  }
+  const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
+  recOrder = missing.length ? missing : ALL_FIELDS.slice();
+  recStep = 0;
+  recFieldFresh = true;
+  document.getElementById('recBotSpecial').classList.remove('hidden');
+  document.getElementById('recBotPrime').classList.add('hidden');
+  recHighlight();
+  renderLots();
+  saveDraft();
+  const target = document.getElementById('recSplit');
+  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function cancelEditLot() {
+  editingLotId = null;
+  updateCamButtons();
+  document.getElementById('lotPrice').value = '';
+  document.getElementById('lotHd').value = '';
+  document.getElementById('lotWt').value = '';
+  document.getElementById('lotPen').value = '';
+  document.getElementById('lotBuyer').value = '';
+  resetMarkSelect();
+  recStep = 0;
+  recOrder = ALL_FIELDS.slice();
+  recHighlight();
+  renderLots();
+  saveDraft();
+}
+function fillBuyerWaySelect(names) {
+  const sel = document.getElementById('buyerWaySelect');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = names.map(function(n){ return '<option value="'+n.replace(/"/g,'')+'">'+n+'</option>'; }).join('');
+  if (names.indexOf(cur) >= 0) sel.value = cur;
+}
+function selectByBuyerWay(name) {
+  if (!name) return;
+  lots.forEach(function(l){ l.selected = (l.client === name); });
+  renderLots();
+}
+function toggleLot(id, on) {
+  const l = lots.find(x => x.id === id); if (l) l.selected = !!on;
+  updateSelectedLotsInfo();
+}
+function updateSelectedLotsInfo() {
+  const el = document.getElementById('selectedLotsInfo');
+  if (!el) return;
+  const list = selectedLots();
+  if (!list.length) { el.textContent = 'No lots selected.'; return; }
+  const hd = list.reduce(function(sum, l){ return sum + (l.hd || 0); }, 0);
+  el.textContent = list.length + ' lot' + (list.length === 1 ? '' : 's') + ' selected · ' + hd + ' hd';
+}
+function selectedLots() { return lots.filter(l => l.selected); }
+function currentCarrier() {
+  const name = (document.getElementById('carrierPick')||{}).value || '';
+  return (S.carriers||[]).find(c => c.name === name) || {name: name, phone:''};
+}
+
+/* Only credit the selected carrier's name to a message if the number
+   actually being texted still matches that carrier's saved mobile.
+   If the phone box has been typed/overridden away from it (e.g. sending
+   to someone who isn't a saved carrier), treat it as an unnamed,
+   one-off recipient rather than leaking the real carrier's name to them. */
+function resolvedCarrier() {
+  const car = currentCarrier();
+  const typedPhone = String((document.getElementById('carrierPhoneNow')||{}).value || '').replace(/\s+/g,'');
+  const carPhone = String(car.phone || '').replace(/\s+/g,'');
+  if (car.name && carPhone && typedPhone && typedPhone !== carPhone) {
+    return {name: '', phone: typedPhone};
+  }
+  return {name: car.name, phone: typedPhone || car.phone || ''};
+}
+
+function incompleteSelected() {
+  return selectedLots().filter(function(l){ return !l.hd || !l.wt; });
+}
+function blockIfIncomplete(status) {
+  const inc = incompleteSelected();
+  if (!inc.length) return false;
+  if (status) status.textContent = 'Finish head & weight on ' + inc.length + ' selected lot' + (inc.length===1?'':'s') + ' first (pen ' + inc.map(function(l){ return l.pen || '?'; }).join(', ') + ').';
+  return true;
+}
+function pickupMessage(list) {
+  list = list || selectedLots();
+  if (!list.length) return '';
+  let th=0, tw=0;
+  list.forEach(l => { th += l.hd; tw += l.hd * l.wt; });
+  const sale = document.getElementById('saleName').value.trim();
+  const loc = document.getElementById('pickupLoc').value.trim();
+  const car = resolvedCarrier();
+  const lines = ['CATTLE PICKUP'];
+  if (car.name) lines.push('Carrier: '+car.name);
+  if (sale) lines.push('Sale: '+sale);
+  if (loc) lines.push('Yard: '+loc);
+  lines.push('Total: '+th+' head');
+  lines.push('Total weight: '+Math.round(tw).toLocaleString()+' kg ('+(tw/1000).toFixed(1)+' t)');
+  lines.push('');
+  list.forEach(l => {
+    const live = Math.round(l.hd * l.wt);
+    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' hd @ '+l.wt+' kg = '+live.toLocaleString()+' kg' + (l.desc ? ' — '+l.desc : ''));
+  });
+  lines.push('');
+  lines.push(S.smsTail || '');
+  return lines.join('\n');
+}
+function markSelectedSent() {
+  const list = selectedLots();
+  if (!list.length) { document.getElementById('smsStatus').textContent='Tick the lots to send.'; return; }
+  if (blockIfIncomplete(document.getElementById('smsStatus'))) return;
+  const car = resolvedCarrier();
+  list.forEach(l => { l.sent = true; l.carrier = car.name; l.selected = false; });
+  renderLots();
+  document.getElementById('smsStatus').textContent = 'Marked sent to '+(car.name||'the number entered')+'.';
+}
+function smsUrl(phone, msg) {
+  const body = encodeURIComponent(msg);
+  const num = String(phone || '').replace(/[^0-9+]/g, '');
+  const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  if (isiOS) return num ? ('sms:' + num + '&body=' + body) : ('sms:&body=' + body);
+  return num ? ('sms:' + num + '?body=' + body) : ('sms:?body=' + body);
+}
+function openSms(url) {
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ try { a.remove(); } catch(e) {} }, 400);
+  try { window.location.href = url; } catch(e) {}
+}
+let lastSms = 0;
+function textAgent(e) {
+  if (e) e.preventDefault();
+  const now = Date.now();
+  if (now - lastSms < 600) return false;
+  lastSms = now;
+  const list = selectedLots();
+  const msg = pickupMessage(list);
+  const status = document.getElementById('smsStatus');
+  if (!msg) { status.textContent = 'Tick the lots to send.'; return false; }
+  if (blockIfIncomplete(status)) return false;
+  const car = resolvedCarrier();
+  const phone = car.phone;
+  if (!phone) {
+    status.textContent = 'Put the carrier mobile in first.';
+    return false;
+  }
+  openSms(smsUrl(phone, msg));
+  list.forEach(l => { l.sent = true; l.carrier = car.name; l.selected = false; });
+  renderLots();
+  status.textContent = 'Opening Messages to ' + phone + (car.name ? ' for '+car.name : '') + '. If it does not open, tap Copy selected lots.';
+  return false;
+}
+document.getElementById('smsLink').addEventListener('click', textAgent);
+document.getElementById('smsLink').addEventListener('touchend', function(e){
+  e.preventDefault();
+  textAgent(e);
+}, {passive:false});
+function copyPickup() {
+  const msg = pickupMessage();
+  const status = document.getElementById('smsStatus');
+  if (!msg) { status.textContent = 'Tick the lots to send.'; return; }
+  if (blockIfIncomplete(status)) return;
+  if (!navigator.clipboard) { status.textContent = 'Copy not supported on this browser.'; return; }
+  navigator.clipboard.writeText(msg).then(function() {
+    status.textContent = 'Copied selected lots.';
+  }).catch(function() {
+    status.textContent = 'Could not copy — press and hold the message to copy it manually.';
+  });
+}
+
+/* excel — builds a genuine .xlsx (Open XML) file by hand, no library, so it
+   opens natively in Excel on Windows AND Mac, plus Apple Numbers and Google
+   Sheets. The old format here was Excel's legacy "SpreadsheetML" XML saved
+   with a .xls extension — real Excel tolerated that, but Numbers on Mac
+   often can't open it, which is exactly the gap this closes. */
+function xmlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function xlsxColLetter(n){
+  let s = '';
+  while (n > 0) { const rem = (n-1) % 26; s = String.fromCharCode(65+rem) + s; n = Math.floor((n-1)/26); }
+  return s;
+}
+function xlsxCellXml(colIdx, rowIdx, v){
+  const ref = xlsxColLetter(colIdx) + rowIdx;
+  if (typeof v === 'number' && isFinite(v)) return '<c r="'+ref+'"><v>'+v+'</v></c>';
+  return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(v)+'</t></is></c>';
+}
+function xlsxSheetXml(rows){
+  const rowsXml = rows.map((arr, i) => '<row r="'+(i+1)+'">' + arr.map((v,j) => xlsxCellXml(j+1, i+1, v)).join('') + '</row>').join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + rowsXml + '</sheetData></worksheet>';
+}
+
+const CRC32_TABLE = (function(){
+  const table = [];
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(bytes){
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function zipBuild(files){
+  const enc = new TextEncoder();
+  let offset = 0;
+  const localParts = [], centralParts = [];
+  const DOS_TIME = 0, DOS_DATE = 0x21;
+  files.forEach(f => {
+    const nameBytes = enc.encode(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const localOffset = offset;
+
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, DOS_TIME, true);
+    lv.setUint16(12, DOS_DATE, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    localParts.push(local, data);
+    offset += local.length + data.length;
+
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(central.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, DOS_TIME, true);
+    cv.setUint16(14, DOS_DATE, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, localOffset, true);
+    central.set(nameBytes, 46);
+    centralParts.push(central);
+  });
+  const centralSize = centralParts.reduce((s,p) => s + p.length, 0);
+  const centralOffset = offset;
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, centralOffset, true);
+  return localParts.concat(centralParts, [eocd]);
+}
+function buildXlsxBlob(sheets){
+  const enc = new TextEncoder();
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+    + sheets.map((_,i) => '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')
+    + '</Types>';
+  const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+    + '</Relationships>';
+  const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    + '<sheets>' + sheets.map((s,i) => '<sheet name="'+xmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('') + '</sheets></workbook>';
+  const workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + sheets.map((s,i) => '<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')
+    + '<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    + '</Relationships>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
+    + '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>'
+    + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+    + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    + '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+    + '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+    + '</styleSheet>';
+
+  const files = [
+    {name:'[Content_Types].xml', data: enc.encode(contentTypes)},
+    {name:'_rels/.rels', data: enc.encode(rootRels)},
+    {name:'xl/workbook.xml', data: enc.encode(workbook)},
+    {name:'xl/_rels/workbook.xml.rels', data: enc.encode(workbookRels)},
+    {name:'xl/styles.xml', data: enc.encode(styles)}
+  ];
+  sheets.forEach((s,i) => files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml', data: enc.encode(xlsxSheetXml(s.rows))}));
+  return new Blob(zipBuild(files), {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function exportExcel() {
+  const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
+  const lotRows = [headers];
+  lots.forEach(l => {
+    lotRows.push([
+      (l.t||'').slice(0,16).replace('T',' '),
+      l.sale||'', l.yard||'', l.pen||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
+      Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
+    ]);
+  });
+  let th=0, td=0;
+  lots.forEach(l=>{ th+=l.hd; td+=lotDollars(l); });
+  const byAgent = {};
+  lots.forEach(l => {
+    const k = l.agent||'Unknown';
+    if (!byAgent[k]) byAgent[k] = {hd:0, dol:0};
+    byAgent[k].hd += l.hd; byAgent[k].dol += lotDollars(l);
+  });
+  const byClient = {};
+  lots.forEach(l => {
+    const k = l.client||'Self';
+    if (!byClient[k]) byClient[k] = {hd:0, dol:0};
+    byClient[k].hd += l.hd; byClient[k].dol += lotDollars(l);
+  });
+  const sumRows = [
+    ['Metric','Value'],
+    ['Total head', th],
+    ['Total $', Math.round(td)],
+    ['Average $/hd', th?Math.round(td/th):0],
+    ['Average $/kg', Math.round(weightedAvgKg(lots)*100)/100],
+    ['Lots', lots.length],
+    ['', ''],
+    ['Agent','Head','Total $'],
+    ...Object.keys(byAgent).map(k => [k, byAgent[k].hd, Math.round(byAgent[k].dol)]),
+    ['', ''],
+    ['Buyer way','Head','Total $'],
+    ...Object.keys(byClient).map(k => [k, byClient[k].hd, Math.round(byClient[k].dol)])
+  ];
+  const watchRows = [['Time','Side','Weight','$/hd','$/kg','Agent','Buyer way']];
+  watches.forEach(w => watchRows.push([(w.t||'').slice(0,16).replace('T',' '), w.side, w.wt, w.hd, w.kg, w.agent||'', w.client||'']));
+
+  const blob = buildXlsxBlob([
+    {name:'Lots', rows: lotRows},
+    {name:'Summary', rows: sumRows},
+    {name:'Watch', rows: watchRows}
+  ]);
+  const name = 'track-n-trade-' + new Date().toISOString().slice(0,10) + '.xlsx';
+  if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+    window.navigator.msSaveOrOpenBlob(blob, name);
+    return;
+  }
+  const status = document.getElementById('smsStatus');
+  const file = (window.File) ? new File([blob], name, {type: blob.type}) : null;
+  if (file && navigator.canShare && navigator.canShare({files: [file]})) {
+    navigator.share({files: [file], title: 'Track n Trade export'}).then(function(){
+      if (status) status.textContent = 'Excel file ready to send.';
+    }).catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      downloadExcelBlob(blob, name);
+    });
+    return;
+  }
+  downloadExcelBlob(blob, name);
+}
+function downloadExcelBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
+}
+
+function init() {
+  load();
+  loadLots();
+  syncHeaderH();
+  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','mktAvgKg','mktAvgWt'].forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = S[k] || '';
+  });
+  if (document.getElementById('finExit')) document.getElementById('finExit').value = S.finExit || 'hd';
+  applyExitMode();
+  if (document.getElementById('useCarry')) document.getElementById('useCarry').value = String(S.useCarry == 0 ? 0 : 1);
+  document.getElementById('modeSpecial').classList.toggle('on', S.saleMode !== 'prime');
+  document.getElementById('modePrime').classList.toggle('on', S.saleMode === 'prime');
+  applyRecorderMode();
+  fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
+  fillMarkSelect(); resetMarkSelect(); renderMarkChips();
+ applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
+  photoLoadAll().then(function(){ renderLots(); updateCamButtons(); });
+  trySyncQueue();
+  restoreDraft();
+  recHighlight();
+  const pad = document.getElementById('recPad');
+  if (pad && !pad.dataset.bound) {
+    pad.dataset.bound = '1';
+    pad.addEventListener('click', function(e) {
+      const b = e.target.closest('button'); if (!b) return;
+      recType(b.getAttribute('data-k'));
+    });
+  }
+  const primePad = document.getElementById('primeNumPad');
+  if (primePad && !primePad.dataset.bound) {
+    primePad.dataset.bound = '1';
+    primePad.addEventListener('click', function(e) {
+      if (primeFieldsLocked()) return;
+      const b = e.target.closest('button'); if (!b) return;
+      recType(b.getAttribute('data-k'));
+    });
+  }
+  ALL_FIELDS.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', function(){
+      const primeMode = S.saleMode === 'prime';
+      if (primeMode && primeFieldsLocked()) return;
+      if (id === 'lotBuyer' && primeMode) {
+        openBuyerWayModal();
+        return;
+      }
+      if (primeMode) {
+        primeSelectField(id);
+        return;
+      }
+      const idx = recOrder.indexOf(id);
+      if (idx >= 0) {
+        recStep = idx;
+        if (id !== 'lotBuyer') recFieldFresh = true;
+        recHighlight();
+        saveDraft();
+      }
+    });
+  });
+}
+init();
+window.addWeight = addWeight;
+window.removeClass = removeClass;
+window.updateClass = updateClass;
+window.addLot = addLot;
+window.logWatch = logWatch;
+window.showTab = showTab;
+window.flip = flip;
+window.saveSettings = saveSettings;
+window.addAgent = addAgent;
+window.delAgent = delAgent;
+window.addClient = addClient;
+window.delClient = delClient;
+window.saveWho = saveWho;
+window.openToolInfo = openToolInfo;
+window.handleMarkChange = handleMarkChange;
+window.closeBuyerWayModal = closeBuyerWayModal;
+window.confirmAddMark = confirmAddMark;
+window.closeAddMarkModal = closeAddMarkModal;
+window.addMarkSetting = addMarkSetting;
+window.delMark = delMark;
+window.setSaleMode = setSaleMode;
+window.primeSaveLot = primeSaveLot;
+window.closeToolInfo = closeToolInfo;
+window.exportExcel = exportExcel;
+window.copyPickup = copyPickup;
+window.toggleLot = toggleLot;
+window.markSelectedSent = markSelectedSent;
+window.addCarrier = addCarrier;
+window.delCarrier = delCarrier;
+window.syncCarrierPhone = syncCarrierPhone;
+window.closeKp = closeKp;
+window.recNext = recNext;
+window.pickBuyer = pickBuyer;
+window.openAddBuyer = openAddBuyer;
+window.closeAddBuyerModal = closeAddBuyerModal;
+window.confirmAddBuyer = confirmAddBuyer;
+window.setExitMode = setExitMode;
+window.setFinExit = setFinExit;
+window.toggleCostInfo = toggleCostInfo;
+window.editLot = editLot;
+window.cancelEditLot = cancelEditLot;
+window.addToWatchlist = addToWatchlist;
+window.removeFromWatchlist = removeFromWatchlist;
+window.buyFromWatchlist = buyFromWatchlist;
+window.selectByBuyerWay = selectByBuyerWay;
+window.pickContact = pickContact;
+window.openNewSaleConfirm = openNewSaleConfirm;
+window.closeNewSaleConfirm = closeNewSaleConfirm;
+</script>
+</body>
+</html>
