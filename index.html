@@ -319,6 +319,34 @@
       font-weight: 800; font-size: clamp(11px, 3vw, 14px); line-height: 1.15;
     }
     .rec-newsale:active { background: #B84D00; }
+    .rec-cam {
+      flex: 0.9 1 0; background: #1e3a5f; color: #fff; border: none; border-radius: 12px;
+      font-size: clamp(20px, 5.5vw, 28px); line-height: 1; position: relative;
+    }
+    .rec-cam:active { background: #2c4f7c; }
+    .rec-cam.has-photo::after {
+      content: "✓"; position: absolute; top: 4px; right: 6px;
+      font-size: 0.55em; font-weight: 800; color: #a7f3d0;
+    }
+    .lot-thumb {
+      width: 44px; height: 44px; object-fit: cover; border-radius: 6px;
+      border: 1px solid var(--border); display: block; background: #e2e8f0;
+    }
+    .lots-table td.c-thumb { width: 52px; padding-left: 4px; padding-right: 4px; }
+    .lot-incomplete { color: #b45309; font-weight: 800; font-size: var(--fs-2xs); display: block; margin-top: 3px; white-space: nowrap; }
+    .incomplete-note {
+      background: #fef3c7; color: #92400e; border-radius: 8px; padding: 8px 12px;
+      font-size: var(--fs-sm); font-weight: 700; margin-bottom: 8px;
+    }
+    .photo-modal {
+      position: fixed; inset: 0; background: rgba(15,23,42,.92); z-index: 220;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .photo-modal img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+    .photo-modal .photo-close {
+      position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; border-radius: 50%;
+      border: none; background: rgba(255,255,255,.18); color: #fff; font-size: 1.4rem; font-weight: 800;
+    }
     #recBotPrime { display: flex; flex-direction: column; }
     .prime-status {
       font-size: var(--fs-sm); color: #cbd5e1; text-align: center;
@@ -624,6 +652,7 @@
             </div>
             <div class="rec-next-row">
               <button type="button" class="rec-newsale" id="recNewSale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="rec-cam" id="recCamSpecial" onclick="openPenCardCamera()" aria-label="Photograph pen card">📷</button>
               <button type="button" class="rec-next" id="recNext" onclick="recNext()">NEXT</button>
             </div>
           </div>
@@ -637,10 +666,16 @@
             </div>
             <div class="rec-next-row">
               <button type="button" class="rec-newsale" onclick="openNewSaleConfirm()">New<br>sale</button>
+              <button type="button" class="rec-cam" id="recCamPrime" onclick="openPenCardCamera()" aria-label="Photograph pen card">📷</button>
               <button type="button" class="prime-record-btn" id="primeRecordBtn">🎙 HOLD</button>
               <button type="button" class="rec-next" id="primeSaveBtn" onclick="primeSaveLot()">SAVE LOT</button>
             </div>
           </div>
+        </div>
+        <input type="file" id="penCardInput" accept="image/*" capture="environment" style="display:none" onchange="onPenCardPicked(this)">
+        <div class="photo-modal hidden" id="photoModal" onclick="closePhoto()">
+          <button type="button" class="photo-close" aria-label="Close">✕</button>
+          <img id="photoModalImg" alt="Pen card">
         </div>
         <div class="screen screen-tight" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
         <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
@@ -827,7 +862,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-06.39'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-14.40'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -851,6 +886,117 @@ let nextId = 3, lots = [], nextLot = 1, watches = [], nextWatch = 1;
 let editingLotId = null;
 let penWatch = [], nextPenWatch = 1;
 let activeIn = null, watchLast = 'kg', ringLock = false;
+
+/* Pen card photos — stored in IndexedDB keyed by lot id, never in
+   localStorage (a 40-lot sale would blow the ~5MB cap). Downscaled hard at
+   capture: a pen card only needs to be readable on a phone later. An
+   in-memory cache keeps rendering synchronous. */
+const PHOTO_DB = 'tnt_photos', PHOTO_STORE = 'photos';
+const PHOTO_MAX_W = 800, PHOTO_QUALITY = 0.7;
+let photoCache = {};
+let pendingPhoto = null;
+function photoDb() {
+  return new Promise(function(resolve, reject) {
+    if (!window.indexedDB) { reject(new Error('no idb')); return; }
+    const req = indexedDB.open(PHOTO_DB, 1);
+    req.onupgradeneeded = function(){ req.result.createObjectStore(PHOTO_STORE); };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+function photoPut(id, dataUrl) {
+  photoCache[id] = dataUrl;
+  return photoDb().then(function(db){
+    return new Promise(function(resolve){
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      tx.objectStore(PHOTO_STORE).put(dataUrl, id);
+      tx.oncomplete = resolve; tx.onerror = resolve;
+    });
+  }).catch(function(){});
+}
+function photoDel(id) {
+  delete photoCache[id];
+  return photoDb().then(function(db){
+    return new Promise(function(resolve){
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      tx.objectStore(PHOTO_STORE).delete(id);
+      tx.oncomplete = resolve; tx.onerror = resolve;
+    });
+  }).catch(function(){});
+}
+function photoLoadAll() {
+  return photoDb().then(function(db){
+    return new Promise(function(resolve){
+      const tx = db.transaction(PHOTO_STORE, 'readonly');
+      const req = tx.objectStore(PHOTO_STORE).openCursor();
+      req.onsuccess = function(){
+        const c = req.result;
+        if (c) { photoCache[c.key] = c.value; c.continue(); } else resolve();
+      };
+      req.onerror = resolve;
+    });
+  }).catch(function(){});
+}
+function downscaleImage(file) {
+  return new Promise(function(resolve, reject) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function(){
+      const scale = Math.min(1, PHOTO_MAX_W / img.width);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', PHOTO_QUALITY));
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+function openPenCardCamera() {
+  document.getElementById('penCardInput').click();
+}
+function onPenCardPicked(inp) {
+  const file = inp.files && inp.files[0];
+  inp.value = '';
+  if (!file) return;
+  downscaleImage(file).then(function(dataUrl){
+    if (editingLotId != null) {
+      const l = lots.find(function(x){ return x.id === editingLotId; });
+      if (l) { l.hasPhoto = true; photoPut(l.id, dataUrl); renderLots(); }
+    } else {
+      pendingPhoto = dataUrl;
+    }
+    updateCamButtons();
+  }).catch(function(){
+    flashRecError('Photo failed — try again');
+    const st = document.getElementById('primeStatus');
+    if (st && S.saleMode === 'prime') st.textContent = 'Photo failed — try again.';
+  });
+}
+function updateCamButtons() {
+  let has = !!pendingPhoto;
+  if (editingLotId != null) {
+    const l = lots.find(function(x){ return x.id === editingLotId; });
+    has = !!(l && l.hasPhoto);
+  }
+  ['recCamSpecial','recCamPrime'].forEach(function(id){
+    const b = document.getElementById(id);
+    if (b) b.classList.toggle('has-photo', has);
+  });
+}
+function openPhoto(id) {
+  const src = photoCache[id];
+  if (!src) return;
+  document.getElementById('photoModalImg').src = src;
+  document.getElementById('photoModal').classList.remove('hidden');
+}
+function closePhoto() {
+  document.getElementById('photoModal').classList.add('hidden');
+  document.getElementById('photoModalImg').src = '';
+}
+function lotIncomplete(l) { return !!(l.hasPhoto && (!l.hd || !l.wt)); }
 
 function load() {
   try {
@@ -2082,7 +2228,9 @@ function startNewSale() {
     hist.push({ t: new Date().toISOString(), lots: lots });
     if (hist.length > HISTORY_CAP) hist = hist.slice(hist.length - HISTORY_CAP);
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
+    lots.forEach(function(l){ if (l.hasPhoto) photoDel(l.id); });
   }
+  pendingPhoto = null;
   lots = [];
   editingLotId = null;
   penWatch = [];
@@ -2098,6 +2246,7 @@ function startNewSale() {
     if (st) st.textContent = 'Hold to record price, pen, head, weight.';
   }
   clearDraft();
+  updateCamButtons();
   renderLots();
   closeNewSaleConfirm();
 }
@@ -2259,16 +2408,20 @@ function addLot() {
     }
     editingLotId = null;
   } else {
-    lots.push({
+    const newLot = {
       id: nextLot++, price, hd, wt, pen, priceUnit,
       desc,
       agent: S.meAgent, client,
       sale: document.getElementById('saleName').value,
       yard: document.getElementById('pickupLoc').value,
       t: new Date().toISOString(),
-      sent: false, carrier: '', selected: true, synced: false
-    });
+      sent: false, carrier: '', selected: true, synced: false,
+      hasPhoto: !!pendingPhoto
+    };
+    lots.push(newLot);
+    if (pendingPhoto) { photoPut(newLot.id, pendingPhoto); pendingPhoto = null; }
   }
+  updateCamButtons();
   document.getElementById('lotPrice').value='';
   document.getElementById('lotHd').value='';
   document.getElementById('lotWt').value='';
@@ -2383,13 +2536,22 @@ function renderLots() {
     + '<th>BUYER WAY</th><th>HD</th><th>AVG $/HD</th><th>AVG $/KG</th><th>AVG KG</th><th>TOTAL $</th>'
     + '</tr></thead><tbody>'+moneyRows+'</tbody></table></div>';
 
-  const truckHtml = wayNames.map(function(n) {
+  const incompleteCount = lots.filter(lotIncomplete).length;
+  const incompleteNote = incompleteCount
+    ? '<div class="incomplete-note">'+incompleteCount+' lot'+(incompleteCount===1?'':'s')+' to complete — tap the row, read head &amp; weight off the photo, type them in.</div>'
+    : '';
+  const truckHtml = incompleteNote + wayNames.map(function(n) {
     const g = byWay[n];
     const rows = g.lots.map(function(l) {
       const st = l.sent ? '<span class="st-ok">✓</span>' : '<span class="st-no">✗</span>';
+      const thumb = l.hasPhoto && photoCache[l.id]
+        ? '<img class="lot-thumb" src="'+photoCache[l.id]+'" alt="Pen card" onclick="event.stopPropagation(); openPhoto('+l.id+')">'
+        : '';
+      const incomplete = lotIncomplete(l) ? '<span class="lot-incomplete">to complete</span>' : '';
       return '<tr class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
         + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
-        + '<td>'+(l.pen||'—')+(l.desc ? '<span class="sub">'+xmlEsc(l.desc)+'</span>' : '')+'</td>'
+        + '<td class="c-thumb">'+thumb+'</td>'
+        + '<td>'+(l.pen||'—')+(l.desc ? '<span class="sub">'+xmlEsc(l.desc)+'</span>' : '')+incomplete+'</td>'
         + '<td>'+(l.hd||'—')+'</td>'
         + '<td>'+(l.wt||'—')+'</td>'
         + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
@@ -2398,7 +2560,7 @@ function renderLots() {
     }).join('');
     return '<div class="way-group"><div class="way-group-h">'+xmlEsc(n)+'</div>'
       + '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
-      + '<th class="c-tick"></th><th>PEN</th><th>HD</th><th>KG/HD</th><th>TOTAL KG</th><th></th>'
+      + '<th class="c-tick"></th><th class="c-thumb"></th><th>PEN</th><th>HD</th><th>KG/HD</th><th>TOTAL KG</th><th></th>'
       + '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }).join('');
   document.getElementById('lotsSummaryTrucking').innerHTML = truckHtml;
@@ -2407,6 +2569,8 @@ function editLot(id) {
   const l = lots.find(function(x){ return x.id === id; });
   if (!l) return;
   editingLotId = id;
+  pendingPhoto = null;
+  updateCamButtons();
   document.getElementById('lotPrice').value = l.price || '';
   document.getElementById('lotPen').value = l.pen || '';
   document.getElementById('lotHd').value = l.hd || '';
@@ -2444,6 +2608,7 @@ function editLot(id) {
 }
 function cancelEditLot() {
   editingLotId = null;
+  updateCamButtons();
   document.getElementById('lotPrice').value = '';
   document.getElementById('lotHd').value = '';
   document.getElementById('lotWt').value = '';
@@ -2501,6 +2666,15 @@ function resolvedCarrier() {
   return {name: car.name, phone: typedPhone || car.phone || ''};
 }
 
+function incompleteSelected() {
+  return selectedLots().filter(function(l){ return !l.hd || !l.wt; });
+}
+function blockIfIncomplete(status) {
+  const inc = incompleteSelected();
+  if (!inc.length) return false;
+  if (status) status.textContent = 'Finish head & weight on ' + inc.length + ' selected lot' + (inc.length===1?'':'s') + ' first (pen ' + inc.map(function(l){ return l.pen || '?'; }).join(', ') + ').';
+  return true;
+}
 function pickupMessage(list) {
   list = list || selectedLots();
   if (!list.length) return '';
@@ -2527,6 +2701,7 @@ function pickupMessage(list) {
 function markSelectedSent() {
   const list = selectedLots();
   if (!list.length) { document.getElementById('smsStatus').textContent='Tick the lots to send.'; return; }
+  if (blockIfIncomplete(document.getElementById('smsStatus'))) return;
   const car = resolvedCarrier();
   list.forEach(l => { l.sent = true; l.carrier = car.name; l.selected = false; });
   renderLots();
@@ -2558,6 +2733,7 @@ function textAgent(e) {
   const msg = pickupMessage(list);
   const status = document.getElementById('smsStatus');
   if (!msg) { status.textContent = 'Tick the lots to send.'; return false; }
+  if (blockIfIncomplete(status)) return false;
   const car = resolvedCarrier();
   const phone = car.phone;
   if (!phone) {
@@ -2579,6 +2755,7 @@ function copyPickup() {
   const msg = pickupMessage();
   const status = document.getElementById('smsStatus');
   if (!msg) { status.textContent = 'Tick the lots to send.'; return; }
+  if (blockIfIncomplete(status)) return;
   if (!navigator.clipboard) { status.textContent = 'Copy not supported on this browser.'; return; }
   navigator.clipboard.writeText(msg).then(function() {
     status.textContent = 'Copied selected lots.';
@@ -2820,6 +2997,7 @@ function init() {
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
+  photoLoadAll().then(function(){ renderLots(); updateCamButtons(); });
   trySyncQueue();
   restoreDraft();
   recHighlight();
