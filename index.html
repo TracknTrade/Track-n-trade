@@ -697,6 +697,21 @@
         <div id="weightClasses"></div>
       </div>
 
+      <div id="calcsMarketSlot"></div>
+      <div class="screen screen-tight" id="blockMarketTrend">
+        <div class="card">
+          <div class="title">Last market</div>
+          <div class="grid-2">
+            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
+            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
+            <div class="trend-diff" id="trendDiff">—</div>
+          </div>
+        </div>
+      </div>
+
       <div class="screen screen-tight" id="blockAgistCalc"><div class="card">
         <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
           <span>Agistment cost calculator</span>
@@ -714,21 +729,6 @@
         </div>
         <p class="note hidden" id="agistFilledNote">Filled into the Buy indicator's Agistment $/wk</p>
       </div></div>
-
-      <div id="calcsMarketSlot"></div>
-      <div class="screen screen-tight" id="blockMarketTrend">
-        <div class="card">
-          <div class="title">Last market</div>
-          <div class="grid-2">
-            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
-            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
-          </div>
-          <div class="trend-row">
-            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
-            <div class="trend-diff" id="trendDiff">—</div>
-          </div>
-        </div>
-      </div>
 
     </section>
 
@@ -866,7 +866,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.47'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.48'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
