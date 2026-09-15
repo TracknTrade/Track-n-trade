@@ -939,13 +939,13 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.89'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.90'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
-  mktAvgKg: 0, mktAvgWt: 0,
+  mktAvgKg: 0, mktAvgWt: 0, ringLast: 2000,
   agentPhone: '',
   carriers: [{name:'Main carrier', phone:''}],
   smsTail: '',
@@ -1770,7 +1770,7 @@ function buildRing() {
   for (let i=0;i<4;i++) h += '<div class="ring-item" style="visibility:hidden">0</div>';
   ring.innerHTML = h; ring.dataset.built = '1';
   ring.addEventListener('scroll', onRing, {passive:true});
-  scrollRing(1720);
+  scrollRing(S.ringLast || 2000);
 }
 function nearest() {
   const ring = document.getElementById('priceRing');
@@ -1790,6 +1790,7 @@ function onRing() {
   it.classList.add('sel');
   const hd = parseInt(it.getAttribute('data-p'),10);
   document.getElementById('wHd').value = hd;
+  if (hd !== S.ringLast) { S.ringLast = hd; persist(); }
   const wt = parseFloat(document.getElementById('wWt').value)||0;
   if (wt) document.getElementById('wKg').value = (hd/wt).toFixed(2);
 }
@@ -1801,6 +1802,7 @@ function scrollRing(price) {
   const ring = it.closest('.ring');
   if (ring) ring.scrollTop = it.offsetTop - (ring.clientHeight - it.offsetHeight) / 2;
   document.getElementById('wHd').value = snap;
+  if (snap !== S.ringLast) { S.ringLast = snap; persist(); }
   setTimeout(()=>{ringLock=false;},160);
 }
 function calcWatch() {
