@@ -940,7 +940,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.81'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.82'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1583,7 +1583,7 @@ function closeKp() {
     inp.dispatchEvent(new Event('input', {bubbles:true}));
     try {
       const scr = inp.closest('.screen, .rec-split');
-      if (scr) scr.scrollIntoView({ block: 'start', behavior: 'auto' });
+      if (scr && scr.getBoundingClientRect().height > 0) scrollMainTo(scr, 'start');
     } catch(e) {}
   }
   activeIn = null;
@@ -1619,8 +1619,10 @@ function bindKp() {
     if (inp.tagName === 'SELECT') return;
     inp.setAttribute('readonly','readonly');
     inp.setAttribute('inputmode','none');
+    inp.setAttribute('tabindex','-1');
     if (inp.dataset.kp === '1') return;
     inp.dataset.kp = '1';
+    inp.addEventListener('focus', function(){ inp.blur(); });
     const openForInp = function(e) {
       e.preventDefault();
       if (activeIn === inp && document.getElementById('keypad').classList.contains('show')) return;
@@ -1788,7 +1790,8 @@ function scrollRing(price) {
   const it = document.querySelector('#priceRing [data-p="'+snap+'"]');
   if (!it) return;
   ringLock = true; it.classList.add('sel');
-  it.scrollIntoView({block:'center', behavior:'auto'});
+  const ring = it.closest('.ring');
+  if (ring) ring.scrollTop = it.offsetTop - (ring.clientHeight - it.offsetHeight) / 2;
   document.getElementById('wHd').value = snap;
   setTimeout(()=>{ringLock=false;},160);
 }
@@ -1939,7 +1942,11 @@ function fillBuyerPick() {
     return '<button type="button" class="mark-chip'+(a===cur?' on':'')+'" data-v="'+xmlEsc(a)+'">'+xmlEsc(a)+'</button>';
   }).join('') + '<button type="button" class="mark-chip add" data-v="__add__">+ Add</button>';
   const onChip = row.querySelector('.mark-chip.on');
-  if (onChip && onChip.scrollIntoView) onChip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  if (onChip) {
+    const l = onChip.offsetLeft, r = l + onChip.offsetWidth;
+    if (l < row.scrollLeft) row.scrollLeft = l - 8;
+    else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth + 8;
+  }
 }
 function pickBuyerChip(v) {
   const row = document.getElementById('recBuyerChips');
