@@ -742,6 +742,8 @@
             </div>
           </div>
         </div>
+        <div class="screen screen-tight" id="recLotsCard"><div class="card"><div class="title">Lot summary</div><p class="note">Tap a lot to check or change it.</p><div id="lotsSummaryRecord"></div></div></div>
+        <div class="screen screen-tight" id="recMoneyCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoneyRecord"></div></div></div>
         <input type="file" id="penCardInput" accept="image/*" capture="environment" style="display:none" onchange="onPenCardPicked(this)">
         <div class="photo-modal hidden" id="photoModal" onclick="closePhoto()">
           <button type="button" class="photo-close" aria-label="Close">✕</button>
@@ -752,8 +754,8 @@
 
     <!-- TRUCK -->
     <section id="pageTruck" class="hidden">
-        <div class="screen screen-tight" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
-        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
+        <div class="screen screen-tight" id="lotsCard"><div class="card"><div class="title">Trucking summary $</div><div id="lotsSummaryMoney"></div></div></div>
+        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lots for trucking</div><p class="note">Tick the lots going on this load, then send below.</p><div id="lotsSummaryTrucking"></div></div></div>
       <div id="blockText" class="screen screen-tight"><div class="card">
         <div class="title">Send selected lots</div>
         <label>Select by buyer way</label>
@@ -931,7 +933,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.73'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.74'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2512,9 +2514,11 @@ function showToast(msg, kind) {
 function lotLabel(l) { return 'Pen ' + (l.pen || '?'); }
 function lotBlurb(l) { return (l.hd ? l.hd + ' ' + sexWord(l) : '') ; }
 /* After editing, drop back to the row in the lot table and flash it so the change is seen landing. */
+let editFrom = 'truck';
 function revealLotRow(id) {
-  showTab('truck');
-  const tr = document.querySelector('#lotsSummaryTrucking tr[data-id="' + id + '"]');
+  const box = editFrom === 'record' ? '#lotsSummaryRecord' : '#lotsSummaryTrucking';
+  showTab(editFrom === 'record' ? 'record' : 'truck');
+  const tr = document.querySelector(box + ' tr[data-id="' + id + '"]');
   if (!tr) return;
   tr.classList.add('flash-row');
   setTimeout(function(){ tr.classList.remove('flash-row'); }, 1900);
@@ -2846,8 +2850,9 @@ function renderLots() {
   updateSelectedLotsInfo();
 
   if (!lots.length) {
-    document.getElementById('lotsSummaryMoney').innerHTML = '<div class="note">No lots yet.</div>';
-    document.getElementById('lotsSummaryTrucking').innerHTML = '<div class="note">No lots yet.</div>';
+    ['lotsSummaryMoney','lotsSummaryMoneyRecord','lotsSummaryTrucking','lotsSummaryRecord'].forEach(function(id){
+      const el = document.getElementById(id); if (el) el.innerHTML = '<div class="note">No lots yet.</div>';
+    });
     return;
   }
 
@@ -2866,43 +2871,52 @@ function renderLots() {
       + '<td>'+(hasHd ? '$'+Math.round(g.dol).toLocaleString() : '—')+'</td>'
       + '</tr>';
   }).join('');
-  document.getElementById('lotsSummaryMoney').innerHTML =
+  const moneyHtml =
     '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
     + '<th>BUYER WAY</th><th>HD</th><th>AVG $/HD</th><th>AVG $/KG</th><th>AVG KG</th><th>TOTAL $</th>'
     + '</tr></thead><tbody>'+moneyRows+'</tbody></table></div>';
+  ['lotsSummaryMoney','lotsSummaryMoneyRecord'].forEach(function(id){ const el = document.getElementById(id); if (el) el.innerHTML = moneyHtml; });
 
   const incompleteCount = lots.filter(lotIncomplete).length;
   const incompleteNote = incompleteCount
     ? '<div class="incomplete-note">'+incompleteCount+' lot'+(incompleteCount===1?'':'s')+' to complete — tap the row, read head &amp; weight off the photo, type them in.</div>'
     : '';
-  const truckHtml = incompleteNote + wayNames.map(function(n) {
-    const g = byWay[n];
-    const rows = g.lots.map(function(l) {
-      const st = l.sent ? '<span class="pill pill-ok">Sent</span>' : '<span class="pill pill-muted">Not sent</span>';
-      const thumb = l.hasPhoto && photoCache[l.id]
-        ? '<img class="lot-thumb" src="'+photoCache[l.id]+'" alt="Pen card" onclick="event.stopPropagation(); openPhoto('+l.id+')">'
-        : '';
-      const incomplete = lotIncomplete(l) ? '<span class="lot-incomplete">to complete</span>' : '';
-      return '<tr data-id="'+l.id+'" class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
-        + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
-        + '<td class="c-thumb">'+thumb+'</td>'
-        + '<td>'+(l.pen||'—')+((l.sex||l.desc) ? '<span class="sub">'+xmlEsc([l.sex,l.desc].filter(Boolean).join(' · '))+'</span>' : '')+incomplete+'</td>'
-        + '<td>'+(l.hd||'—')+'</td>'
-        + '<td>'+(l.wt||'—')+'</td>'
-        + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
-        + '<td class="c-st">'+st+'</td>'
-        + '</tr>';
+  function lotTable(dispatch) {
+    return incompleteNote + wayNames.map(function(n) {
+      const g = byWay[n];
+      const rows = g.lots.map(function(l) {
+        const st = l.sent ? '<span class="pill pill-ok">Sent</span>' : '<span class="pill pill-muted">Not sent</span>';
+        const thumb = l.hasPhoto && photoCache[l.id]
+          ? '<img class="lot-thumb" src="'+photoCache[l.id]+'" alt="Pen card" onclick="event.stopPropagation(); openPhoto('+l.id+')">'
+          : '';
+        const incomplete = lotIncomplete(l) ? '<span class="lot-incomplete">to complete</span>' : '';
+        const priceCell = dispatch ? '' : '<td>' + (l.priceUnit === 'kg' ? ('$' + (+l.price).toFixed(2) + '/kg') : ('$' + Math.round(l.price).toLocaleString())) + '</td>';
+        return '<tr data-id="'+l.id+'" class="'+(editingLotId != null && l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
+          + (dispatch ? '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>' : '')
+          + '<td class="c-thumb">'+thumb+'</td>'
+          + '<td>'+(l.pen||'—')+((l.sex||l.desc) ? '<span class="sub">'+xmlEsc([l.sex,l.desc].filter(Boolean).join(' · '))+'</span>' : '')+incomplete+'</td>'
+          + '<td>'+(l.hd||'—')+'</td>'
+          + '<td>'+(l.wt||'—')+'</td>'
+          + priceCell
+          + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
+          + (dispatch ? '<td class="c-st">'+st+'</td>' : '')
+          + '</tr>';
+      }).join('');
+      return '<div class="way-group"><div class="way-group-h">'+xmlEsc(n)+'</div>'
+        + '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
+        + (dispatch ? '<th class="c-tick"></th>' : '') + '<th class="c-thumb"></th><th>PEN</th><th>HD</th><th>KG/HD</th>'
+        + (dispatch ? '' : '<th>PRICE</th>') + '<th>TOTAL KG</th>' + (dispatch ? '<th></th>' : '')
+        + '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
     }).join('');
-    return '<div class="way-group"><div class="way-group-h">'+xmlEsc(n)+'</div>'
-      + '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
-      + '<th class="c-tick"></th><th class="c-thumb"></th><th>PEN</th><th>HD</th><th>KG/HD</th><th>TOTAL KG</th><th></th>'
-      + '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-  }).join('');
-  document.getElementById('lotsSummaryTrucking').innerHTML = truckHtml;
+  }
+  document.getElementById('lotsSummaryTrucking').innerHTML = lotTable(true);
+  const recBox = document.getElementById('lotsSummaryRecord');
+  if (recBox) recBox.innerHTML = lotTable(false);
 }
 function editLot(id) {
   const l = lots.find(function(x){ return x.id === id; });
   if (!l) return;
+  editFrom = (currentTab === 'record') ? 'record' : 'truck';
   editingLotId = id;
   pendingPhoto = null;
   updateCamButtons();
