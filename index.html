@@ -228,7 +228,9 @@
     }
     .pin-actions button:disabled { opacity: .4; }
     .tool-grp { font-size: 10px; font-weight: 700; color: var(--tt-800); text-transform: uppercase; letter-spacing: .1em; padding: 12px 0 2px; }
-    .sub-toggles { padding-left: 16px; }
+    .sub-toggles { padding: 2px 0 8px; border-bottom: 1px solid var(--line-2); }
+    .type-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .type-pick .mark-chip { min-height: 36px; padding: 0 12px; font-size: 13px; }
     .sub-toggles .toggle { padding: 9px 0; font-weight: 500; }
     .where-row { padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
     .where-sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
@@ -937,7 +939,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.75'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.76'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1989,9 +1991,9 @@ function renderSexToggles() {
   const box = document.getElementById('sexTypeToggles');
   if (!box) return;
   box.classList.toggle('hidden', !S.showSex);
-  box.innerHTML = SEX_TYPES.map(function(t){
-    return '<div class="toggle" onclick="flipSex(\''+t.replace(/&/g,'&amp;')+'\')"><span>'+xmlEsc(t)+'</span><div class="switch'+(sexEnabled(t)?' on':'')+'"><i></i></div></div>';
-  }).join('');
+  box.innerHTML = '<div class="type-pick">' + SEX_TYPES.map(function(t){
+    return '<button type="button" class="mark-chip'+(sexEnabled(t)?' on':'')+'" onclick="flipSex(\''+t.replace(/&/g,'&amp;')+'\')">'+xmlEsc(t)+'</button>';
+  }).join('') + '</div><p class="note" style="margin-top:4px;">Tap to hide the ones you never buy.</p>';
 }
 function flipSex(t) {
   if (!S.sexOn || typeof S.sexOn !== 'object') { S.sexOn = {}; SEX_TYPES.forEach(function(x){ S.sexOn[x] = true; }); }
