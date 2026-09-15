@@ -346,6 +346,17 @@
       font-size: var(--fs-sm); font-weight: 600; flex: 0 0 auto;
     }
     .edit-banner button { background: var(--warn); color: #fff; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 600; font-size: 13px; }
+    .edit-banner button.arm { background: var(--ink); }
+    .tnt-toast {
+      position: fixed; left: 12px; right: 12px; top: calc(var(--header-h) + 10px); z-index: 160;
+      background: var(--tt-800); color: #fff; border-radius: var(--r-md); padding: 12px 16px;
+      font-weight: 600; font-size: var(--fs-sm); text-align: center; box-shadow: 0 8px 24px rgba(10,10,11,.18);
+      opacity: 0; transform: translateY(-8px); transition: opacity .18s, transform .18s; pointer-events: none;
+    }
+    .tnt-toast.show { opacity: 1; transform: translateY(0); }
+    .tnt-toast.warn { background: var(--warn); }
+    .lots-table tr.flash-row td { animation: rowFlash 1.8s ease-out; }
+    @keyframes rowFlash { 0% { background: var(--tt-100); } 100% { background: transparent; } }
     .lots-table tr.editing-row td { background: var(--warn-bg); }
     .stats-by-buyer { display: flex; gap: 0; overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); flex: 0 0 auto; -webkit-overflow-scrolling: touch; }
     .stats-by-buyer .bwc { flex: 0 0 auto; min-width: 74px; text-align: center; padding: 7px 8px; border-right: 1px solid var(--line-2); }
@@ -470,6 +481,7 @@
   </style>
 </head>
 <body>
+  <div class="tnt-toast" id="tntToast" role="status" aria-live="polite"></div>
   <div id="keypad">
     <div class="kp-in">
       <div class="kp-g" id="kpBtns">
@@ -619,7 +631,7 @@
             <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
             <div class="edit-banner hidden" id="editingBanner">
               <span id="editingBannerText">Editing…</span>
-              <button type="button" onclick="cancelEditLot()">Cancel</button>
+              <button type="button" id="editCancelBtn" onclick="cancelEditTap()">Cancel</button>
             </div>
             <div class="card" style="margin-top:4px;">
               <div class="rec-fields">
@@ -902,7 +914,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.57'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.58'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1907,7 +1919,7 @@ function recHighlight() {
   const activeEl = document.getElementById(activeId);
   if (activeEl) activeEl.classList.add('on-field');
   const btn = document.getElementById('recNext');
-  if (btn) btn.textContent = (recStep === recOrder.length - 1) ? 'SAVE LOT' : 'NEXT';
+  if (btn) btn.textContent = (recStep === recOrder.length - 1) ? (editingLotId != null ? 'SAVE CHANGES' : 'SAVE LOT') : 'NEXT';
   fillBuyerPick();
 }
 function fillBuyerPick() {
@@ -2111,6 +2123,7 @@ function recNext() {
     saveDraft();
     return;
   }
+  const editedId = editingLotId;
   if (!addLot()) { flashRecError('NEED $/HD + PEN'); return; }
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
@@ -2118,6 +2131,13 @@ function recNext() {
   recHighlight();
   clearDraft();
   applyRecorderMode();
+  const saved = lots.find(function(x){ return x.id === (editedId != null ? editedId : nextLot - 1); });
+  if (editedId != null) {
+    showToast((saved ? lotLabel(saved) : 'Lot') + ' updated');
+    if (saved) revealLotRow(saved.id);
+  } else if (saved) {
+    showToast(lotLabel(saved) + ' saved' + (lotBlurb(saved) ? ' · ' + lotBlurb(saved) : ''));
+  }
 }
 
 /* sale mode: special vs prime (voice) */
@@ -2440,14 +2460,36 @@ function primeSaveLot() {
     if (st) st.textContent = 'Still processing what you said — one sec, then tap Save Lot again.';
     return;
   }
+  const editedId = editingLotId;
   if (addLot()) {
     if (st) st.textContent = 'Saved. Tap Record for the next lot.';
+    const saved = lots.find(function(x){ return x.id === (editedId != null ? editedId : nextLot - 1); });
+    if (saved) showToast(lotLabel(saved) + (editedId != null ? ' updated' : ' saved' + (lotBlurb(saved) ? ' · ' + lotBlurb(saved) : '')));
   } else {
     if (st) st.textContent = 'Missing $/kg or pen — check the fields, then Save Lot.';
   }
 }
 
 let recErrorTimer = null;
+let toastTimer = null;
+function showToast(msg, kind) {
+  const t = document.getElementById('tntToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'tnt-toast show' + (kind === 'warn' ? ' warn' : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+function lotLabel(l) { return 'Pen ' + (l.pen || '?'); }
+function lotBlurb(l) { return (l.hd ? l.hd + ' ' + sexWord(l) : '') ; }
+/* After editing, drop back to the row in the lot table and flash it so the change is seen landing. */
+function revealLotRow(id) {
+  const tr = document.querySelector('#lotsSummaryTrucking tr[data-id="' + id + '"]');
+  if (!tr) return;
+  tr.classList.add('flash-row');
+  setTimeout(function(){ tr.classList.remove('flash-row'); }, 1900);
+  try { tr.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) { tr.scrollIntoView(); }
+}
 function flashRecError(msg) {
   const btn = document.getElementById('recNext');
   if (!btn) return;
@@ -2457,6 +2499,7 @@ function flashRecError(msg) {
   btn.classList.add('rec-next-error');
   recErrorTimer = setTimeout(function(){
     btn.textContent = btn.dataset.origText;
+    delete btn.dataset.origText;
     btn.classList.remove('rec-next-error');
     recErrorTimer = null;
   }, 1800);
@@ -2807,7 +2850,7 @@ function renderLots() {
         ? '<img class="lot-thumb" src="'+photoCache[l.id]+'" alt="Pen card" onclick="event.stopPropagation(); openPhoto('+l.id+')">'
         : '';
       const incomplete = lotIncomplete(l) ? '<span class="lot-incomplete">to complete</span>' : '';
-      return '<tr class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
+      return '<tr data-id="'+l.id+'" class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
         + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
         + '<td class="c-thumb">'+thumb+'</td>'
         + '<td>'+(l.pen||'—')+((l.sex||l.desc) ? '<span class="sub">'+xmlEsc([l.sex,l.desc].filter(Boolean).join(' · '))+'</span>' : '')+incomplete+'</td>'
@@ -2868,6 +2911,22 @@ function editLot(id) {
   saveDraft();
   const target = document.getElementById('recSplit');
   if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+}
+let cancelArmTimer = null;
+function cancelEditTap() {
+  const b = document.getElementById('editCancelBtn');
+  if (!b) return;
+  if (!b.classList.contains('arm')) {
+    b.classList.add('arm'); b.textContent = 'Tap again to discard';
+    if (cancelArmTimer) clearTimeout(cancelArmTimer);
+    cancelArmTimer = setTimeout(function(){ b.classList.remove('arm'); b.textContent = 'Cancel'; }, 3000);
+    return;
+  }
+  if (cancelArmTimer) { clearTimeout(cancelArmTimer); cancelArmTimer = null; }
+  b.classList.remove('arm'); b.textContent = 'Cancel';
+  const l = lots.find(function(x){ return x.id === editingLotId; });
+  cancelEditLot();
+  showToast('Edit cancelled' + (l ? ' · ' + lotLabel(l).toLowerCase() + ' unchanged' : ''), 'warn');
 }
 function cancelEditLot() {
   editingLotId = null;
@@ -3375,6 +3434,7 @@ window.setFinExit = setFinExit;
 window.toggleCostInfo = toggleCostInfo;
 window.editLot = editLot;
 window.cancelEditLot = cancelEditLot;
+window.cancelEditTap = cancelEditTap;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
