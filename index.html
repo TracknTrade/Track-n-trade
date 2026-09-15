@@ -939,7 +939,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.90'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.91'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1213,6 +1213,7 @@ function showTab(name) {
     return;
   }
   applyFeatures();
+  if (name === 'record' && !ringPositioned) scrollRing(S.ringLast || 2000);
   if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
   if (name === 'truck') renderLots();
   if (main) {
@@ -1794,10 +1795,13 @@ function onRing() {
   const wt = parseFloat(document.getElementById('wWt').value)||0;
   if (wt) document.getElementById('wKg').value = (hd/wt).toFixed(2);
 }
+let ringPositioned = false;
 function scrollRing(price) {
   const snap = Math.round(price/5)*5;
   const it = document.querySelector('#priceRing [data-p="'+snap+'"]');
   if (!it) return;
+  const rg = it.closest('.ring');
+  if (rg && rg.clientHeight > 0) ringPositioned = true;
   ringLock = true; it.classList.add('sel');
   const ring = it.closest('.ring');
   if (ring) ring.scrollTop = it.offsetTop - (ring.clientHeight - it.offsetHeight) / 2;
