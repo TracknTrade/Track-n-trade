@@ -916,7 +916,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.59'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.60'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1958,8 +1958,8 @@ function sexEnabled(t) {
   return S.sexOn[t] !== false;
 }
 /* Type and marking groups collapse to just their current pick once chosen; tap the pick to open the group again. */
-let sexOpen = false, markOpen = false;
-function chipsCollapseAll() { sexOpen = false; markOpen = false; }
+let sexOpen = false, markOpen = true;   // markings stay open (one tap); type only opens on demand
+function chipsCollapseAll() { sexOpen = false; markOpen = true; }
 function chipRowHome() { const r = document.querySelector('.mark-chips.dual'); if (r) r.scrollLeft = 0; }
 function fillSexChips() {
   const row = document.getElementById('recSexChips');
@@ -2075,7 +2075,7 @@ function confirmAddMark() {
   fillMarkSelect();
   document.getElementById('lotDesc').value = n;
   markSelectPrevValue = n;
-  markOpen = false;
+  markOpen = true;
   syncMarkChips();
   saveDraft();
 }
@@ -2099,7 +2099,7 @@ function pickMarkChip(v) {
   const sel = document.getElementById('lotDesc');
   if (!sel || sel.disabled) return;
   if (v === '__open__') { markOpen = true; sexOpen = false; fillSexChips(); syncMarkChips(); chipRowHome(); return; }
-  if (v !== '__add__') { sel.value = v; markOpen = false; }
+  if (v !== '__add__') sel.value = v;
   handleMarkChange(v);
   fillSexChips(); syncMarkChips(); chipRowHome();
 }
