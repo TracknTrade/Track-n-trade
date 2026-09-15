@@ -902,7 +902,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.56'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.57'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1939,10 +1939,20 @@ function sexEnabled(t) {
   if (!S.sexOn || typeof S.sexOn !== 'object') return true;
   return S.sexOn[t] !== false;
 }
+/* Type and marking groups collapse to just their current pick once chosen; tap the pick to open the group again. */
+let sexOpen = false, markOpen = false;
+function chipsCollapseAll() { sexOpen = false; markOpen = false; }
+function chipRowHome() { const r = document.querySelector('.mark-chips.dual'); if (r) r.scrollLeft = 0; }
 function fillSexChips() {
   const row = document.getElementById('recSexChips');
   if (!row) return;
   const cur = document.getElementById('lotSex').value;
+  if (!sexOpen) {
+    row.innerHTML = cur
+      ? '<button type="button" class="mark-chip on" data-v="__open__">'+xmlEsc(cur)+'</button>'
+      : '<button type="button" class="mark-chip add" data-v="__open__">Type</button>';
+    return;
+  }
   row.innerHTML = SEX_TYPES.filter(function(t){ return sexEnabled(t) || t === cur; }).map(function(t){
     return '<button type="button" class="mark-chip'+(t===cur?' on':'')+'" data-v="'+xmlEsc(t)+'">'+xmlEsc(t)+'</button>';
   }).join('');
@@ -1950,11 +1960,13 @@ function fillSexChips() {
 function pickSexChip(v) {
   const row = document.getElementById('recSexChips');
   if (row && row.classList.contains('disabled')) return;
+  if (v === '__open__') { sexOpen = true; markOpen = false; fillSexChips(); syncMarkChips(); chipRowHome(); return; }
   const inp = document.getElementById('lotSex');
   inp.value = (inp.value === v) ? '' : v;   // tap again to clear
   S.lastSex = inp.value;
   persist();
-  fillSexChips();
+  sexOpen = false; markOpen = true;         // done here — show the markings next
+  fillSexChips(); syncMarkChips(); chipRowHome();
   saveDraft();
 }
 function sexWord(l) { return (l.sex && SEX_WORDS[l.sex]) || 'hd'; }
@@ -2009,6 +2021,7 @@ function fillMarkSelect() {
   syncMarkChips();
 }
 function resetMarkSelect() {
+  chipsCollapseAll();
   removeTempMarkOption();
   const sel = document.getElementById('lotDesc');
   if (sel) sel.value = S.markings[0];
@@ -2044,6 +2057,7 @@ function confirmAddMark() {
   fillMarkSelect();
   document.getElementById('lotDesc').value = n;
   markSelectPrevValue = n;
+  markOpen = false;
   syncMarkChips();
   saveDraft();
 }
@@ -2052,18 +2066,24 @@ function syncMarkChips() {
   const row = document.getElementById('recMarkChips');
   if (!sel || !row) return;
   const cur = sel.value;
-  row.innerHTML = Array.from(sel.options).map(function(o){
-    const isAdd = o.value === '__add__';
-    return '<button type="button" class="mark-chip' + (isAdd ? ' add' : '') + (!isAdd && o.value === cur ? ' on' : '') + '" data-v="' + xmlEsc(o.value) + '">' + xmlEsc(isAdd ? '+ Add' : o.textContent) + '</button>';
-  }).join('');
+  if (!markOpen) {
+    const o = sel.options[sel.selectedIndex];
+    row.innerHTML = '<button type="button" class="mark-chip on" data-v="__open__">' + xmlEsc(o ? o.textContent : cur) + '</button>';
+  } else {
+    row.innerHTML = Array.from(sel.options).map(function(o){
+      const isAdd = o.value === '__add__';
+      return '<button type="button" class="mark-chip' + (isAdd ? ' add' : '') + (!isAdd && o.value === cur ? ' on' : '') + '" data-v="' + xmlEsc(o.value) + '">' + xmlEsc(isAdd ? '+ Add' : o.textContent) + '</button>';
+    }).join('');
+  }
   row.classList.toggle('disabled', !!sel.disabled);
 }
 function pickMarkChip(v) {
   const sel = document.getElementById('lotDesc');
   if (!sel || sel.disabled) return;
-  if (v !== '__add__') sel.value = v;
+  if (v === '__open__') { markOpen = true; sexOpen = false; fillSexChips(); syncMarkChips(); chipRowHome(); return; }
+  if (v !== '__add__') { sel.value = v; markOpen = false; }
   handleMarkChange(v);
-  syncMarkChips();
+  fillSexChips(); syncMarkChips(); chipRowHome();
 }
 function removeTempMarkOption() {
   const sel = document.getElementById('lotDesc');
@@ -2665,6 +2685,7 @@ function addLot() {
   document.getElementById('lotWt').value='';
   document.getElementById('lotPen').value='';
   resetMarkSelect();
+  fillSexChips();
   if (S.saleMode === 'prime') { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
   renderLots();
   trySyncQueue();
@@ -2815,6 +2836,7 @@ function editLot(id) {
   document.getElementById('lotWt').value = l.wt || '';
   document.getElementById('lotBuyer').value = l.client || '';
   document.getElementById('lotSex').value = l.sex || '';
+  chipsCollapseAll();
   fillSexChips();
   const descEl = document.getElementById('lotDesc');
   if (descEl) {
@@ -2856,8 +2878,8 @@ function cancelEditLot() {
   document.getElementById('lotPen').value = '';
   document.getElementById('lotBuyer').value = S.meClient || '';
   document.getElementById('lotSex').value = S.lastSex || '';
-  fillSexChips();
   resetMarkSelect();
+  fillSexChips();
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   recHighlight();
