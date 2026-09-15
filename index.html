@@ -227,6 +227,7 @@
       color: var(--tt-800); font-weight: 600; font-size: 13px; font-family: var(--font-ui);
     }
     .pin-actions button:disabled { opacity: .4; }
+    .tool-grp { font-size: 10px; font-weight: 700; color: var(--tt-800); text-transform: uppercase; letter-spacing: .1em; padding: 12px 0 2px; }
     .sub-toggles { padding-left: 16px; }
     .sub-toggles .toggle { padding: 9px 0; font-weight: 500; }
     .where-row { padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
@@ -560,7 +561,6 @@
 
   <header>
     <h1>Track n Trade</h1>
-    <p>Yards tool • Agency ready</p>
   </header>
 
   <main>
@@ -604,37 +604,6 @@
         </div>
         </div>
       </div>
-      <div id="blockRing" class="screen"><div class="watch">
-        <div class="title" style="text-align:center;color:#fff;">Sales watch</div>
-        <div class="grid-2">
-          <div><label>Weight</label><input id="wWt" inputmode="decimal"></div>
-          <div><label>$/Kg</label><input id="wKg" inputmode="decimal"></div>
-        </div>
-        <input type="hidden" id="wHd">
-        <div class="ring-row">
-          <div class="ring-btns">
-            <button type="button" onclick="logWatch('Buy')">Buy</button>
-          </div>
-          <div class="ring-wrap"><div class="ring" id="priceRing"></div><div class="ring-lines"></div></div>
-        </div>
-        <div id="watchList"></div>
-      </div></div>
-
-      <div id="blockWatchlist" class="screen"><div class="card">
-        <div class="title">Pen watchlist</div>
-        <p class="note">Walk the pens ahead of the sale, note your max price here, then come back once the sale catches up.</p>
-        <div class="grid-2">
-          <div><label>Pen</label><input id="wlPen" inputmode="numeric"></div>
-          <div><label>Head</label><input id="wlHd" inputmode="numeric"></div>
-        </div>
-        <div class="grid-2">
-          <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
-          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
-        </div>
-        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
-        <div id="watchlistCards" class="watchlist-cards"></div>
-      </div></div>
-
       <div class="screen" id="blockMarketTrend">
         <div class="card">
           <div class="title">Last market</div>
@@ -676,6 +645,37 @@
 
     <!-- RECORD -->
     <section id="pageRecord" class="hidden">
+      <div id="blockRing" class="screen"><div class="watch">
+        <div class="title" style="text-align:center;color:#fff;">Sales watch</div>
+        <div class="grid-2">
+          <div><label>Weight</label><input id="wWt" inputmode="decimal"></div>
+          <div><label>$/Kg</label><input id="wKg" inputmode="decimal"></div>
+        </div>
+        <input type="hidden" id="wHd">
+        <div class="ring-row">
+          <div class="ring-btns">
+            <button type="button" onclick="logWatch('Buy')">Buy</button>
+          </div>
+          <div class="ring-wrap"><div class="ring" id="priceRing"></div><div class="ring-lines"></div></div>
+        </div>
+        <div id="watchList"></div>
+      </div></div>
+
+      <div id="blockWatchlist" class="screen"><div class="card">
+        <div class="title">Pen watchlist</div>
+        <p class="note">Walk the pens ahead of the sale, note your max price here, then come back once the sale catches up.</p>
+        <div class="grid-2">
+          <div><label>Pen</label><input id="wlPen" inputmode="numeric"></div>
+          <div><label>Head</label><input id="wlHd" inputmode="numeric"></div>
+        </div>
+        <div class="grid-2">
+          <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
+          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
+        </div>
+        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
+        <div id="watchlistCards" class="watchlist-cards"></div>
+      </div></div>
+
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
           <div class="rec-top">
@@ -808,20 +808,24 @@
 
       <div class="card">
         <div class="title">Show or hide tools</div>
+        <p class="note">Switch off anything you don't use and it disappears from its page. Grouped by the tab it lives on.</p>
+        <div class="tool-grp">Sale</div>
         <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
+        <div class="toggle" onclick="flip('showAgist')"><span>Agistment cost calculator</span><div class="switch" id="sw_showAgist"><i></i></div></div>
+        <div class="tool-grp">Record</div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
-        <div class="toggle" onclick="flip('showRecorder')"><span>Purchase recorder <button type="button" class="info-btn" onclick="openToolInfo('showRecorder',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRecorder"><i></i></div></div>
         <div class="toggle" onclick="flip('showSex')"><span>Stock type chips <button type="button" class="info-btn" onclick="openToolInfo('showSex',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showSex"><i></i></div></div>
         <div id="sexTypeToggles" class="sub-toggles"></div>
+        <div class="tool-grp">Truck</div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
       </div>
 
       <div class="card">
         <div class="title">Buy indicator defaults</div>
-        <p class="note">Same fields as the Yards screen. Change them here and they become the starting numbers.</p>
+        <p class="note">Same fields as the Buy indicator on the Sale tab. Change them here and they become the starting numbers.</p>
         <div class="grid-2">
           <div><label>Target kg</label><input id="s_targetWt" inputmode="decimal"></div>
           <div><label>ADG kg/day</label><input id="s_adg" inputmode="decimal"></div>
@@ -867,7 +871,7 @@
 
       <div class="card">
         <div class="title">Livestock carriers</div>
-        <p class="note">Add trucking companies. These will be selectable on the Yards Tab</p>
+        <p class="note">Add trucking companies. You pick one on the Truck tab when sending lots.</p>
         <div id="carrierList"></div>
         <input id="newCarrierName" class="native" style="margin-top:8px;" placeholder="Carrier name">
         <div class="phone-row" style="margin-top:8px;">
@@ -891,7 +895,7 @@
 
       <div class="card">
         <div class="title">Buyer Way</div>
-        <p class="note">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Purchase Recorder, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. The short name is all that goes anywhere — the driver's text just reads "Drop-off JS:" with the map link, and the export shows the same.</p>
+        <p class="note">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Record tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. The short name is all that goes anywhere — the driver's text just reads "Drop-off JS:" with the map link, and the export shows the same.</p>
         <div id="clientChips"></div>
         <div class="grid-2">
           <input id="newClient" class="native" placeholder="Buyer way">
@@ -933,9 +937,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.74'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.75'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showMarketTrend: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
@@ -1207,7 +1211,10 @@ function showTab(name) {
   applyFeatures();
   if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
   if (name === 'truck') renderLots();
-  if (main) main.scrollTop = pageScroll[name] || 0;
+  if (main) {
+    if (name === 'record' && pageScroll[name] == null) scrollMainTo(document.getElementById('recSplit'), 'start');
+    else main.scrollTop = pageScroll[name] || 0;
+  }
 }
 function goRecorder() {
   showTab('record');
@@ -1232,12 +1239,12 @@ function applyFeatures() {
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
   document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
-  document.getElementById('blockRecorder').classList.toggle('hidden', !S.showRecorder);
+  document.getElementById('blockAgistCalc').classList.toggle('hidden', !S.showAgist);
   document.getElementById('blockText').classList.toggle('hidden', !S.showText);
 }
 
 function fillSettings() {
-  ['showIndicator','showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showRecorder','showText','showSex'].forEach(k => {
+  ['showIndicator','showMarketTrend','showTradeAnalysis','showAgist','showRing','showWatchlist','showText','showSex'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderSexToggles();
@@ -1456,7 +1463,7 @@ const TOOL_INFO = {
   },
   showWatchlist: {
     title: 'Pen watchlist',
-    body: "For walking the pens ahead of where the sale's up to. Note the pen number, head count, avg weight and your max $/hd for each one you're interested in — they sit here as cards until the sale reaches them. Mark a card Bought to send it straight into the Purchase recorder ready to finish off, or Not bought to drop it. Clears automatically when you start a new sale."
+    body: "For walking the pens ahead of where the sale's up to. Note the pen number, head count, avg weight and your max $/hd for each one you're interested in — they sit here as cards until the sale reaches them. Mark a card Bought to send it straight into the recorder ready to finish off, or Not bought to drop it. Clears automatically when you start a new sale."
   },
   showRecorder: {
     title: 'Purchase recorder',
