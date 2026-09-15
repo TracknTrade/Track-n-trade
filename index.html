@@ -280,8 +280,8 @@
 
     /* ── Recorder ───────────────────────────────────────────────────────── */
     .rec-split {
-      height: calc(100dvh - var(--header-h) - env(safe-area-inset-bottom, 0px));
-      max-height: calc(100dvh - var(--header-h) - env(safe-area-inset-bottom, 0px));
+      height: calc(100dvh - var(--header-h));
+      max-height: calc(100dvh - var(--header-h));
       display: flex; flex-direction: column; gap: 4px;
       scroll-snap-align: start; overflow: hidden;
       padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -318,10 +318,16 @@
     .mark-chip.add { border-style: dashed; color: var(--muted); }
     .mark-chips.disabled, .chip-group.disabled { opacity: .4; pointer-events: none; }
     .mark-chips.dual { align-items: center; scroll-snap-type: none; }
-    .grp { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+    .grp { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; position: relative; }
     .grp + .grp { border-left: 1.5px solid var(--line); padding-left: 10px; margin-left: 2px; }
     .grp.hidden { display: none; }
-    .grp-lbl { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); flex: 0 0 auto; }
+    /* Label stays pinned at the left edge while its chips slide under it; the next group's label takes over as it arrives. */
+    .grp-lbl {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); flex: 0 0 auto;
+      position: sticky; left: 0; z-index: 1; background: var(--card); padding: 12px 6px 12px 0;
+      box-shadow: 6px 0 6px -2px var(--card);
+    }
+    .grp + .grp .grp-lbl { left: 0; margin-left: -10px; padding-left: 10px; }
     .chip-group { display: flex; gap: 8px; flex: 0 0 auto; }
     @media (max-height: 720px) {
       .mark-strip { margin-top: 4px; }
@@ -896,7 +902,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.54'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.56'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
