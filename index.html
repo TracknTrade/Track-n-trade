@@ -940,7 +940,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.78'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.79'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1836,12 +1836,14 @@ function addToWatchlist() {
   const wt = parseFloat(document.getElementById('wlWt').value) || 0;
   const price = parseFloat(document.getElementById('wlPrice').value) || 0;
   if (!pen) return;
+  closeKp();
   penWatch.push({id: nextPenWatch++, pen, hd, wt, price});
   document.getElementById('wlPen').value = '';
   document.getElementById('wlHd').value = '';
   document.getElementById('wlWt').value = '';
   document.getElementById('wlPrice').value = '';
   renderWatchlist();
+  showToast('Pen ' + pen + ' added to watchlist');
 }
 function removeFromWatchlist(id) {
   penWatch = penWatch.filter(function(w){ return w.id !== id; });
@@ -1850,6 +1852,7 @@ function removeFromWatchlist(id) {
 function buyFromWatchlist(id) {
   const w = penWatch.find(function(x){ return x.id === id; });
   if (!w) return;
+  closeKp();
   penWatch = penWatch.filter(function(x){ return x.id !== id; });
   renderWatchlist();
   editingLotId = null;
