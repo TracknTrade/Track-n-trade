@@ -606,7 +606,7 @@
         </div>
         </div>
       </div>
-      <div class="screen" id="blockMarketTrend">
+      <div class="screen screen-tight" id="blockMarketTrend">
         <div class="card">
           <div class="title">Last market</div>
           <div class="grid-2">
@@ -620,10 +620,9 @@
         </div>
       </div>
 
-      <div class="screen" id="blockTradeAnalysis">
+      <div class="screen screen-tight" id="blockTradeAnalysis">
         <div class="title">Trade Analysis</div>
         <div id="weightClasses"></div>
-        <button class="btn btn-g" onclick="addWeight()">+ Add weight class</button>
       </div>
 
     </section>
@@ -801,17 +800,15 @@
       <div class="card">
         <div class="title">Buy indicator</div>
         <p class="note">Drives the Trade analysis on the Sale tab. Tap SAVE SETTINGS at the bottom to apply.</p>
+        <div class="mode-sw" id="sExitSw">
+          <button type="button" data-v="hd" onclick="setSExit('hd')">Last sale $/hd</button>
+          <button type="button" data-v="kg" onclick="setSExit('kg')">Expected $/kg</button>
+          <button type="button" data-v="fin" onclick="setSExit('fin')">Financed</button>
+        </div>
+        <input type="hidden" id="s_exitMode" value="hd">
         <div class="grid-2">
           <div><label>Target kg</label><input id="s_targetWt" inputmode="decimal"></div>
           <div><label>ADG kg/day</label><input id="s_adg" inputmode="decimal"></div>
-          <div>
-            <label>Exit mode</label>
-            <select id="s_exitMode" class="native">
-              <option value="hd">Last sale $/hd</option>
-              <option value="kg">Expected sale $/kg</option>
-              <option value="fin">Financed</option>
-            </select>
-          </div>
           <div><label>Last sale $/hd</label><input id="s_saleBench" inputmode="decimal"></div>
           <div><label>Expected sale $/kg</label><input id="s_saleKg" inputmode="decimal"></div>
           <div><label>Interest % p.a.</label><input id="s_interestRate" inputmode="decimal"></div>
@@ -828,6 +825,7 @@
           </div>
         </div>
         <p class="note">Set carry costs to No, if you know your desired gross margin/gross profit.</p>
+        <button class="btn btn-g" onclick="addWeight(); showToast('Weight class added to Trade analysis');">+ Add weight class</button>
       </div>
 
       <div class="card">
@@ -938,7 +936,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.84'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.85'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1255,6 +1253,7 @@ function fillSettings() {
     if (el) el.value = S[k];
   });
   document.getElementById('s_exitMode').value = (S.exitMode==='kg'||S.exitMode==='fin') ? S.exitMode : 'hd';
+  renderSExit();
   document.getElementById('s_useCarry').value = String(S.useCarry == 0 ? 0 : 1);
   document.getElementById('s_smsTail').value = S.smsTail || '';
   document.getElementById('s_licenseCode').value = S.licenseCode || '';
@@ -1307,6 +1306,14 @@ function flip(k) {
   if (k === 'showSex') renderSexToggles();
 }
 
+function setSExit(v) {
+  document.getElementById('s_exitMode').value = v;
+  renderSExit();
+}
+function renderSExit() {
+  const v = document.getElementById('s_exitMode').value;
+  Array.from(document.querySelectorAll('#sExitSw button')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === v); });
+}
 function saveSettings() {
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     S[k] = parseFloat(document.getElementById('s_'+k).value) || 0;
@@ -3513,6 +3520,7 @@ window.toggleCostInfo = toggleCostInfo;
 window.editLot = editLot;
 window.cancelEditLot = cancelEditLot;
 window.cancelEditTap = cancelEditTap;
+window.setSExit = setSExit;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
