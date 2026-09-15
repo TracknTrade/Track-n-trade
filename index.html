@@ -82,17 +82,17 @@
     /* ── Header ─────────────────────────────────────────────────────────── */
     header {
       background: var(--tt-900); color: #fff;
-      padding: 10px 12px 0;
+      padding: 6px 12px 0;
       position: sticky; top: 0; z-index: 90;
       display: flex; flex-direction: column;
     }
-    header h1 { font-size: 1.25rem; line-height: 1; padding: 6px 2px 12px; color: #fff; }
+    header h1 { font-size: 1.15rem; line-height: 1; padding: 4px 2px 8px; color: #fff; }
     header p { display: none; }
     .tabs { display: flex; gap: 6px; width: 100%; }
     .tab {
       flex: 1; background: rgba(255,255,255,.10); color: rgba(255,255,255,.72); border: none;
-      padding: 14px 8px; font-weight: 700; font-size: var(--fs-md);
-      border-radius: 12px 12px 0 0; min-height: 54px; font-family: var(--font-ui);
+      padding: 9px 8px; font-weight: 700; font-size: 15px;
+      border-radius: 10px 10px 0 0; min-height: 40px; font-family: var(--font-ui);
     }
     .tab.on { background: var(--bg); color: var(--tt-800); font-weight: 900; }
     @media (display-mode: browser), (display-mode: fullscreen) { body { padding-top: 0; } }
@@ -916,7 +916,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.60'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.61'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
