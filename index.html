@@ -313,10 +313,10 @@
     .rec-top { flex: 1 1 55%; min-height: 0; display: flex; flex-direction: column; }
     .rec-top .card { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 4px; padding: 10px !important; }
     .rec-bot {
-      flex: 1 1 45%; min-height: 0; background: var(--kp-ground); color: #fff;
+      flex: 1 1 45%; min-height: 0; overflow: hidden; background: var(--kp-ground); color: #fff;
       border-radius: var(--r-lg); padding: 10px; display: flex; flex-direction: column;
     }
-    .rec-fields { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
+    .rec-fields { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; flex: 1; min-height: 0; }
     .rec-fields > div { display: flex; flex-direction: column; min-height: 0; }
     .rec-fields .wide { grid-column: 1 / -1; }
     .rec-fields label { margin-bottom: 3px; }
@@ -404,10 +404,10 @@
 
     /* ── Keypads ────────────────────────────────────────────────────────── */
     #numPad { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-    .rec-pad { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 8px; flex: 1; min-height: 0; }
+    .rec-pad { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 8px; flex: 1; min-height: 0; }
     .rec-pad button {
       background: var(--kp-key); color: #fff; border: none; border-radius: 12px;
-      font-size: clamp(26px, 8vw, 44px); font-weight: 600; min-height: 0; height: 100%; padding: 0;
+      font-size: clamp(26px, 8vw, 44px); font-weight: 600; min-height: 0; height: 100%; padding: 0; line-height: 1; overflow: hidden;
       font-variant-numeric: tabular-nums;
     }
     .rec-pad button.alt { background: var(--kp-alt); font-size: clamp(20px, 6vw, 32px); }
@@ -940,7 +940,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.79'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.80'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
