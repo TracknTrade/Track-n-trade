@@ -113,6 +113,8 @@
     }
     .tab.on { background: var(--bg); color: var(--tt-800); font-weight: 900; }
     @media (display-mode: browser), (display-mode: fullscreen) { body { padding-top: 0; } }
+    /* In Safari itself the browser's own toolbar already fills the bottom strip, so don't pad for the home indicator too. */
+    @media (display-mode: browser) { :root { --nav-safe: 0px; } }
 
     /* ── Layout ─────────────────────────────────────────────────────────── */
     main {
@@ -926,7 +928,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.67'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.68'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
