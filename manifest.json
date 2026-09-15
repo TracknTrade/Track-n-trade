@@ -1,0 +1,10 @@
+{
+  "name": "Track n Trade",
+  "short_name": "Track n Trade",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafafa",
+  "theme_color": "#052e23"
+}

@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Track n Trade" />
   <meta name="theme-color" content="#052e23" />
+  <link rel="manifest" href="manifest.json" />
   <meta name="format-detection" content="telephone=no" />
   <title>Track n Trade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +18,7 @@
     /* ── Tokens — Track n Trade style guide (product context) ───────────── */
     :root {
       --header-h: 90px;
-      --nav-h: 50px;
+      --nav-h: 58px;
       --nav-safe: max(0px, calc(env(safe-area-inset-bottom, 0px) - 22px));
       /* neutrals */
       --ink: #0a0a0b;
@@ -93,16 +94,16 @@
     /* Bottom tab bar — matches the concept mockup: white, hairline top, active item on a mint pill */
     .bnav {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 75;
-      height: calc(var(--nav-h) + var(--nav-safe)); padding: 3px 8px calc(3px + var(--nav-safe));
+      height: calc(var(--nav-h) + var(--nav-safe)); padding: 4px 8px calc(4px + var(--nav-safe));
       background: var(--card); border-top: 1px solid var(--line);
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
     }
     .bnav button {
       background: none; border: none; color: var(--ink); opacity: .45; font-family: var(--font-ui);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-      font-size: 10px; font-weight: 700; padding: 3px 0; border-radius: 10px; min-height: 44px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      font-size: 11px; font-weight: 700; padding: 3px 0; border-radius: 12px; min-height: 50px;
     }
-    .bnav button svg { width: 20px; height: 20px; }
+    .bnav button svg { width: 24px; height: 24px; }
     .bnav button.on { opacity: 1; background: var(--tt-50); color: var(--tt-800); }
     body.kp-open .bnav { display: none; }
     .tabs { display: flex; gap: 6px; width: 100%; }
@@ -929,7 +930,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.70'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.71'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3348,7 +3349,7 @@ function init() {
   recHighlight();
   try { const t = localStorage.getItem('tnt_tab'); if (t && t !== 'sale') showTab(t); } catch(e) {}
   const vn = document.getElementById('verNote');
-  if (vn) vn.textContent = 'Version ' + APP_VERSION + (matchMedia('(display-mode: standalone)').matches ? ' · home screen' : ' · browser');
+  if (vn) vn.textContent = 'Version ' + APP_VERSION + (matchMedia('(display-mode: standalone)').matches ? ' · home screen' : ' · browser') + ' · view ' + window.innerHeight + ' of ' + screen.height + ' · inset ' + (getComputedStyle(document.documentElement).getPropertyValue('--nav-safe') || '').trim();
   const sc = document.getElementById('recSexChips');
   if (sc && !sc.dataset.bound) {
     sc.dataset.bound = '1';
