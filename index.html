@@ -321,6 +321,8 @@
     .grp { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; position: relative; }
     .grp + .grp { border-left: 1.5px solid var(--line); padding-left: 10px; margin-left: 2px; }
     .grp.hidden { display: none; }
+    .grp.hidden + .grp { border-left: none; padding-left: 0; margin-left: 0; }
+    .grp.hidden + .grp .grp-lbl { margin-left: 0; padding-left: 0; }
     /* Label stays pinned at the left edge while its chips slide under it; the next group's label takes over as it arrives. */
     .grp-lbl {
       font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); flex: 0 0 auto;
@@ -914,7 +916,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.58'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.59'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1224,9 +1226,13 @@ function fillCalcsInputs() {
   });
 }
 
-function applyFeatures() {
+/* Type chips only appear while a lot is being edited from the lot summary; fresh entry stays pen/price/head/weight. */
+function updateSexStrip() {
   const ss = document.getElementById('sexStrip');
-  if (ss) ss.classList.toggle('hidden', !S.showSex);
+  if (ss) ss.classList.toggle('hidden', !S.showSex || editingLotId == null);
+}
+function applyFeatures() {
+  updateSexStrip();
   const tab = document.getElementById('pageCalcs').classList.contains('hidden') ? 'yards' : 'calcs';
   document.getElementById('blockIndicator').classList.toggle('hidden', !movableVisible('indicatorWhere', tab));
   document.getElementById('blockMarketTrend').classList.toggle('hidden', !movableVisible('marketWhere', tab));
@@ -1446,7 +1452,7 @@ const TOOL_INFO = {
   },
   showSex: {
     title: 'Stock type chips',
-    body: "A row of one-tap chips in the Purchase recorder for what the pen is — steers, heifers, cows, cow &amp; calf units, PTIC cows, bulls or mixed. Never required. Remembers your last pick, so it's one tap when the sale moves from steers to heifers and nothing the rest of the time. Turn off the types you never buy to keep the row short, or the whole row if you don't want it."
+    body: "One-tap chips for what a pen is — steers, heifers, cows, cow &amp; calf units, PTIC cows, bulls or mixed. They stay out of the way while you're recording; tap a lot in the lot summary to edit it and the TYPE chips appear so you can add it then. Never required. Turn off the types you never buy to keep the row short, or the whole thing if you don't want it."
   },
   showMarketTrend: {
     title: 'Last market',
@@ -1879,7 +1885,7 @@ function renderWatchlist() {
 
 
 const ALL_FIELDS = ['lotPrice','lotHd','lotPen','lotWt'];
-const DRAFT_FIELDS = ALL_FIELDS.concat(['lotBuyer','lotSex']);
+const DRAFT_FIELDS = ALL_FIELDS.concat(['lotBuyer']);
 let recOrder = ALL_FIELDS.slice();
 let recStep = 0;
 const DRAFT_KEY = 'cbpro_draft';
@@ -2728,7 +2734,9 @@ function addLot() {
   document.getElementById('lotWt').value='';
   document.getElementById('lotPen').value='';
   resetMarkSelect();
+  document.getElementById('lotSex').value = '';
   fillSexChips();
+  updateSexStrip();
   if (S.saleMode === 'prime') { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
   renderLots();
   trySyncQueue();
@@ -2881,6 +2889,7 @@ function editLot(id) {
   document.getElementById('lotSex').value = l.sex || '';
   chipsCollapseAll();
   fillSexChips();
+  updateSexStrip();
   const descEl = document.getElementById('lotDesc');
   if (descEl) {
     const d = l.desc || S.markings[0];
@@ -2936,9 +2945,10 @@ function cancelEditLot() {
   document.getElementById('lotWt').value = '';
   document.getElementById('lotPen').value = '';
   document.getElementById('lotBuyer').value = S.meClient || '';
-  document.getElementById('lotSex').value = S.lastSex || '';
+  document.getElementById('lotSex').value = '';
   resetMarkSelect();
   fillSexChips();
+  updateSexStrip();
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   recHighlight();
@@ -3329,7 +3339,7 @@ function init() {
   applyRecorderMode();
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
-  document.getElementById('lotSex').value = S.lastSex || '';
+  document.getElementById('lotSex').value = '';
   fillSexChips();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); updateCamButtons(); });
