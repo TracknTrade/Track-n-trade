@@ -611,7 +611,6 @@
           <div class="title">Last market</div>
           <div class="grid-2">
             <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
-            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
           </div>
           <div class="trend-row">
             <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
@@ -936,7 +935,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.85'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.86'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1463,7 +1462,7 @@ const TOOL_INFO = {
   },
   showMarketTrend: {
     title: 'Last market',
-    body: "Type in the last market's Avg $/kg and Avg kg once you know them, and this compares it to what you're actually paying today. Green means you're buying above last market, red means you're paying below it."
+    body: "Type in the last market's Avg $/kg once you know it, and this compares it to what you're actually paying today. Green means you're buying above last market, red means you're paying below it."
   },
   showRing: {
     title: 'Sales watch ring',
@@ -2832,12 +2831,7 @@ function saveMarketAvgKg() {
   persist();
   updateMarketTrend();
 }
-function saveMarketAvgWt() {
-  S.mktAvgWt = parseFloat(document.getElementById('mktAvgWt').value) || 0;
-  persist();
-}
 document.getElementById('mktAvgKg').addEventListener('input', saveMarketAvgKg);
-document.getElementById('mktAvgWt').addEventListener('input', saveMarketAvgWt);
 
 function renderLots() {
   persistLots();
@@ -3393,7 +3387,7 @@ function init() {
   load();
   loadLots();
   syncHeaderH();
-  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','mktAvgKg','mktAvgWt'].forEach(k => {
+  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','mktAvgKg'].forEach(k => {
     const el = document.getElementById(k);
     if (el) el.value = S[k] || '';
   });
