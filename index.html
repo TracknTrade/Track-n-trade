@@ -931,7 +931,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.72'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.73'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1171,6 +1171,8 @@ function syncAppH() {
   if (vv && vv.height) h = Math.max(h, Math.round(vv.height + vv.offsetTop));
   if (document.documentElement.clientHeight) h = Math.max(h, document.documentElement.clientHeight);
   if (h > 0) document.documentElement.style.setProperty('--app-h', h + 'px');
+  // If the system has already stopped the window short of the screen edge, it is handling the home indicator itself.
+  if (screen && screen.height && h < screen.height - 20) document.documentElement.style.setProperty('--nav-safe', '0px');
 }
 window.addEventListener('resize', function(){ syncHeaderH(); syncAppH(); });
 window.addEventListener('orientationchange', function(){ syncHeaderH(); syncAppH(); });
