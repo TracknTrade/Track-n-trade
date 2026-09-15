@@ -196,6 +196,17 @@
     .lot { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); color: var(--ink-2); }
     .lot b { color: var(--ink); }
     .toggle { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
+    .pin-row { padding: 10px 0; border-bottom: 1px solid var(--line-2); }
+    .pin-row:last-child { border-bottom: none; }
+    .pin-name { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 6px; }
+    .pin-row input { margin-top: 0; font-size: 14px; }
+    .pin-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .pin-actions button {
+      flex: 1; min-height: 40px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper);
+      color: var(--tt-800); font-weight: 600; font-size: 13px; font-family: var(--font-ui);
+    }
+    .sub-toggles { padding-left: 16px; }
+    .sub-toggles .toggle { padding: 9px 0; font-weight: 500; }
     .where-row { padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
     .where-sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
     .where-sw button {
@@ -274,10 +285,10 @@
       scroll-snap-align: start; overflow: hidden;
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-    .rec-top { flex: 1 1 55%; min-height: 0; display: flex; flex-direction: column; }
+    .rec-top { flex: 1 1 60%; min-height: 0; display: flex; flex-direction: column; }
     .rec-top .card { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 4px; padding: 10px !important; }
     .rec-bot {
-      flex: 1 1 45%; min-height: 0; background: var(--kp-ground); color: #fff;
+      flex: 1 1 40%; min-height: 0; background: var(--kp-ground); color: #fff;
       border-radius: var(--r-lg); padding: 10px; display: flex; flex-direction: column;
     }
     .rec-fields { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
@@ -604,6 +615,11 @@
                 <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
                 <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
               </div>
+              <div class="mark-strip" id="sexStrip">
+                <label>TYPE</label>
+                <div class="mark-chips" id="recSexChips"></div>
+                <input id="lotSex" class="rec-field native visually-hidden" readonly tabindex="-1" aria-hidden="true">
+              </div>
               <div class="mark-strip">
                 <label>BUYER-WAY</label>
                 <div class="mark-chips" id="recBuyerChips"></div>
@@ -764,6 +780,8 @@
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
         <div class="toggle" onclick="flip('showRecorder')"><span>Purchase recorder <button type="button" class="info-btn" onclick="openToolInfo('showRecorder',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRecorder"><i></i></div></div>
+        <div class="toggle" onclick="flip('showSex')"><span>Stock type chips <button type="button" class="info-btn" onclick="openToolInfo('showSex',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showSex"><i></i></div></div>
+        <div id="sexTypeToggles" class="sub-toggles"></div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
       </div>
 
@@ -848,6 +866,13 @@
       </div>
 
       <div class="card">
+        <div class="title">Drop-off pins for drivers</div>
+        <p class="note">A map link for each buyer way's ramp. It goes into the text to the carrier so the driver can tap it and navigate straight to the unloading point. Stand at the ramp and tap <b>Use my location</b>, or paste a Google Maps link.</p>
+        <div id="pinList"></div>
+        <p class="note" id="pinStatus"></p>
+      </div>
+
+      <div class="card">
         <div class="title">Markings</div>
         <p class="note">Paint-mark options shown on the Purchase recorder, like Shoulder, Loin, Rump, Tail — or No Mark by default. Add more here, or on the fly from the recorder.</p>
         <div id="markChips"></div>
@@ -866,9 +891,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.51'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.53'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  indicatorWhere: 'both', marketWhere: 'calcs', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
@@ -1063,7 +1088,7 @@ function syncLotToSheet(lot) {
       id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
       pen: lot.pen, hd: lot.hd, wt: lot.wt,
       priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
-      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc
+      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || ''
     })
   });
 }
@@ -1177,6 +1202,8 @@ function fillCalcsInputs() {
 }
 
 function applyFeatures() {
+  const ss = document.getElementById('sexStrip');
+  if (ss) ss.classList.toggle('hidden', !S.showSex);
   const tab = document.getElementById('pageCalcs').classList.contains('hidden') ? 'yards' : 'calcs';
   document.getElementById('blockIndicator').classList.toggle('hidden', !movableVisible('indicatorWhere', tab));
   document.getElementById('blockMarketTrend').classList.toggle('hidden', !movableVisible('marketWhere', tab));
@@ -1188,10 +1215,12 @@ function applyFeatures() {
 }
 
 function fillSettings() {
-  ['showTradeAnalysis','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
+  ['showTradeAnalysis','showRing','showWatchlist','showRecorder','showText','showSex'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderWhere();
+  renderSexToggles();
+  renderPins();
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     const el = document.getElementById('s_'+k);
     if (el) el.value = S[k];
@@ -1246,6 +1275,7 @@ function flip(k) {
   S[k] = !S[k];
   document.getElementById('sw_'+k).classList.toggle('on', S[k]);
   persist();
+  if (k === 'showSex') renderSexToggles();
 }
 
 function saveSettings() {
@@ -1292,13 +1322,67 @@ function addClient() {
   const n = (document.getElementById('newClient').value || '').trim();
   if (!n || S.clients.indexOf(n) >= 0) return;
   S.clients.push(n); document.getElementById('newClient').value = '';
-  persist(); renderChips(); fillWho();
+  persist(); renderChips(); fillWho(); renderPins();
 }
 function delClient(n) {
   if (S.clients.length <= 1) { alert('Add another buyer way first — there needs to be at least one.'); return; }
   S.clients = S.clients.filter(x => x !== n);
   if (S.meClient === n) S.meClient = S.clients[0];
-  persist(); renderChips(); fillWho();
+  setPin(n, '');
+  persist(); renderChips(); fillWho(); renderPins();
+}
+/* drop-off pins (one map link per buyer way) */
+function pinFor(name) { return (S.pins && S.pins[name]) || ''; }
+function setPin(name, url) {
+  if (!S.pins || typeof S.pins !== 'object') S.pins = {};
+  url = (url || '').trim();
+  if (url) S.pins[name] = url; else delete S.pins[name];
+  persist();
+}
+function renderPins() {
+  const box = document.getElementById('pinList');
+  if (!box) return;
+  box.innerHTML = (S.clients || []).map(function(c, i) {
+    const url = pinFor(c);
+    return '<div class="pin-row">'
+      + '<div class="pin-name"><span>' + xmlEsc(c) + '</span>' + (url ? '<span class="pill pill-ok">Pin set</span>' : '<span class="pill pill-muted">No pin</span>') + '</div>'
+      + '<input class="native" data-pin="' + i + '" placeholder="Paste a Google Maps link" value="' + xmlEsc(url).replace(/"/g, '&quot;') + '">'
+      + '<div class="pin-actions">'
+      + '<button type="button" data-act="gps" data-pin="' + i + '">Use my location</button>'
+      + '<button type="button" data-act="open" data-pin="' + i + '"' + (url ? '' : ' disabled') + '>Open</button>'
+      + '<button type="button" data-act="clear" data-pin="' + i + '"' + (url ? '' : ' disabled') + '>Clear</button>'
+      + '</div></div>';
+  }).join('');
+  if (!box.dataset.bound) {
+    box.dataset.bound = '1';
+    box.addEventListener('change', function(e) {
+      const inp = e.target.closest('input[data-pin]');
+      if (!inp) return;
+      setPin(S.clients[+inp.dataset.pin], inp.value);
+      renderPins();
+    });
+    box.addEventListener('click', function(e) {
+      const b = e.target.closest('button[data-act]');
+      if (!b) return;
+      const name = S.clients[+b.dataset.pin];
+      if (b.dataset.act === 'gps') pinFromGps(name);
+      if (b.dataset.act === 'open') { const u = pinFor(name); if (u) window.open(u, '_blank'); }
+      if (b.dataset.act === 'clear') { setPin(name, ''); renderPins(); }
+    });
+  }
+}
+function pinFromGps(name) {
+  const st = document.getElementById('pinStatus');
+  if (!navigator.geolocation) { if (st) st.textContent = 'This phone will not share its location with the app.'; return; }
+  if (st) st.textContent = 'Getting your location…';
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
+    setPin(name, 'https://maps.google.com/?q=' + lat + ',' + lng);
+    renderPins();
+    if (st) st.textContent = 'Pin saved for ' + name + ' (accurate to about ' + Math.round(pos.coords.accuracy) + ' m).';
+  }, function(err) {
+    if (st) st.textContent = 'Could not get a location — check Location Services is allowed for Safari/Chrome, then try again.';
+  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
 }
 function renderMarkChips() {
   const box = document.getElementById('markChips');
@@ -1336,6 +1420,10 @@ const TOOL_INFO = {
   showTradeAnalysis: {
     title: 'Trade analysis',
     body: "Shows how a purchase plays out over time — days on feed, expected sale value, cost of carry, and net return — for one or more weight classes side by side. Handy for comparing a few buying scenarios before you commit."
+  },
+  showSex: {
+    title: 'Stock type chips',
+    body: "A row of one-tap chips in the Purchase recorder for what the pen is — steers, heifers, cows, cow &amp; calf units, PTIC cows, bulls or mixed. Never required. Remembers your last pick, so it's one tap when the sale moves from steers to heifers and nothing the rest of the time. Turn off the types you never buy to keep the row short, or the whole row if you don't want it."
   },
   showMarketTrend: {
     title: 'Last market',
@@ -1768,7 +1856,7 @@ function renderWatchlist() {
 
 
 const ALL_FIELDS = ['lotPrice','lotHd','lotPen','lotWt'];
-const DRAFT_FIELDS = ALL_FIELDS.concat(['lotBuyer']);
+const DRAFT_FIELDS = ALL_FIELDS.concat(['lotBuyer','lotSex']);
 let recOrder = ALL_FIELDS.slice();
 let recStep = 0;
 const DRAFT_KEY = 'cbpro_draft';
@@ -1827,8 +1915,52 @@ function pickBuyerChip(v) {
   if (v === '__add__') openAddBuyer(); else pickBuyer(v);
 }
 function setBuyerChipsLocked(locked) {
-  const row = document.getElementById('recBuyerChips');
-  if (row) row.classList.toggle('disabled', !!locked);
+  ['recBuyerChips','recSexChips'].forEach(function(id){
+    const row = document.getElementById(id);
+    if (row) row.classList.toggle('disabled', !!locked);
+  });
+}
+
+/* stock type (sex) chips */
+const SEX_TYPES = ['Steer','Heifer','Cow','C&C','PTIC','Bull','Mixed'];
+const SEX_WORDS = { 'Steer':'steers', 'Heifer':'heifers', 'Cow':'cows', 'C&C':'cow & calf units', 'PTIC':'PTIC cows', 'Bull':'bulls', 'Mixed':'mixed hd' };
+function sexEnabled(t) {
+  if (!S.sexOn || typeof S.sexOn !== 'object') return true;
+  return S.sexOn[t] !== false;
+}
+function fillSexChips() {
+  const row = document.getElementById('recSexChips');
+  if (!row) return;
+  const cur = document.getElementById('lotSex').value;
+  row.innerHTML = SEX_TYPES.filter(function(t){ return sexEnabled(t) || t === cur; }).map(function(t){
+    return '<button type="button" class="mark-chip'+(t===cur?' on':'')+'" data-v="'+xmlEsc(t)+'">'+xmlEsc(t)+'</button>';
+  }).join('');
+}
+function pickSexChip(v) {
+  const row = document.getElementById('recSexChips');
+  if (row && row.classList.contains('disabled')) return;
+  const inp = document.getElementById('lotSex');
+  inp.value = (inp.value === v) ? '' : v;   // tap again to clear
+  S.lastSex = inp.value;
+  persist();
+  fillSexChips();
+  saveDraft();
+}
+function sexWord(l) { return (l.sex && SEX_WORDS[l.sex]) || 'hd'; }
+function renderSexToggles() {
+  const box = document.getElementById('sexTypeToggles');
+  if (!box) return;
+  box.classList.toggle('hidden', !S.showSex);
+  box.innerHTML = SEX_TYPES.map(function(t){
+    return '<div class="toggle" onclick="flipSex(\''+t.replace(/&/g,'&amp;')+'\')"><span>'+xmlEsc(t)+'</span><div class="switch'+(sexEnabled(t)?' on':'')+'"><i></i></div></div>';
+  }).join('');
+}
+function flipSex(t) {
+  if (!S.sexOn || typeof S.sexOn !== 'object') { S.sexOn = {}; SEX_TYPES.forEach(function(x){ S.sexOn[x] = true; }); }
+  S.sexOn[t] = !sexEnabled(t);
+  persist();
+  renderSexToggles();
+  fillSexChips();
 }
 function pickBuyer(name) {
   document.getElementById('lotBuyer').value = name;
@@ -2494,19 +2626,20 @@ function addLot() {
   if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need '+(priceUnit==='kg'?'$/kg':'$/hd')+' and pen.'; return false; }
   const desc = descEl ? descEl.value : '';
   const client = document.getElementById('lotBuyer').value || S.meClient;
+  const sex = document.getElementById('lotSex').value || '';
   if (editingLotId != null) {
     const existingLot = lots.find(function(x){ return x.id === editingLotId; });
     if (existingLot) {
       existingLot.price = price; existingLot.hd = hd; existingLot.wt = wt;
       existingLot.pen = pen; existingLot.priceUnit = priceUnit;
-      existingLot.desc = desc; existingLot.client = client;
+      existingLot.desc = desc; existingLot.client = client; existingLot.sex = sex;
       existingLot.synced = false;
     }
     editingLotId = null;
   } else {
     const newLot = {
       id: nextLot++, price, hd, wt, pen, priceUnit,
-      desc,
+      desc, sex,
       agent: S.meAgent, client,
       sale: document.getElementById('saleName').value,
       yard: document.getElementById('pickupLoc').value,
@@ -2647,7 +2780,7 @@ function renderLots() {
       return '<tr class="'+(l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
         + '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>'
         + '<td class="c-thumb">'+thumb+'</td>'
-        + '<td>'+(l.pen||'—')+(l.desc ? '<span class="sub">'+xmlEsc(l.desc)+'</span>' : '')+incomplete+'</td>'
+        + '<td>'+(l.pen||'—')+((l.sex||l.desc) ? '<span class="sub">'+xmlEsc([l.sex,l.desc].filter(Boolean).join(' · '))+'</span>' : '')+incomplete+'</td>'
         + '<td>'+(l.hd||'—')+'</td>'
         + '<td>'+(l.wt||'—')+'</td>'
         + '<td>'+((l.hd&&l.wt) ? Math.round(l.hd*l.wt).toLocaleString() : '—')+'</td>'
@@ -2672,6 +2805,8 @@ function editLot(id) {
   document.getElementById('lotHd').value = l.hd || '';
   document.getElementById('lotWt').value = l.wt || '';
   document.getElementById('lotBuyer').value = l.client || '';
+  document.getElementById('lotSex').value = l.sex || '';
+  fillSexChips();
   const descEl = document.getElementById('lotDesc');
   if (descEl) {
     const d = l.desc || S.markings[0];
@@ -2711,6 +2846,8 @@ function cancelEditLot() {
   document.getElementById('lotWt').value = '';
   document.getElementById('lotPen').value = '';
   document.getElementById('lotBuyer').value = S.meClient || '';
+  document.getElementById('lotSex').value = S.lastSex || '';
+  fillSexChips();
   resetMarkSelect();
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
@@ -2789,8 +2926,17 @@ function pickupMessage(list) {
   lines.push('');
   list.forEach(l => {
     const live = Math.round(l.hd * l.wt);
-    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' hd @ '+l.wt+' kg = '+live.toLocaleString()+' kg' + (l.desc ? ' — '+l.desc : ''));
+    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' '+sexWord(l)+' @ '+l.wt+' kg = '+live.toLocaleString()+' kg' + (l.desc ? ' — '+l.desc : ''));
   });
+  const ways = [];
+  list.forEach(l => { const k = l.client || 'Self'; if (ways.indexOf(k) < 0) ways.push(k); });
+  const pinned = ways.filter(function(w){ return !!pinFor(w); });
+  if (pinned.length) {
+    lines.push('');
+    pinned.forEach(function(w) {
+      lines.push((ways.length > 1 ? 'Drop-off ' + w + ': ' : 'Drop-off: ') + pinFor(w));
+    });
+  }
   lines.push('');
   lines.push(S.smsTail || '');
   return lines.join('\n');
@@ -3003,12 +3149,12 @@ function buildXlsxBlob(sheets){
 }
 
 function exportExcel() {
-  const headers = ['Date','Sale','Yard','Pen','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
+  const headers = ['Date','Sale','Yard','Pen','Type','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
   const lotRows = [headers];
   lots.forEach(l => {
     lotRows.push([
       (l.t||'').slice(0,16).replace('T',' '),
-      l.sale||'', l.yard||'', l.pen||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
+      l.sale||'', l.yard||'', l.pen||'', l.sex||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
       Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
     ]);
   });
@@ -3093,11 +3239,18 @@ function init() {
   applyRecorderMode();
   fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
+  document.getElementById('lotSex').value = S.lastSex || '';
+  fillSexChips();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); updateCamButtons(); });
   trySyncQueue();
   restoreDraft();
   recHighlight();
+  const sc = document.getElementById('recSexChips');
+  if (sc && !sc.dataset.bound) {
+    sc.dataset.bound = '1';
+    sc.addEventListener('click', function(e){ const b = e.target.closest('.mark-chip'); if (b) pickSexChip(b.getAttribute('data-v')); });
+  }
   const bc = document.getElementById('recBuyerChips');
   if (bc && !bc.dataset.bound) {
     bc.dataset.bound = '1';
@@ -3182,6 +3335,7 @@ window.syncCarrierPhone = syncCarrierPhone;
 window.closeKp = closeKp;
 window.recNext = recNext;
 window.pickBuyer = pickBuyer;
+window.flipSex = flipSex;
 window.openAddBuyer = openAddBuyer;
 window.closeAddBuyerModal = closeAddBuyerModal;
 window.confirmAddBuyer = confirmAddBuyer;
