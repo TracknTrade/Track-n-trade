@@ -788,10 +788,10 @@
       <div class="card">
         <div class="title">Show or hide tools</div>
         <p class="note">Switch off anything you don't use and it disappears from its page. Grouped by the tab it lives on.</p>
-        <div class="tool-grp">Sale</div>
+        <div class="tool-grp">Tools</div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
-        <div class="tool-grp">Record</div>
+        <div class="tool-grp">Sale</div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
         <div class="toggle" onclick="flip('showSex')"><span>Stock type chips <button type="button" class="info-btn" onclick="openToolInfo('showSex',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showSex"><i></i></div></div>
@@ -802,7 +802,7 @@
 
       <div class="card">
         <div class="title">Buy indicator</div>
-        <p class="note">Drives the Trade analysis on the Sale tab. Tap SAVE SETTINGS at the bottom to apply.</p>
+        <p class="note">Drives the Trade analysis on the Tools tab. Tap SAVE SETTINGS at the bottom to apply.</p>
         <div class="mode-sw" id="sExitSw">
           <button type="button" data-v="hd" onclick="setSExit('hd')">Last sale $/hd</button>
           <button type="button" data-v="kg" onclick="setSExit('kg')">Expected $/kg</button>
@@ -890,7 +890,7 @@
 
       <div class="card">
         <div class="title">Buyer Way</div>
-        <p class="note">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Record tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. The short name is all that goes anywhere — the driver's text just reads "Drop-off JS:" with the map link, and the export shows the same.</p>
+        <p class="note">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. The short name is all that goes anywhere — the driver's text just reads "Drop-off JS:" with the map link, and the export shows the same.</p>
         <div id="clientChips"></div>
         <div class="grid-2">
           <input id="newClient" class="native" placeholder="Buyer way">
@@ -928,8 +928,8 @@
   </main>
 
   <nav class="bnav" id="bnav" aria-label="Main">
-    <button type="button" id="nav_sale" class="on" onclick="showTab('sale')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg><span>Sale</span></button>
-    <button type="button" id="nav_record" onclick="showTab('record')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg><span>Record</span></button>
+    <button type="button" id="nav_sale" class="on" onclick="showTab('sale')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Tools</span></button>
+    <button type="button" id="nav_record" onclick="showTab('record')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Sale</span></button>
     <button type="button" id="nav_truck" onclick="showTab('truck')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Truck</span></button>
     <button type="button" id="nav_setup" onclick="showTab('setup')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Setup</span></button>
   </nav>
@@ -939,7 +939,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.87'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.88'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
