@@ -940,7 +940,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.80'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.81'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3439,6 +3439,12 @@ function init() {
   ALL_FIELDS.forEach(function(id) {
     const el = document.getElementById(id);
     if (!el) return;
+    // These boxes are driven by the on-screen keypad, never the system keyboard. Stop iOS from focusing
+    // them on tap — a focused box gets scrolled "into view", which shoves the recorder and hides the SAVE row.
+    el.setAttribute('inputmode', 'none');
+    el.setAttribute('tabindex', '-1');
+    el.addEventListener('mousedown', function(e){ e.preventDefault(); });
+    el.addEventListener('focus', function(){ el.blur(); });
     el.addEventListener('click', function(){
       const primeMode = S.saleMode === 'prime';
       if (primeMode && primeFieldsLocked()) return;
