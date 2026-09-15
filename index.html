@@ -286,10 +286,10 @@
       scroll-snap-align: start; overflow: hidden;
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-    .rec-top { flex: 1 1 60%; min-height: 0; display: flex; flex-direction: column; }
+    .rec-top { flex: 1 1 55%; min-height: 0; display: flex; flex-direction: column; }
     .rec-top .card { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 4px; padding: 10px !important; }
     .rec-bot {
-      flex: 1 1 40%; min-height: 0; background: var(--kp-ground); color: #fff;
+      flex: 1 1 45%; min-height: 0; background: var(--kp-ground); color: #fff;
       border-radius: var(--r-lg); padding: 10px; display: flex; flex-direction: column;
     }
     .rec-fields { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
@@ -316,7 +316,13 @@
     }
     .mark-chip.on { background: var(--tt-800); border-color: var(--tt-800); color: #fff; }
     .mark-chip.add { border-style: dashed; color: var(--muted); }
-    .mark-chips.disabled { opacity: .4; pointer-events: none; }
+    .mark-chips.disabled, .chip-group.disabled { opacity: .4; pointer-events: none; }
+    .mark-chips.dual { align-items: center; scroll-snap-type: none; }
+    .grp { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+    .grp + .grp { border-left: 1.5px solid var(--line); padding-left: 10px; margin-left: 2px; }
+    .grp.hidden { display: none; }
+    .grp-lbl { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); flex: 0 0 auto; }
+    .chip-group { display: flex; gap: 8px; flex: 0 0 auto; }
     @media (max-height: 720px) {
       .mark-strip { margin-top: 4px; }
       .mark-strip label { margin-bottom: 2px; }
@@ -616,20 +622,18 @@
                 <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
                 <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
               </div>
-              <div class="mark-strip" id="sexStrip">
-                <label>TYPE</label>
-                <div class="mark-chips" id="recSexChips"></div>
+              <div class="mark-strip">
+                <div class="mark-chips dual">
+                  <div class="grp" id="sexStrip"><span class="grp-lbl">TYPE</span><div class="chip-group" id="recSexChips"></div></div>
+                  <div class="grp"><span class="grp-lbl">MARK</span><div class="chip-group" id="recMarkChips"></div></div>
+                </div>
                 <input id="lotSex" class="rec-field native visually-hidden" readonly tabindex="-1" aria-hidden="true">
+                <select id="lotDesc" class="rec-field native visually-hidden" onchange="handleMarkChange(this.value)" tabindex="-1" aria-hidden="true"></select>
               </div>
               <div class="mark-strip">
                 <label>BUYER-WAY</label>
                 <div class="mark-chips" id="recBuyerChips"></div>
                 <input id="lotBuyer" class="rec-field native visually-hidden" readonly tabindex="-1" aria-hidden="true">
-              </div>
-              <div class="mark-strip">
-                <label>MARKINGS</label>
-                <div class="mark-chips" id="recMarkChips"></div>
-                <select id="lotDesc" class="rec-field native visually-hidden" onchange="handleMarkChange(this.value)" tabindex="-1" aria-hidden="true"></select>
               </div>
             </div>
           </div>
@@ -892,7 +896,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.53'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.54'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2047,8 +2051,6 @@ function syncMarkChips() {
     return '<button type="button" class="mark-chip' + (isAdd ? ' add' : '') + (!isAdd && o.value === cur ? ' on' : '') + '" data-v="' + xmlEsc(o.value) + '">' + xmlEsc(isAdd ? '+ Add' : o.textContent) + '</button>';
   }).join('');
   row.classList.toggle('disabled', !!sel.disabled);
-  const onChip = row.querySelector('.mark-chip.on');
-  if (onChip && onChip.scrollIntoView) onChip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 function pickMarkChip(v) {
   const sel = document.getElementById('lotDesc');
