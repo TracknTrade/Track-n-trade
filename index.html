@@ -498,6 +498,7 @@
     <p>Yards tool • Agency ready</p>
     <div class="tabs">
       <button class="tab on" id="tabYards" onclick="showTab('yards')">Yards</button>
+      <button class="tab" id="tabCalcs" onclick="showTab('calcs')">Calcs</button>
       <button class="tab" id="tabSettings" onclick="showTab('settings')">Settings</button>
     </div>
   </header>
@@ -543,11 +544,6 @@
         </div>
         </div>
       </div>
-      <div class="screen" id="blockTradeAnalysis">
-        <div class="title">Trade Analysis</div>
-        <div id="weightClasses"></div>
-      </div>
-
       <div id="blockRing" class="screen"><div class="watch">
         <div class="title" style="text-align:center;color:#fff;">Sales watch</div>
         <div class="grid-2">
@@ -578,20 +574,6 @@
         <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
         <div id="watchlistCards" class="watchlist-cards"></div>
       </div></div>
-
-      <div class="screen screen-tight" id="blockMarketTrend">
-        <div class="card">
-          <div class="title">Last market</div>
-          <div class="grid-2">
-            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
-            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
-          </div>
-          <div class="trend-row">
-            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
-            <div class="trend-diff" id="trendDiff">—</div>
-          </div>
-        </div>
-      </div>
 
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
@@ -699,6 +681,48 @@
       </div>
     </section>
 
+    <!-- CALCS -->
+    <section id="pageCalcs" class="hidden">
+      <div id="calcsIndicatorSlot"></div>
+      <div class="screen screen-tight" id="blockAgistCalc"><div class="card">
+        <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Agistment cost calculator</span>
+          <button type="button" class="info-btn" onclick="toggleCostInfo()" aria-label="What does this calculator do?">i</button>
+        </div>
+        <p class="note">Work this out if you don't already know your $/wk agistment-equivalent cost. The answer goes straight into the Buy indicator's Agistment $/wk and is saved as your default.</p>
+        <p class="note hidden" id="costInfoNote">Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
+        <div class="grid-2">
+          <div><label>Farm operating cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
+          <div><label>Head sold/run per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
+        </div>
+        <div class="cost-calc-out">
+          <span class="muted">Cost per head, per week</span>
+          <b id="s_costPerHeadWk">—</b>
+        </div>
+        <p class="note hidden" id="agistFilledNote">Filled into the Buy indicator's Agistment $/wk</p>
+      </div></div>
+
+      <div class="screen" id="blockTradeAnalysis">
+        <div class="title">Trade Analysis</div>
+        <div id="weightClasses"></div>
+      </div>
+
+      <div class="screen screen-tight" id="blockMarketTrend">
+        <div class="card">
+          <div class="title">Last market</div>
+          <div class="grid-2">
+            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
+            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
+            <div class="trend-diff" id="trendDiff">—</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
     <!-- SETTINGS -->
     <section id="pageSettings" class="hidden">
       <div style="padding:10px 0 0;">
@@ -721,7 +745,8 @@
 
       <div class="card">
         <div class="title">Show or hide tools</div>
-        <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
+        <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator on Yards <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
+        <div class="toggle" onclick="flip('showIndicatorCalcs')"><span>Buy indicator on Calcs <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicatorCalcs"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
@@ -760,24 +785,6 @@
           </div>
         </div>
         <p class="note">Set carry costs to No, if you know your desired gross margin/gross profit.</p>
-      </div>
-
-      <div class="card">
-        <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Agistment cost calculator</span>
-          <button type="button" class="info-btn" onclick="toggleCostInfo()" aria-label="What does this calculator do?">i</button>
-        </div>
-        <p class="note">Optional — work this out if you don't already know your $/wk agistment-equivalent cost.</p>
-        <p class="note hidden" id="costInfoNote">Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
-        <div class="grid-2">
-          <div><label>Farm operating cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
-          <div><label>Head sold/run per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
-        </div>
-        <div class="cost-calc-out">
-          <span class="muted">Cost per head, per week</span>
-          <b id="s_costPerHeadWk">—</b>
-        </div>
-        <p class="note hidden" id="agistFilledNote">↑ Filled into Agistment $/wk above</p>
       </div>
 
       <div class="card">
@@ -847,9 +854,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.44'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.45'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showIndicatorCalcs: false, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
@@ -1078,28 +1085,57 @@ window.addEventListener('resize', syncHeaderH);
 window.addEventListener('orientationchange', syncHeaderH);
 
 let yardsScrollTop = 0;
+let calcsScrollTop = 0;
 function showTab(name) {
   closeKp();
   const main = document.querySelector('main');
-  if (main && !document.getElementById('pageYards').classList.contains('hidden')) {
-    yardsScrollTop = main.scrollTop;
-  }
+  if (main && !document.getElementById('pageYards').classList.contains('hidden')) yardsScrollTop = main.scrollTop;
+  if (main && !document.getElementById('pageCalcs').classList.contains('hidden')) calcsScrollTop = main.scrollTop;
   document.getElementById('pageYards').classList.toggle('hidden', name !== 'yards');
+  document.getElementById('pageCalcs').classList.toggle('hidden', name !== 'calcs');
   document.getElementById('pageSettings').classList.toggle('hidden', name !== 'settings');
   document.getElementById('tabYards').classList.toggle('on', name === 'yards');
+  document.getElementById('tabCalcs').classList.toggle('on', name === 'calcs');
   document.getElementById('tabSettings').classList.toggle('on', name === 'settings');
   if (name === 'settings') {
     fillSettings();
     if (main) main.scrollTop = 0;
   }
   if (name === 'yards') {
+    placeIndicator('yards');
     applyFeatures();
     if (main) main.scrollTop = yardsScrollTop;
   }
+  if (name === 'calcs') {
+    placeIndicator('calcs');
+    applyFeatures();
+    fillCalcsInputs();
+    refreshAgistCalcDisplay();
+    if (main) main.scrollTop = calcsScrollTop;
+  }
+}
+/* The Buy indicator is one block that lives on whichever tab is showing (Yards or Calcs). */
+function placeIndicator(where) {
+  const blk = document.getElementById('blockIndicator');
+  if (!blk) return;
+  if (where === 'calcs') {
+    const slot = document.getElementById('calcsIndicatorSlot');
+    if (slot && blk.parentElement !== slot) slot.appendChild(blk);
+  } else {
+    const page = document.getElementById('pageYards');
+    if (page && blk.parentElement !== page) page.insertBefore(blk, page.firstChild);
+  }
+}
+function fillCalcsInputs() {
+  ['opCost','headPerYr'].forEach(k => {
+    const el = document.getElementById('s_'+k);
+    if (el && document.activeElement !== el) el.value = S[k] || '';
+  });
 }
 
 function applyFeatures() {
-  document.getElementById('blockIndicator').classList.toggle('hidden', !S.showIndicator);
+  const onCalcs = !document.getElementById('pageCalcs').classList.contains('hidden');
+  document.getElementById('blockIndicator').classList.toggle('hidden', onCalcs ? !S.showIndicatorCalcs : !S.showIndicator);
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockMarketTrend').classList.toggle('hidden', !S.showMarketTrend);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
@@ -1109,7 +1145,7 @@ function applyFeatures() {
 }
 
 function fillSettings() {
-  ['showIndicator','showTradeAnalysis','showMarketTrend','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
+  ['showIndicator','showIndicatorCalcs','showTradeAnalysis','showMarketTrend','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
@@ -1144,8 +1180,13 @@ function applyAgistCalc() {
   const v = agistCalcValue();
   const note = document.getElementById('agistFilledNote');
   if (v === null) { if (note) note.classList.add('hidden'); return; }
-  const agistEl = document.getElementById('s_agistRate');
-  if (agistEl) agistEl.value = v.toFixed(2);
+  const val = parseFloat(v.toFixed(2));
+  S.agistRate = val;
+  S.opCost = parseFloat(document.getElementById('s_opCost').value) || 0;
+  S.headPerYr = parseFloat(document.getElementById('s_headPerYr').value) || 0;
+  ['agistRate','s_agistRate'].forEach(function(id){ const el = document.getElementById(id); if (el) el.value = val; });
+  persist();
+  if (typeof calculate === 'function') calculate();
   if (note) note.classList.remove('hidden');
 }
 function toggleCostInfo() {
