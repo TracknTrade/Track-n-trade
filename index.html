@@ -196,6 +196,10 @@
     .watch input { background: var(--paper); color: var(--ink); text-align: center; font-size: 2.2rem; min-height: 76px; border-color: transparent; }
     .ring-row { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
     .trend-row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+    .mkt-row { display: flex; align-items: flex-end; gap: 14px; }
+    .mkt-row .mkt-in { flex: 1 1 0; min-width: 0; }
+    .mkt-row .mkt-in input { margin: 0; }
+    .mkt-row .trend-row { flex: 1 1 0; margin-top: 0; padding-bottom: 6px; }
     .trend-light {
       width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
       background: var(--line); transition: background .2s;
@@ -609,12 +613,12 @@
       <div class="screen screen-tight" id="blockMarketTrend">
         <div class="card">
           <div class="title">Last market</div>
-          <div class="grid-2">
-            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
-          </div>
-          <div class="trend-row">
-            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
-            <div class="trend-diff" id="trendDiff">—</div>
+          <div class="mkt-row">
+            <div class="mkt-in"><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
+            <div class="trend-row">
+              <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
+              <div class="trend-diff" id="trendDiff">—</div>
+            </div>
           </div>
         </div>
       </div>
@@ -935,7 +939,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.86'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.87'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
