@@ -288,7 +288,7 @@
       flex: 1; min-height: 0; height: auto; width: 100%;
       font-size: clamp(24px, 6.8vw, 40px); margin: 0; padding: 4px 8px;
     }
-    .mark-strip { flex: 0 0 auto; margin-top: 6px; min-height: 0; }
+    .mark-strip { flex: 0 0 auto; margin-top: 6px; min-height: 0; position: relative; }
     .mark-strip label { margin-bottom: 4px; }
     .mark-chips {
       display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -866,7 +866,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.49'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.51'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1740,7 +1740,7 @@ function buyFromWatchlist(id) {
   document.getElementById('lotWt').value = w.wt || '';
   document.getElementById('lotPrice').value = w.price || '';
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
-  recOrder = missing.length ? missing : ALL_FIELDS.slice();
+  recOrder = missing.length ? missing : ['lotPrice'];
   recStep = 0;
   recFieldFresh = true;
   document.getElementById('recBotSpecial').classList.remove('hidden');
@@ -2692,7 +2692,7 @@ function editLot(id) {
     syncMarkChips();
   }
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
-  recOrder = missing.length ? missing : ALL_FIELDS.slice();
+  recOrder = missing.length ? missing : ['lotPrice'];
   recStep = 0;
   recFieldFresh = true;
   document.getElementById('recBotSpecial').classList.remove('hidden');
@@ -3138,10 +3138,13 @@ function init() {
       const idx = recOrder.indexOf(id);
       if (idx >= 0) {
         recStep = idx;
-        recFieldFresh = true;
-        recHighlight();
-        saveDraft();
+      } else {
+        recOrder = [id];
+        recStep = 0;
       }
+      recFieldFresh = true;
+      recHighlight();
+      saveDraft();
     });
   });
 }
