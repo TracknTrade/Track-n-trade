@@ -632,7 +632,22 @@
 
     <!-- RECORD -->
     <section id="pageRecord" class="hidden">
-      <div id="blockRing" class="screen"><div class="watch">
+      <div id="blockWatchlist" class="screen screen-tight"><div class="card">
+        <div class="title">Pen watchlist</div>
+        <p class="note">Walk the pens ahead of the sale, note your max price here, then come back once the sale catches up.</p>
+        <div class="grid-2">
+          <div><label>Pen</label><input id="wlPen" inputmode="numeric"></div>
+          <div><label>Head</label><input id="wlHd" inputmode="numeric"></div>
+        </div>
+        <div class="grid-2">
+          <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
+          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
+        </div>
+        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
+        <div id="watchlistCards" class="watchlist-cards"></div>
+      </div></div>
+
+      <div id="blockRing" class="screen screen-tight"><div class="watch">
         <div class="title" style="text-align:center;color:#fff;">Sales watch</div>
         <div class="grid-2">
           <div><label>Weight</label><input id="wWt" inputmode="decimal"></div>
@@ -646,21 +661,6 @@
           <div class="ring-wrap"><div class="ring" id="priceRing"></div><div class="ring-lines"></div></div>
         </div>
         <div id="watchList"></div>
-      </div></div>
-
-      <div id="blockWatchlist" class="screen"><div class="card">
-        <div class="title">Pen watchlist</div>
-        <p class="note">Walk the pens ahead of the sale, note your max price here, then come back once the sale catches up.</p>
-        <div class="grid-2">
-          <div><label>Pen</label><input id="wlPen" inputmode="numeric"></div>
-          <div><label>Head</label><input id="wlHd" inputmode="numeric"></div>
-        </div>
-        <div class="grid-2">
-          <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
-          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
-        </div>
-        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
-        <div id="watchlistCards" class="watchlist-cards"></div>
       </div></div>
 
       <div id="blockRecorder">
@@ -939,7 +939,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.88'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.89'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
