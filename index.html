@@ -196,6 +196,13 @@
     .lot { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); color: var(--ink-2); }
     .lot b { color: var(--ink); }
     .toggle { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
+    .where-row { padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
+    .where-sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+    .where-sw button {
+      border: 1.5px solid var(--line); background: var(--paper); color: var(--tt-800);
+      border-radius: 999px; padding: 0 4px; font-weight: 600; font-size: 13px; min-height: 40px; font-family: var(--font-ui);
+    }
+    .where-sw button.on { background: var(--tt-800); border-color: var(--tt-800); color: #fff; }
     .switch { width: 46px; height: 27px; background: var(--line); border-radius: 99px; position: relative; flex: 0 0 46px; transition: background .15s; }
     .switch.on { background: var(--tt-700); }
     .switch i { position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; background: #fff; border-radius: 50%; transition: left .15s; }
@@ -575,6 +582,7 @@
         <div id="watchlistCards" class="watchlist-cards"></div>
       </div></div>
 
+      <div id="yardsMarketSlot"></div>
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
           <div class="rec-top">
@@ -684,6 +692,11 @@
     <!-- CALCS -->
     <section id="pageCalcs" class="hidden">
       <div id="calcsIndicatorSlot"></div>
+      <div class="screen" id="blockTradeAnalysis">
+        <div class="title">Trade Analysis</div>
+        <div id="weightClasses"></div>
+      </div>
+
       <div class="screen screen-tight" id="blockAgistCalc"><div class="card">
         <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
           <span>Agistment cost calculator</span>
@@ -702,11 +715,7 @@
         <p class="note hidden" id="agistFilledNote">Filled into the Buy indicator's Agistment $/wk</p>
       </div></div>
 
-      <div class="screen" id="blockTradeAnalysis">
-        <div class="title">Trade Analysis</div>
-        <div id="weightClasses"></div>
-      </div>
-
+      <div id="calcsMarketSlot"></div>
       <div class="screen screen-tight" id="blockMarketTrend">
         <div class="card">
           <div class="title">Last market</div>
@@ -745,10 +754,13 @@
 
       <div class="card">
         <div class="title">Show or hide tools</div>
-        <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator on Yards <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
-        <div class="toggle" onclick="flip('showIndicatorCalcs')"><span>Buy indicator on Calcs <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicatorCalcs"><i></i></div></div>
+        <div class="where-row"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span>
+          <div class="where-sw" id="where_indicatorWhere"><button type="button" data-v="yards" onclick="setWhere('indicatorWhere','yards')">Yards</button><button type="button" data-v="calcs" onclick="setWhere('indicatorWhere','calcs')">Calcs</button><button type="button" data-v="both" onclick="setWhere('indicatorWhere','both')">Both</button><button type="button" data-v="off" onclick="setWhere('indicatorWhere','off')">Off</button></div>
+        </div>
+        <div class="where-row"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span>
+          <div class="where-sw" id="where_marketWhere"><button type="button" data-v="yards" onclick="setWhere('marketWhere','yards')">Yards</button><button type="button" data-v="calcs" onclick="setWhere('marketWhere','calcs')">Calcs</button><button type="button" data-v="both" onclick="setWhere('marketWhere','both')">Both</button><button type="button" data-v="off" onclick="setWhere('marketWhere','off')">Off</button></div>
+        </div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
-        <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
         <div class="toggle" onclick="flip('showRecorder')"><span>Purchase recorder <button type="button" class="info-btn" onclick="openToolInfo('showRecorder',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRecorder"><i></i></div></div>
@@ -854,9 +866,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.45'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.47'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showIndicatorCalcs: false, showTradeAnalysis: true, showMarketTrend: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  indicatorWhere: 'both', marketWhere: 'calcs', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
@@ -995,6 +1007,13 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) S = Object.assign({}, defaults, JSON.parse(raw));
+    // v.45 and earlier stored on/off flags; fold them into the where-settings once.
+    if (!S.indicatorWhere || ['yards','calcs','both','off'].indexOf(S.indicatorWhere) < 0) {
+      S.indicatorWhere = (S.showIndicator === false) ? (S.showIndicatorCalcs ? 'calcs' : 'off') : 'both';
+    }
+    if (!S.marketWhere || ['yards','calcs','both','off'].indexOf(S.marketWhere) < 0) {
+      S.marketWhere = (S.showMarketTrend === false) ? 'off' : 'calcs';
+    }
   } catch(e) {}
 }
 function persist() {
@@ -1102,29 +1121,53 @@ function showTab(name) {
     if (main) main.scrollTop = 0;
   }
   if (name === 'yards') {
-    placeIndicator('yards');
+    placeMovables('yards');
     applyFeatures();
     if (main) main.scrollTop = yardsScrollTop;
   }
   if (name === 'calcs') {
-    placeIndicator('calcs');
+    placeMovables('calcs');
     applyFeatures();
     fillCalcsInputs();
     refreshAgistCalcDisplay();
     if (main) main.scrollTop = calcsScrollTop;
   }
 }
-/* The Buy indicator is one block that lives on whichever tab is showing (Yards or Calcs). */
-function placeIndicator(where) {
-  const blk = document.getElementById('blockIndicator');
-  if (!blk) return;
-  if (where === 'calcs') {
-    const slot = document.getElementById('calcsIndicatorSlot');
-    if (slot && blk.parentElement !== slot) slot.appendChild(blk);
-  } else {
-    const page = document.getElementById('pageYards');
-    if (page && blk.parentElement !== page) page.insertBefore(blk, page.firstChild);
-  }
+/* Buy indicator and Last market are single blocks that sit on whichever tab is showing (Yards or Calcs).
+   Each has a where-setting: 'yards' | 'calcs' | 'both' | 'off'. */
+const MOVABLES = [
+  { block: 'blockIndicator',   key: 'indicatorWhere', yards: null,              calcs: 'calcsIndicatorSlot' },
+  { block: 'blockMarketTrend', key: 'marketWhere',    yards: 'yardsMarketSlot', calcs: 'calcsMarketSlot' }
+];
+function placeMovables(tab) {
+  MOVABLES.forEach(function(m){
+    const blk = document.getElementById(m.block);
+    if (!blk) return;
+    const slotId = tab === 'calcs' ? m.calcs : m.yards;
+    if (slotId) {
+      const slot = document.getElementById(slotId);
+      if (slot && blk.parentElement !== slot) slot.appendChild(blk);
+    } else {
+      const page = document.getElementById('pageYards');
+      if (page && blk.parentElement !== page) page.insertBefore(blk, page.firstChild);
+    }
+  });
+}
+function movableVisible(key, tab) {
+  const w = S[key] || 'off';
+  return w === 'both' || w === tab;
+}
+function setWhere(key, v) {
+  S[key] = v;
+  persist();
+  renderWhere();
+}
+function renderWhere() {
+  MOVABLES.forEach(function(m){
+    const box = document.getElementById('where_' + m.key);
+    if (!box) return;
+    Array.from(box.querySelectorAll('button')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === (S[m.key] || 'off')); });
+  });
 }
 function fillCalcsInputs() {
   ['opCost','headPerYr'].forEach(k => {
@@ -1134,10 +1177,10 @@ function fillCalcsInputs() {
 }
 
 function applyFeatures() {
-  const onCalcs = !document.getElementById('pageCalcs').classList.contains('hidden');
-  document.getElementById('blockIndicator').classList.toggle('hidden', onCalcs ? !S.showIndicatorCalcs : !S.showIndicator);
+  const tab = document.getElementById('pageCalcs').classList.contains('hidden') ? 'yards' : 'calcs';
+  document.getElementById('blockIndicator').classList.toggle('hidden', !movableVisible('indicatorWhere', tab));
+  document.getElementById('blockMarketTrend').classList.toggle('hidden', !movableVisible('marketWhere', tab));
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
-  document.getElementById('blockMarketTrend').classList.toggle('hidden', !S.showMarketTrend);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
   document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
   document.getElementById('blockRecorder').classList.toggle('hidden', !S.showRecorder);
@@ -1145,9 +1188,10 @@ function applyFeatures() {
 }
 
 function fillSettings() {
-  ['showIndicator','showIndicatorCalcs','showTradeAnalysis','showMarketTrend','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
+  ['showTradeAnalysis','showRing','showWatchlist','showRecorder','showText'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
+  renderWhere();
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     const el = document.getElementById('s_'+k);
     if (el) el.value = S[k];
