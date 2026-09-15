@@ -338,7 +338,7 @@
     }
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .rec-fields .on-field { border-color: var(--tt-500) !important; box-shadow: 0 0 0 4px rgba(16,185,129,.16); background: var(--paper); }
-    .rec-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 0; border-radius: var(--r-md); overflow: hidden; flex: 0 0 auto; }
+    .rec-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border-radius: var(--r-md); overflow: hidden; flex: 0 0 auto; }
     .rec-stats .stat { padding: 7px 1px; min-width: 0; }
     .rec-stats .stat-k { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rec-stats .stat-v { font-size: 1.05rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -628,7 +628,6 @@
               <div class="stat"><div class="stat-k">HD</div><div class="stat-v" id="statHd">0</div></div>
               <div class="stat"><div class="stat-k">AVG $/HD</div><div class="stat-v" id="statAvgHd">$0</div></div>
               <div class="stat"><div class="stat-k">AVG $/KG</div><div class="stat-v" id="statAvgKg">$0.00</div></div>
-              <div class="stat"><div class="stat-k">TOTAL</div><div class="stat-v" id="statTotal">$0</div></div>
             </div>
             <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
             <div class="edit-banner hidden" id="editingBanner">
@@ -916,7 +915,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.61'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.63'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1820,8 +1819,7 @@ function sendWatchToRecorder(wt, hd) {
   saveDraft();
   document.getElementById('wWt').value = '';
   document.getElementById('wKg').value = '';
-  const target = document.getElementById('recSplit');
-  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+  scrollMainTo(document.getElementById('recSplit'), 'start');
 }
 function renderWatches() {
   document.getElementById('watchList').innerHTML = watches.map(w =>
@@ -1864,8 +1862,7 @@ function buyFromWatchlist(id) {
   document.getElementById('recBotPrime').classList.add('hidden');
   recHighlight();
   saveDraft();
-  const target = document.getElementById('recSplit');
-  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+  scrollMainTo(document.getElementById('recSplit'), 'start');
 }
 function renderWatchlist() {
   const box = document.getElementById('watchlistCards');
@@ -2477,6 +2474,14 @@ function primeSaveLot() {
 }
 
 let recErrorTimer = null;
+function scrollMainTo(el, block) {
+  const main = document.querySelector('main');
+  if (!main || !el) return;
+  const mr = main.getBoundingClientRect(), er = el.getBoundingClientRect();
+  let y = er.top - mr.top + main.scrollTop;
+  if (block === 'center') y -= (main.clientHeight - er.height) / 2;
+  main.scrollTop = Math.max(0, y);
+}
 let toastTimer = null;
 function showToast(msg, kind) {
   const t = document.getElementById('tntToast');
@@ -2494,7 +2499,7 @@ function revealLotRow(id) {
   if (!tr) return;
   tr.classList.add('flash-row');
   setTimeout(function(){ tr.classList.remove('flash-row'); }, 1900);
-  try { tr.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) { tr.scrollIntoView(); }
+  scrollMainTo(tr, 'center');
 }
 function flashRecError(msg) {
   const btn = document.getElementById('recNext');
@@ -2814,7 +2819,8 @@ function renderLots() {
   document.getElementById('statHd').textContent = th || '—';
   document.getElementById('statAvgHd').textContent = th ? ('$'+Math.round(td/th).toLocaleString()) : '—';
   document.getElementById('statAvgKg').textContent = avgKgAll ? ('$'+avgKgAll.toFixed(2)) : '—';
-  document.getElementById('statTotal').textContent = th ? ('$'+Math.round(td).toLocaleString()) : '—';
+  const stTot = document.getElementById('statTotal');
+  if (stTot) stTot.textContent = th ? ('$'+Math.round(td).toLocaleString()) : '—';
   updateMarketTrend();
 
   fillBuyerWaySelect(wayNames);
@@ -2918,8 +2924,7 @@ function editLot(id) {
   recHighlight();
   renderLots();
   saveDraft();
-  const target = document.getElementById('recSplit');
-  if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+  scrollMainTo(document.getElementById('recSplit'), 'start');
 }
 let cancelArmTimer = null;
 function cancelEditTap() {
