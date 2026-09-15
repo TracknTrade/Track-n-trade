@@ -940,7 +940,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.77'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.78'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: true, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2504,13 +2504,25 @@ function primeSaveLot() {
 }
 
 let recErrorTimer = null;
+let scrollJumpTimer = null;
 function scrollMainTo(el, block) {
   const main = document.querySelector('main');
   if (!main || !el) return;
   const mr = main.getBoundingClientRect(), er = el.getBoundingClientRect();
   let y = er.top - mr.top + main.scrollTop;
   if (block === 'center') y -= (main.clientHeight - er.height) / 2;
-  main.scrollTop = Math.max(0, y);
+  y = Math.max(0, Math.round(y));
+  // iOS can ignore a programmatic jump while a flick is still settling or the snap is arguing;
+  // switch snapping off, set the position, and re-assert it over the next few frames before snapping back on.
+  if (scrollJumpTimer) { clearTimeout(scrollJumpTimer); scrollJumpTimer = null; }
+  main.style.scrollSnapType = 'none';
+  main.scrollTop = y;
+  requestAnimationFrame(function(){ main.scrollTop = y; });
+  scrollJumpTimer = setTimeout(function(){
+    main.scrollTop = y;
+    main.style.scrollSnapType = '';
+    scrollJumpTimer = null;
+  }, 160);
 }
 let toastTimer = null;
 function showToast(msg, kind) {
