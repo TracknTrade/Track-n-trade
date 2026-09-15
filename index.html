@@ -915,7 +915,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.63'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.64'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2027,6 +2027,34 @@ function confirmAddBuyer() {
 
 /* markings */
 let markSelectPrevValue = null;
+let markPicked = [];                       // markings chosen for the lot being recorded (multi-select)
+function isNoMark(m) { return /^no\s*marks?$/i.test(String(m || '')); }
+function noMarkName() { return (S.markings || []).find(isNoMark) || ''; }
+function markListFromDesc(desc) {
+  return String(desc || '').split(/\s*,\s*/).map(function(x){ return x.trim(); }).filter(Boolean);
+}
+function currentDesc() { return markPicked.join(', '); }
+function setMarkPicked(list) {
+  const sel = document.getElementById('lotDesc');
+  const known = Array.from(sel ? sel.options : []).map(function(o){ return o.value; });
+  markPicked = (list || []).filter(function(m){ return m && m !== '__add__'; });
+  // any marking the lot has that's not in the current list gets a temporary option so it can show as a chip
+  markPicked.forEach(function(m){
+    if (known.indexOf(m) < 0 && sel) {
+      const opt = document.createElement('option'); opt.setAttribute('data-temp', '1'); opt.value = m; opt.textContent = m;
+      sel.insertBefore(opt, sel.firstChild);
+    }
+  });
+  if (!markPicked.length && noMarkName()) markPicked = [noMarkName()];
+  if (sel && markPicked.length) sel.value = markPicked[0];
+}
+function toggleMark(m) {
+  if (isNoMark(m)) { markPicked = [m]; return; }
+  markPicked = markPicked.filter(function(x){ return !isNoMark(x); });
+  const i = markPicked.indexOf(m);
+  if (i >= 0) markPicked.splice(i, 1); else markPicked.push(m);
+  if (!markPicked.length && noMarkName()) markPicked = [noMarkName()];
+}
 function fillMarkSelect() {
   const sel = document.getElementById('lotDesc');
   if (!sel) return;
@@ -2038,8 +2066,7 @@ function fillMarkSelect() {
 function resetMarkSelect() {
   chipsCollapseAll();
   removeTempMarkOption();
-  const sel = document.getElementById('lotDesc');
-  if (sel) sel.value = S.markings[0];
+  setMarkPicked([noMarkName() || S.markings[0]]);
   markSelectPrevValue = S.markings[0];
   syncMarkChips();
 }
@@ -2058,8 +2085,6 @@ function openAddMark() {
 }
 function closeAddMarkModal() {
   document.getElementById('addMarkModal').classList.add('hidden');
-  const sel = document.getElementById('lotDesc');
-  if (sel) sel.value = markSelectPrevValue || S.markings[0];
   syncMarkChips();
 }
 function confirmAddMark() {
@@ -2070,7 +2095,8 @@ function confirmAddMark() {
   persist();
   renderMarkChips();
   fillMarkSelect();
-  document.getElementById('lotDesc').value = n;
+  toggleMark(n);
+  if (markPicked.indexOf(n) < 0) markPicked.push(n);
   markSelectPrevValue = n;
   markOpen = true;
   syncMarkChips();
@@ -2080,14 +2106,13 @@ function syncMarkChips() {
   const sel = document.getElementById('lotDesc');
   const row = document.getElementById('recMarkChips');
   if (!sel || !row) return;
-  const cur = sel.value;
   if (!markOpen) {
-    const o = sel.options[sel.selectedIndex];
-    row.innerHTML = '<button type="button" class="mark-chip on" data-v="__open__">' + xmlEsc(o ? o.textContent : cur) + '</button>';
+    row.innerHTML = '<button type="button" class="mark-chip on" data-v="__open__">' + xmlEsc(currentDesc() || 'Mark') + '</button>';
   } else {
     row.innerHTML = Array.from(sel.options).map(function(o){
       const isAdd = o.value === '__add__';
-      return '<button type="button" class="mark-chip' + (isAdd ? ' add' : '') + (!isAdd && o.value === cur ? ' on' : '') + '" data-v="' + xmlEsc(o.value) + '">' + xmlEsc(isAdd ? '+ Add' : o.textContent) + '</button>';
+      const on = !isAdd && markPicked.indexOf(o.value) >= 0;
+      return '<button type="button" class="mark-chip' + (isAdd ? ' add' : '') + (on ? ' on' : '') + '" data-v="' + xmlEsc(o.value) + '">' + xmlEsc(isAdd ? '+ Add' : o.textContent) + '</button>';
     }).join('');
   }
   row.classList.toggle('disabled', !!sel.disabled);
@@ -2096,15 +2121,17 @@ function pickMarkChip(v) {
   const sel = document.getElementById('lotDesc');
   if (!sel || sel.disabled) return;
   if (v === '__open__') { markOpen = true; sexOpen = false; fillSexChips(); syncMarkChips(); chipRowHome(); return; }
-  if (v !== '__add__') sel.value = v;
-  handleMarkChange(v);
-  fillSexChips(); syncMarkChips(); chipRowHome();
+  if (v === '__add__') { openAddMark(); return; }
+  toggleMark(v);
+  sel.value = markPicked[0] || v;
+  markSelectPrevValue = sel.value;
+  saveDraft();
+  fillSexChips(); syncMarkChips();
 }
 function removeTempMarkOption() {
   const sel = document.getElementById('lotDesc');
   if (!sel) return;
-  const opt = sel.querySelector('option[data-temp="1"]');
-  if (opt) opt.remove();
+  Array.from(sel.querySelectorAll('option[data-temp="1"]')).forEach(function(o){ o.remove(); });
 }
 let recFieldFresh = false;
 function recType(k) {
@@ -2707,7 +2734,7 @@ function addLot() {
   const priceUnit = (S.saleMode === 'prime') ? 'kg' : 'hd';
   const descEl = document.getElementById('lotDesc');
   if (!price || !pen) { document.getElementById('smsStatus').textContent = 'Need '+(priceUnit==='kg'?'$/kg':'$/hd')+' and pen.'; return false; }
-  const desc = descEl ? descEl.value : '';
+  const desc = currentDesc();
   const client = document.getElementById('lotBuyer').value || S.meClient;
   const sex = document.getElementById('lotSex').value || '';
   if (editingLotId != null) {
@@ -2898,21 +2925,13 @@ function editLot(id) {
   updateSexStrip();
   const descEl = document.getElementById('lotDesc');
   if (descEl) {
-    const d = l.desc || S.markings[0];
-    const existing = S.markings.find(function(m){ return m.toLowerCase() === d.toLowerCase(); });
     removeTempMarkOption();
-    if (existing) {
-      descEl.value = existing;
-      markSelectPrevValue = existing;
-    } else {
-      const opt = document.createElement('option');
-      opt.setAttribute('data-temp', '1');
-      opt.value = d;
-      opt.textContent = d.length > 60 ? d.slice(0, 60) + '…' : d;
-      descEl.insertBefore(opt, descEl.firstChild);
-      descEl.value = d;
-      markSelectPrevValue = d;
-    }
+    const picks = markListFromDesc(l.desc).map(function(d){
+      const existing = S.markings.find(function(m){ return m.toLowerCase() === d.toLowerCase(); });
+      return existing || d;
+    });
+    setMarkPicked(picks.length ? picks : [noMarkName() || S.markings[0]]);
+    markSelectPrevValue = markPicked[0];
     syncMarkChips();
   }
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
