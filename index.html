@@ -17,6 +17,7 @@
     /* ── Tokens — Track n Trade style guide (product context) ───────────── */
     :root {
       --header-h: 90px;
+      --nav-h: 60px;
       /* neutrals */
       --ink: #0a0a0b;
       --ink-2: #3f3f46;
@@ -88,6 +89,21 @@
     }
     header h1 { font-size: 1.15rem; line-height: 1; padding: 4px 2px 8px; color: #fff; }
     header p { display: none; }
+    /* Bottom tab bar — matches the concept mockup: white, hairline top, active item on a mint pill */
+    .bnav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 75;
+      height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: var(--card); border-top: 1px solid var(--line);
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    }
+    .bnav button {
+      background: none; border: none; color: var(--ink); opacity: .45; font-family: var(--font-ui);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      font-size: 11px; font-weight: 700; padding: 6px 0; border-radius: 12px; min-height: 48px;
+    }
+    .bnav button svg { width: 20px; height: 20px; }
+    .bnav button.on { opacity: 1; background: var(--tt-50); color: var(--tt-800); }
+    body.kp-open .bnav { display: none; }
     .tabs { display: flex; gap: 6px; width: 100%; }
     .tab {
       flex: 1; background: rgba(255,255,255,.10); color: rgba(255,255,255,.72); border: none;
@@ -100,14 +116,14 @@
     /* ── Layout ─────────────────────────────────────────────────────────── */
     main {
       max-width: 640px; margin: 0 auto;
-      height: calc(100dvh - var(--header-h));
+      height: calc(100dvh - var(--header-h) - var(--nav-h) - env(safe-area-inset-bottom, 0px));
       overflow-y: auto;
       padding: 0 12px 8px;
       scroll-snap-type: y mandatory;
       -webkit-overflow-scrolling: touch;
     }
     .screen {
-      min-height: calc(100dvh - var(--header-h));
+      min-height: calc(100dvh - var(--header-h) - var(--nav-h) - env(safe-area-inset-bottom, 0px));
       scroll-snap-align: start; scroll-snap-stop: always;
       display: flex; flex-direction: column; justify-content: center;
       padding: 12px 0 18px;
@@ -280,11 +296,10 @@
 
     /* ── Recorder ───────────────────────────────────────────────────────── */
     .rec-split {
-      height: calc(100dvh - var(--header-h));
-      max-height: calc(100dvh - var(--header-h));
+      height: calc(100dvh - var(--header-h) - var(--nav-h) - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100dvh - var(--header-h) - var(--nav-h) - env(safe-area-inset-bottom, 0px));
       display: flex; flex-direction: column; gap: 4px;
       scroll-snap-align: start; overflow: hidden;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .rec-top { flex: 1 1 55%; min-height: 0; display: flex; flex-direction: column; }
     .rec-top .card { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 4px; padding: 10px !important; }
@@ -541,11 +556,6 @@
   <header>
     <h1>Track n Trade</h1>
     <p>Yards tool • Agency ready</p>
-    <div class="tabs">
-      <button class="tab on" id="tabYards" onclick="showTab('yards')">Yards</button>
-      <button class="tab" id="tabCalcs" onclick="showTab('calcs')">Calcs</button>
-      <button class="tab" id="tabSettings" onclick="showTab('settings')">Settings</button>
-    </div>
   </header>
 
   <main>
@@ -620,7 +630,47 @@
         <div id="watchlistCards" class="watchlist-cards"></div>
       </div></div>
 
-      <div id="yardsMarketSlot"></div>
+      <div class="screen" id="blockMarketTrend">
+        <div class="card">
+          <div class="title">Last market</div>
+          <div class="grid-2">
+            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
+            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
+            <div class="trend-diff" id="trendDiff">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" id="blockTradeAnalysis">
+        <div class="title">Trade Analysis</div>
+        <div id="weightClasses"></div>
+      </div>
+
+      <div class="screen screen-tight" id="blockAgistCalc"><div class="card">
+        <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Agistment cost calculator</span>
+          <button type="button" class="info-btn" onclick="toggleCostInfo()" aria-label="What does this calculator do?">i</button>
+        </div>
+        <p class="note">Work this out if you don't already know your $/wk agistment-equivalent cost. The answer goes straight into the Buy indicator's Agistment $/wk and is saved as your default.</p>
+        <p class="note hidden" id="costInfoNote">Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
+        <div class="grid-2">
+          <div><label>Farm operating cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
+          <div><label>Head sold/run per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
+        </div>
+        <div class="cost-calc-out">
+          <span class="muted">Cost per head, per week</span>
+          <b id="s_costPerHeadWk">—</b>
+        </div>
+        <p class="note hidden" id="agistFilledNote">Filled into the Buy indicator's Agistment $/wk</p>
+      </div></div>
+
+    </section>
+
+    <!-- RECORD -->
+    <section id="pageRecord" class="hidden">
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
           <div class="rec-top">
@@ -692,10 +742,13 @@
           <button type="button" class="photo-close" aria-label="Close">✕</button>
           <img id="photoModalImg" alt="Pen card">
         </div>
+      </div>
+    </section>
+
+    <!-- TRUCK -->
+    <section id="pageTruck" class="hidden">
         <div class="screen screen-tight" id="lotsCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoney"></div></div></div>
         <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lot summary for trucking</div><div id="lotsSummaryTrucking"></div></div></div>
-      </div>
-
       <div id="blockText" class="screen screen-tight"><div class="card">
         <div class="title">Send selected lots</div>
         <label>Select by buyer way</label>
@@ -729,54 +782,8 @@
       </div>
     </section>
 
-    <!-- CALCS -->
-    <section id="pageCalcs" class="hidden">
-      <div id="calcsIndicatorSlot"></div>
-      <div class="screen" id="blockTradeAnalysis">
-        <div class="title">Trade Analysis</div>
-        <div id="weightClasses"></div>
-      </div>
-
-      <div id="calcsMarketSlot"></div>
-      <div class="screen" id="blockMarketTrend">
-        <div class="card">
-          <div class="title">Last market</div>
-          <div class="grid-2">
-            <div><label>Avg $/kg</label><input id="mktAvgKg" inputmode="decimal"></div>
-            <div><label>Avg kg</label><input id="mktAvgWt" inputmode="decimal"></div>
-          </div>
-          <div class="trend-row">
-            <div class="trend-light" id="trendLight"><span id="trendArrow"></span></div>
-            <div class="trend-diff" id="trendDiff">—</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="screen screen-tight" id="blockAgistCalc"><div class="card">
-        <div class="title" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Agistment cost calculator</span>
-          <button type="button" class="info-btn" onclick="toggleCostInfo()" aria-label="What does this calculator do?">i</button>
-        </div>
-        <p class="note">Work this out if you don't already know your $/wk agistment-equivalent cost. The answer goes straight into the Buy indicator's Agistment $/wk and is saved as your default.</p>
-        <p class="note hidden" id="costInfoNote">Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
-        <div class="grid-2">
-          <div><label>Farm operating cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
-          <div><label>Head sold/run per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
-        </div>
-        <div class="cost-calc-out">
-          <span class="muted">Cost per head, per week</span>
-          <b id="s_costPerHeadWk">—</b>
-        </div>
-        <p class="note hidden" id="agistFilledNote">Filled into the Buy indicator's Agistment $/wk</p>
-      </div></div>
-
-    </section>
-
     <!-- SETTINGS -->
     <section id="pageSettings" class="hidden">
-      <div style="padding:10px 0 0;">
-        <button type="button" class="btn btn-g" style="margin-top:0;" onclick="showTab('yards')">BACK TO YARDS</button>
-      </div>
       <div class="card">
         <div class="title">Feedback</div>
         <p class="note">Found a bug, or want something added? Tell us and we'll get onto it.</p>
@@ -794,12 +801,8 @@
 
       <div class="card">
         <div class="title">Show or hide tools</div>
-        <div class="where-row"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span>
-          <div class="where-sw" id="where_indicatorWhere"><button type="button" data-v="yards" onclick="setWhere('indicatorWhere','yards')">Yards</button><button type="button" data-v="calcs" onclick="setWhere('indicatorWhere','calcs')">Calcs</button><button type="button" data-v="both" onclick="setWhere('indicatorWhere','both')">Both</button><button type="button" data-v="off" onclick="setWhere('indicatorWhere','off')">Off</button></div>
-        </div>
-        <div class="where-row"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span>
-          <div class="where-sw" id="where_marketWhere"><button type="button" data-v="yards" onclick="setWhere('marketWhere','yards')">Yards</button><button type="button" data-v="calcs" onclick="setWhere('marketWhere','calcs')">Calcs</button><button type="button" data-v="both" onclick="setWhere('marketWhere','both')">Both</button><button type="button" data-v="off" onclick="setWhere('marketWhere','off')">Off</button></div>
-        </div>
+        <div class="toggle" onclick="flip('showIndicator')"><span>Buy indicator <button type="button" class="info-btn" onclick="openToolInfo('showIndicator',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showIndicator"><i></i></div></div>
+        <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
@@ -906,18 +909,25 @@
         </div>
       </div>
 
-      <button class="btn btn-n" onclick="saveSettings(); showTab('yards');">SAVE AND BACK TO YARDS</button>
+      <button class="btn btn-n" onclick="saveSettings(); showToast('Settings saved');">SAVE SETTINGS</button>
     </section>
   </main>
+
+  <nav class="bnav" id="bnav" aria-label="Main">
+    <button type="button" id="nav_sale" class="on" onclick="showTab('sale')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg><span>Sale</span></button>
+    <button type="button" id="nav_record" onclick="showTab('record')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg><span>Record</span></button>
+    <button type="button" id="nav_truck" onclick="showTab('truck')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Truck</span></button>
+    <button type="button" id="nav_setup" onclick="showTab('setup')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Setup</span></button>
+  </nav>
 
 <script>
 const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.65'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.66'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  indicatorWhere: 'both', marketWhere: 'calcs', pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
@@ -1056,13 +1066,10 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) S = Object.assign({}, defaults, JSON.parse(raw));
-    // v.45 and earlier stored on/off flags; fold them into the where-settings once.
-    if (!S.indicatorWhere || ['yards','calcs','both','off'].indexOf(S.indicatorWhere) < 0) {
-      S.indicatorWhere = (S.showIndicator === false) ? (S.showIndicatorCalcs ? 'calcs' : 'off') : 'both';
-    }
-    if (!S.marketWhere || ['yards','calcs','both','off'].indexOf(S.marketWhere) < 0) {
-      S.marketWhere = (S.showMarketTrend === false) ? 'off' : 'calcs';
-    }
+    // v.46–v.65 stored a Yards/Calcs/Both/Off placement; fold it back to on/off once.
+    if (S.indicatorWhere) { S.showIndicator = S.indicatorWhere !== 'off'; delete S.indicatorWhere; }
+    if (S.marketWhere) { S.showMarketTrend = S.marketWhere !== 'off'; delete S.marketWhere; }
+    delete S.showIndicatorCalcs;
   } catch(e) {}
 }
 function persist() {
@@ -1153,70 +1160,35 @@ window.addEventListener('resize', syncHeaderH);
 window.addEventListener('orientationchange', syncHeaderH);
 
 let yardsScrollTop = 0;
-let calcsScrollTop = 0;
+const PAGES = { sale: 'pageYards', record: 'pageRecord', truck: 'pageTruck', setup: 'pageSettings' };
+const pageScroll = {};
+let currentTab = 'sale';
 function showTab(name) {
+  if (name === 'yards' || name === 'calcs') name = 'sale';
+  if (name === 'settings') name = 'setup';
+  if (!PAGES[name]) name = 'sale';
   closeKp();
   const main = document.querySelector('main');
-  if (main && !document.getElementById('pageYards').classList.contains('hidden')) yardsScrollTop = main.scrollTop;
-  if (main && !document.getElementById('pageCalcs').classList.contains('hidden')) calcsScrollTop = main.scrollTop;
-  document.getElementById('pageYards').classList.toggle('hidden', name !== 'yards');
-  document.getElementById('pageCalcs').classList.toggle('hidden', name !== 'calcs');
-  document.getElementById('pageSettings').classList.toggle('hidden', name !== 'settings');
-  document.getElementById('tabYards').classList.toggle('on', name === 'yards');
-  document.getElementById('tabCalcs').classList.toggle('on', name === 'calcs');
-  document.getElementById('tabSettings').classList.toggle('on', name === 'settings');
-  if (name === 'settings') {
+  if (main) pageScroll[currentTab] = main.scrollTop;
+  Object.keys(PAGES).forEach(function(k){
+    document.getElementById(PAGES[k]).classList.toggle('hidden', k !== name);
+    const b = document.getElementById('nav_' + k);
+    if (b) b.classList.toggle('on', k === name);
+  });
+  currentTab = name;
+  if (name === 'setup') {
     fillSettings();
     if (main) main.scrollTop = 0;
+    return;
   }
-  if (name === 'yards') {
-    placeMovables('yards');
-    applyFeatures();
-    if (main) main.scrollTop = yardsScrollTop;
-  }
-  if (name === 'calcs') {
-    placeMovables('calcs');
-    applyFeatures();
-    fillCalcsInputs();
-    refreshAgistCalcDisplay();
-    if (main) main.scrollTop = calcsScrollTop;
-  }
+  applyFeatures();
+  if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
+  if (name === 'truck') renderLots();
+  if (main) main.scrollTop = pageScroll[name] || 0;
 }
-/* Buy indicator and Last market are single blocks that sit on whichever tab is showing (Yards or Calcs).
-   Each has a where-setting: 'yards' | 'calcs' | 'both' | 'off'. */
-const MOVABLES = [
-  { block: 'blockIndicator',   key: 'indicatorWhere', yards: null,              calcs: 'calcsIndicatorSlot' },
-  { block: 'blockMarketTrend', key: 'marketWhere',    yards: 'yardsMarketSlot', calcs: 'calcsMarketSlot' }
-];
-function placeMovables(tab) {
-  MOVABLES.forEach(function(m){
-    const blk = document.getElementById(m.block);
-    if (!blk) return;
-    const slotId = tab === 'calcs' ? m.calcs : m.yards;
-    if (slotId) {
-      const slot = document.getElementById(slotId);
-      if (slot && blk.parentElement !== slot) slot.appendChild(blk);
-    } else {
-      const page = document.getElementById('pageYards');
-      if (page && blk.parentElement !== page) page.insertBefore(blk, page.firstChild);
-    }
-  });
-}
-function movableVisible(key, tab) {
-  const w = S[key] || 'off';
-  return w === 'both' || w === tab;
-}
-function setWhere(key, v) {
-  S[key] = v;
-  persist();
-  renderWhere();
-}
-function renderWhere() {
-  MOVABLES.forEach(function(m){
-    const box = document.getElementById('where_' + m.key);
-    if (!box) return;
-    Array.from(box.querySelectorAll('button')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === (S[m.key] || 'off')); });
-  });
+function goRecorder() {
+  showTab('record');
+  scrollMainTo(document.getElementById('recSplit'), 'start');
 }
 function fillCalcsInputs() {
   ['opCost','headPerYr'].forEach(k => {
@@ -1232,9 +1204,8 @@ function updateSexStrip() {
 }
 function applyFeatures() {
   updateSexStrip();
-  const tab = document.getElementById('pageCalcs').classList.contains('hidden') ? 'yards' : 'calcs';
-  document.getElementById('blockIndicator').classList.toggle('hidden', !movableVisible('indicatorWhere', tab));
-  document.getElementById('blockMarketTrend').classList.toggle('hidden', !movableVisible('marketWhere', tab));
+  document.getElementById('blockIndicator').classList.toggle('hidden', !S.showIndicator);
+  document.getElementById('blockMarketTrend').classList.toggle('hidden', !S.showMarketTrend);
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
   document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
@@ -1243,10 +1214,9 @@ function applyFeatures() {
 }
 
 function fillSettings() {
-  ['showTradeAnalysis','showRing','showWatchlist','showRecorder','showText','showSex'].forEach(k => {
+  ['showIndicator','showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showRecorder','showText','showSex'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
-  renderWhere();
   renderSexToggles();
   renderPins();
   ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
@@ -1819,7 +1789,7 @@ function sendWatchToRecorder(wt, hd) {
   saveDraft();
   document.getElementById('wWt').value = '';
   document.getElementById('wKg').value = '';
-  scrollMainTo(document.getElementById('recSplit'), 'start');
+  goRecorder();
 }
 function renderWatches() {
   document.getElementById('watchList').innerHTML = watches.map(w =>
@@ -1862,7 +1832,7 @@ function buyFromWatchlist(id) {
   document.getElementById('recBotPrime').classList.add('hidden');
   recHighlight();
   saveDraft();
-  scrollMainTo(document.getElementById('recSplit'), 'start');
+  goRecorder();
 }
 function renderWatchlist() {
   const box = document.getElementById('watchlistCards');
@@ -2522,6 +2492,7 @@ function lotLabel(l) { return 'Pen ' + (l.pen || '?'); }
 function lotBlurb(l) { return (l.hd ? l.hd + ' ' + sexWord(l) : '') ; }
 /* After editing, drop back to the row in the lot table and flash it so the change is seen landing. */
 function revealLotRow(id) {
+  showTab('truck');
   const tr = document.querySelector('#lotsSummaryTrucking tr[data-id="' + id + '"]');
   if (!tr) return;
   tr.classList.add('flash-row');
@@ -2943,7 +2914,7 @@ function editLot(id) {
   recHighlight();
   renderLots();
   saveDraft();
-  scrollMainTo(document.getElementById('recSplit'), 'start');
+  goRecorder();
 }
 let cancelArmTimer = null;
 function cancelEditTap() {
