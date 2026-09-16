@@ -273,6 +273,10 @@
     .grid-2 > div.na label { color: var(--faint); }
     .grid-2 > div.na input { background: var(--wash); color: var(--faint); border-style: dashed; }
     .grid-2 > div.na input::placeholder { color: var(--faint); font-weight: 600; }
+    .tail-view { display: flex; gap: 8px; align-items: center; }
+    .tail-preview { flex: 1 1 0; min-width: 0; min-height: 46px; display: flex; align-items: center; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: var(--r-md); background: var(--wash); color: var(--ink-2); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tail-preview.empty { color: var(--faint); font-style: italic; }
+    .tail-big { min-height: 180px; margin-top: 0; font-size: 16px; line-height: 1.45; }
     .send-minor { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .btn-ghost {
       min-height: 46px; border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--paper);
@@ -885,7 +889,17 @@
       <div class="card">
         <div class="title">Delivery / SMS sign-off</div>
         <label>Message/Notes/delivery address for carrier</label>
-        <textarea id="s_smsTail" class="native"></textarea>
+        <div id="tailView" class="tail-view">
+          <div id="tailPreview" class="tail-preview"></div>
+          <button type="button" class="btn-ghost" style="flex:0 0 auto;padding:0 16px;" onclick="tailEdit(true)">Edit</button>
+        </div>
+        <div id="tailEditBox" class="hidden">
+          <textarea id="s_smsTail" class="native tail-big" placeholder="Anything the driver needs every time — gate codes, who to call, where to unload."></textarea>
+          <div class="send-minor">
+            <button type="button" class="btn-ghost" onclick="tailEdit(false)">Cancel</button>
+            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="tailSave()">Save</button>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -979,11 +993,16 @@
   </nav>
 
 <script>
+/* STORAGE KEYS — DO NOT RENAME. Everything a user has set up (buyer ways, carriers, markings, profiles,
+   Buy indicator numbers, sale mode, tool switches, the current sale's lots) lives in the phone's localStorage
+   under these keys. An app update only replaces the page code; load() below reads what's there and merges it
+   over the defaults, so nothing a user typed is ever overwritten by a new version. Renaming a key would orphan
+   every user's settings — treat these strings as permanent. Migrations (see load) only ever add or convert. */
 const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.110'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.111'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1123,6 +1142,7 @@ function lotIncomplete(l) { return !!(l.hasPhoto && (!l.hd || !l.wt)); }
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
+    // Saved settings win over defaults, always. Defaults only fill keys the saved copy doesn't have yet.
     if (raw) S = Object.assign({}, defaults, JSON.parse(raw));
     // v.46–v.65 stored a Yards/Calcs/Both/Off placement; fold it back to on/off once.
     if (S.indicatorWhere) { S.showIndicator = S.indicatorWhere !== 'off'; delete S.indicatorWhere; }
@@ -1314,6 +1334,8 @@ function fillSettings() {
   renderSExit();
   document.getElementById('s_useCarry').value = String(S.useCarry == 0 ? 0 : 1);
   document.getElementById('s_smsTail').value = S.smsTail || '';
+  tailRender();
+  tailEdit(false);
   document.getElementById('s_licenseCode').value = S.licenseCode || '';
   updateSyncStatusNote();
   renderCarriers();
@@ -1405,6 +1427,28 @@ function setSFin(v) {
   renderSExit();
   calculate();
 }
+/* Delivery / SMS sign-off — one-line preview with Edit; the editor saves on its own, not via SAVE SETTINGS */
+function tailRender() {
+  const pv = document.getElementById('tailPreview');
+  if (!pv) return;
+  const t = (S.smsTail || '').trim();
+  pv.textContent = t ? t.replace(/\s+/g, ' ') : 'Nothing set — tap Edit';
+  pv.classList.toggle('empty', !t);
+}
+function tailEdit(open) {
+  const v = document.getElementById('tailView'), e = document.getElementById('tailEditBox'), ta = document.getElementById('s_smsTail');
+  if (open) { ta.value = S.smsTail || ''; }
+  if (v) v.classList.toggle('hidden', !!open);
+  if (e) e.classList.toggle('hidden', !open);
+  if (open && ta) setTimeout(function(){ ta.focus(); }, 50);
+}
+function tailSave() {
+  S.smsTail = document.getElementById('s_smsTail').value;
+  persist();
+  tailRender();
+  tailEdit(false);
+  showToast('Sign-off saved');
+}
 function saveSettings() {
   ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     const inp = document.getElementById('s_'+k);
@@ -1417,7 +1461,7 @@ function saveSettings() {
   applyExitMode();
   S.useCarry = document.getElementById('s_useCarry').value === '0' ? 0 : 1;
   document.getElementById('useCarry').value = String(S.useCarry);
-  S.smsTail = document.getElementById('s_smsTail').value;
+  if (!document.getElementById('tailEditBox').classList.contains('hidden')) S.smsTail = document.getElementById('s_smsTail').value;
   S.licenseCode = (document.getElementById('s_licenseCode').value || '').trim();
   persist();
   fillCarriers();
@@ -3744,6 +3788,8 @@ window.markSentTap = markSentTap;
 window.openInfo = openInfo;
 window.toggleCarrierForm = toggleCarrierForm;
 window.toggleAddForm = toggleAddForm;
+window.tailEdit = tailEdit;
+window.tailSave = tailSave;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
