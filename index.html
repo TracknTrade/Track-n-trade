@@ -28,7 +28,7 @@
       --faint: #a1a1aa;
       --line: #e4e4e7;
       --line-2: #f4f4f5;
-      --bg: #fafafa;
+      --bg: #f0f0f2;
       --card: #ffffff;
       --paper: #ffffff;
       --wash: #f7f7f8;
@@ -144,7 +144,7 @@
 
     /* ── Card ───────────────────────────────────────────────────────────── */
     .card {
-      background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
+      background: var(--card); border: 1px solid #d4d4d8; border-radius: var(--r-lg);
       padding: 16px; margin-bottom: 0; box-shadow: var(--shadow-card);
     }
     .title { font-size: 1rem; font-weight: 900; margin-bottom: 10px; color: var(--ink); }
@@ -243,6 +243,8 @@
       color: var(--tt-800); font-weight: 600; font-size: 13px; font-family: var(--font-ui);
     }
     .pin-actions button:disabled { opacity: .4; }
+    .setup-grp { font-size: 11px; font-weight: 700; color: var(--tt-800); text-transform: uppercase; letter-spacing: .1em; padding: 18px 4px 6px; }
+    .setup-grp:first-child { padding-top: 10px; }
     .tool-grp { font-size: 10px; font-weight: 700; color: var(--tt-800); text-transform: uppercase; letter-spacing: .1em; padding: 12px 0 2px; }
     .sub-toggles { padding: 2px 0 8px; border-bottom: 1px solid var(--line-2); }
     .type-pick { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -802,6 +804,7 @@
 
     <!-- SETTINGS -->
     <section id="pageSettings" class="hidden">
+      <div class="setup-grp">Sale</div>
       <div class="card">
         <div class="title">Sale mode</div>
         <div class="mode-sw">
@@ -826,6 +829,7 @@
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
       </div>
 
+      <div class="setup-grp">Numbers</div>
       <div class="card">
         <div class="title">Buy indicator</div>
         <p class="note desc">Drives the Trade analysis on the Tools tab. Tap SAVE SETTINGS at the bottom to apply. Set Use carry costs to No if you know your desired gross margin.</p>
@@ -877,18 +881,11 @@
       </div>
 
 
+      <div class="setup-grp">Trucking</div>
       <div class="card">
         <div class="title">Delivery / SMS sign-off</div>
         <label>Message/Notes/delivery address for carrier</label>
         <textarea id="s_smsTail" class="native"></textarea>
-      </div>
-
-      <div class="card">
-        <div class="title">Team sync</div>
-        <p class="note desc">For paid team/district licences. Leave blank and nothing changes — the app works exactly as it does today.</p>
-        <label>Licence code</label>
-        <input id="s_licenseCode" class="native" placeholder="Leave blank if you don't have one">
-        <p class="note" id="syncStatusNote">No licence code entered.</p>
       </div>
 
       <div class="card">
@@ -909,15 +906,20 @@
         </div>
       </div>
 
+      <div class="setup-grp">People &amp; places</div>
       <div class="card">
         <div class="title">Agency/Staff Buyers</div>
         <p class="note desc">Use this to facilitate multiple buyers, buying multiple ways for the one organisation</p>
         <label>I am Individual or Agency/Staff buyer</label>
         <select id="meAgent" class="native" onchange="saveWho()" style="margin-bottom:12px;"></select>
         <div id="agentChips"></div>
-        <div class="grid-2">
-          <input id="newAgent" class="native" placeholder="Agent name">
-          <button class="btn btn-g" style="margin-top:0;" onclick="addAgent()">Add agent</button>
+        <button type="button" class="btn btn-g" id="addAgentBtn" onclick="toggleAddForm('agent', true)">Add agent</button>
+        <div id="agentForm" class="hidden">
+          <input id="newAgent" class="native" style="margin-top:8px;" placeholder="Agent name">
+          <div class="send-minor">
+            <button type="button" class="btn-ghost" onclick="toggleAddForm('agent', false)">Cancel</button>
+            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="addAgent()">Save agent</button>
+          </div>
         </div>
       </div>
 
@@ -925,9 +927,13 @@
         <div class="title">Buyer Way</div>
         <p class="note desc">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. Tap a buyer way to open its profile: the drop-off map pin goes into the driver's text, the preferred carrier is picked for you on the Truck tab, and email and phone are kept for reference.</p>
         <div id="buyerWayList"></div>
-        <div class="grid-2">
-          <input id="newClient" class="native" placeholder="Buyer way">
-          <button class="btn btn-g" style="margin-top:0;" onclick="addClient()">Add buyer way</button>
+        <button type="button" class="btn btn-g" id="addClientBtn" onclick="toggleAddForm('client', true)">Add buyer way</button>
+        <div id="clientForm" class="hidden">
+          <input id="newClient" class="native" style="margin-top:8px;" placeholder="Buyer way (keep it short)">
+          <div class="send-minor">
+            <button type="button" class="btn-ghost" onclick="toggleAddForm('client', false)">Cancel</button>
+            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="addClient()">Save buyer way</button>
+          </div>
         </div>
       </div>
 
@@ -935,10 +941,23 @@
         <div class="title">Markings</div>
         <p class="note desc">Paint-mark options shown on the Purchase recorder, like Shoulder, Loin, Rump, Tail — or No Mark by default. Add more here, or on the fly from the recorder.</p>
         <div id="markChips"></div>
-        <div class="grid-2">
-          <input id="newMark" class="native" placeholder="Marking name">
-          <button class="btn btn-g" style="margin-top:0;" onclick="addMarkSetting()">Add marking</button>
+        <button type="button" class="btn btn-g" id="addMarkBtn" onclick="toggleAddForm('mark', true)">Add marking</button>
+        <div id="markForm" class="hidden">
+          <input id="newMark" class="native" style="margin-top:8px;" placeholder="Marking name">
+          <div class="send-minor">
+            <button type="button" class="btn-ghost" onclick="toggleAddForm('mark', false)">Cancel</button>
+            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="addMarkSetting()">Save marking</button>
+          </div>
         </div>
+      </div>
+
+      <div class="setup-grp">Account</div>
+      <div class="card">
+        <div class="title">Team sync</div>
+        <p class="note desc">For paid team/district licences. Leave blank and nothing changes — the app works exactly as it does today.</p>
+        <label>Licence code</label>
+        <input id="s_licenseCode" class="native" placeholder="Leave blank if you don't have one">
+        <p class="note" id="syncStatusNote">No licence code entered.</p>
       </div>
 
       <div class="card">
@@ -964,7 +983,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.108'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.109'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1416,6 +1435,7 @@ function addAgent() {
   const n = (document.getElementById('newAgent').value || '').trim();
   if (!n || S.agents.indexOf(n) >= 0) return;
   S.agents.push(n); document.getElementById('newAgent').value = '';
+  toggleAddForm('agent', false);
   persist(); renderChips(); fillWho();
 }
 function delAgent(n) {
@@ -1428,6 +1448,7 @@ function addClient() {
   const n = (document.getElementById('newClient').value || '').trim();
   if (!n || S.clients.indexOf(n) >= 0) return;
   S.clients.push(n); document.getElementById('newClient').value = '';
+  toggleAddForm('client', false);
   profileFor(n);
   openProfile = n;
   persist(); renderChips(); fillWho(); renderBuyerWays(); fillBuyerPick();
@@ -1539,6 +1560,7 @@ function addMarkSetting() {
   const n = (document.getElementById('newMark').value || '').trim();
   if (!n || S.markings.indexOf(n) >= 0) return;
   S.markings.push(n); document.getElementById('newMark').value = '';
+  toggleAddForm('mark', false);
   persist(); renderMarkChips(); fillMarkSelect();
 }
 function delMark(n) {
@@ -1631,6 +1653,14 @@ function renderCarriers() {
   box.innerHTML = S.carriers.map((c,i) =>
     '<div class="lot"><span><b>'+c.name+'</b><br><span class="muted">'+(c.phone||'no number')+'</span></span><button class="btn-r" onclick="delCarrier('+i+')">Remove</button></div>'
   ).join('') || '<div class="note">No carriers yet.</div>';
+}
+const ADD_FORMS = { agent: ['agentForm','addAgentBtn','newAgent'], client: ['clientForm','addClientBtn','newClient'], mark: ['markForm','addMarkBtn','newMark'] };
+function toggleAddForm(kind, open) {
+  const ids = ADD_FORMS[kind]; if (!ids) return;
+  const f = document.getElementById(ids[0]), b = document.getElementById(ids[1]), inp = document.getElementById(ids[2]);
+  if (f) f.classList.toggle('hidden', !open);
+  if (b) b.classList.toggle('hidden', !!open);
+  if (open && inp) setTimeout(function(){ inp.focus(); }, 50);
 }
 function toggleCarrierForm(open) {
   const f = document.getElementById('carrierForm'), b = document.getElementById('addCarrierBtn');
@@ -3713,6 +3743,7 @@ window.setSFin = setSFin;
 window.markSentTap = markSentTap;
 window.openInfo = openInfo;
 window.toggleCarrierForm = toggleCarrierForm;
+window.toggleAddForm = toggleAddForm;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
