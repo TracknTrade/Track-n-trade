@@ -254,6 +254,9 @@
     }
     #pageSettings .card > .note.desc { display: none; }
     .title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .grid-2 > div.na label { color: var(--faint); }
+    .grid-2 > div.na input { background: var(--wash); color: var(--faint); border-style: dashed; }
+    .grid-2 > div.na input::placeholder { color: var(--faint); font-weight: 600; }
     .info-btn {
       width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; border: none;
       background: var(--faint); color: #fff; font-size: 0.8rem; font-weight: 600;
@@ -941,11 +944,11 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.96'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.97'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
-  targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
+  targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'kg',
   opCost: 0, headPerYr: 0,
   mktAvgKg: 0, mktAvgWt: 0, ringLast: 2000,
   agentPhone: '',
@@ -1089,6 +1092,7 @@ function load() {
     // Last market is off by default from v.84; switch it off once for existing installs (Setup turns it back on).
     if (!S.mktDefaultOffDone) { S.showMarketTrend = false; S.mktDefaultOffDone = true; }
     if (!S.profitDefaultDone) { if (S.targetProfit === 1) S.targetProfit = 100; S.profitDefaultDone = true; }
+    if (!S.finDefaultDone) { S.finExit = 'kg'; S.finDefaultDone = true; }
   } catch(e) {}
 }
 function persist() {
@@ -1256,6 +1260,7 @@ function fillSettings() {
   });
   renderSexToggles();
   renderPins();
+  ['s_saleBench','s_saleKg','s_interestRate'].forEach(function(id){ setNA(id, false); });
   ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     const el = document.getElementById('s_'+k);
     if (el) el.value = S[k];
@@ -1321,6 +1326,31 @@ function renderSExit() {
   if (row) row.classList.toggle('hidden', v !== 'fin');
   const f = S.finExit === 'kg' ? 'kg' : 'hd';
   Array.from(document.querySelectorAll('#sFinSw button')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === f); });
+  applySetupNA();
+}
+function setNA(id, na) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const wrap = el.parentElement;
+  if (na) {
+    if (el.value !== '') el.dataset.val = el.value;
+    el.dataset.na = '1';
+    el.value = ''; el.placeholder = 'N/A'; el.disabled = true;
+    if (wrap) wrap.classList.add('na');
+  } else if (el.dataset.na) {
+    el.value = el.dataset.val || ''; el.placeholder = ''; el.disabled = false;
+    delete el.dataset.na;
+    if (wrap) wrap.classList.remove('na');
+  }
+}
+function applySetupNA() {
+  const mode = document.getElementById('s_exitMode').value;
+  const fin = S.finExit === 'kg' ? 'kg' : 'hd';
+  const useHd = mode === 'hd' || (mode === 'fin' && fin === 'hd');
+  const useKg = mode === 'kg' || (mode === 'fin' && fin === 'kg');
+  setNA('s_saleBench', !useHd);
+  setNA('s_saleKg', !useKg);
+  setNA('s_interestRate', mode !== 'fin');
 }
 function setSFin(v) {
   S.finExit = (v === 'kg') ? 'kg' : 'hd';
@@ -1332,7 +1362,8 @@ function setSFin(v) {
 }
 function saveSettings() {
   ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
-    S[k] = parseFloat(document.getElementById('s_'+k).value) || 0;
+    const inp = document.getElementById('s_'+k);
+    S[k] = parseFloat(inp.dataset.na ? (inp.dataset.val || '') : inp.value) || 0;
     const el = document.getElementById(k);
     if (el) el.value = S[k];
   });
