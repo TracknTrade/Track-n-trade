@@ -273,6 +273,11 @@
     .grid-2 > div.na label { color: var(--faint); }
     .grid-2 > div.na input { background: var(--wash); color: var(--faint); border-style: dashed; }
     .grid-2 > div.na input::placeholder { color: var(--faint); font-weight: 600; }
+    .bi-sum { display: flex; align-items: center; gap: 10px; }
+    .bi-sum-lines { flex: 1 1 0; min-width: 0; font-size: 13px; color: var(--ink-2); line-height: 1.4; }
+    .bi-sum-lines div { margin-bottom: 2px; }
+    .bi-sub { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line-2); }
+    .bi-sub-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
     .acct-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .acct-chip { min-height: 44px; padding: 0 14px; font-size: 14px; }
     .acct-chip.unset { border-style: dashed; color: var(--muted); }
@@ -841,7 +846,12 @@
       <div class="setup-grp">Numbers</div>
       <div class="card">
         <div class="title">Buy indicator</div>
-        <p class="note desc">Drives the Trade analysis on the Tools tab. Changes apply as you type. Set Use carry costs to No if you know your desired gross margin.</p>
+        <p class="note desc">Drives the Trade analysis on the Tools tab. Changes apply as you type. Set Use carry costs to No if you know your desired gross margin. The agistment cost calculator at the foot works out a $/wk figure from your whole-farm running cost and fills it into Agistment $/wk for you.</p>
+        <div id="biSummary" class="bi-sum">
+          <div class="bi-sum-lines"><div id="biLine1"></div><div id="biLine2"></div></div>
+          <button type="button" class="btn-ghost" style="flex:0 0 auto;padding:0 16px;" onclick="biOpen(true)">Edit</button>
+        </div>
+        <div id="biBody" class="hidden">
         <div class="mode-sw" id="sExitSw">
           <button type="button" data-v="hd" onclick="setSExit('hd')">Last sale $/hd</button>
           <button type="button" data-v="kg" onclick="setSExit('kg')">Expected $/kg</button>
@@ -873,11 +883,8 @@
           </div>
         </div>
         <button class="btn btn-g" onclick="addWeight(); showToast('Weight class added to Trade analysis');">+ Add weight class</button>
-      </div>
-
-      <div class="card">
-        <div class="title">Agistment cost calculator</div>
-        <p class="note desc">Work this out if you don't already know your $/wk agistment-equivalent cost. The answer goes straight into Agistment $/wk above. Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
+        <div class="bi-sub">
+          <div class="bi-sub-title">Agistment cost calculator</div>
         <div class="grid-2">
           <div><label>Farm cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
           <div><label>Head per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
@@ -887,8 +894,10 @@
           <b id="s_costPerHeadWk">—</b>
         </div>
         <p class="note hidden" id="agistFilledNote">Filled into Agistment $/wk above</p>
+        </div>
+        <button type="button" class="btn-ghost" style="width:100%;margin-top:12px;" onclick="biOpen(false)">Done</button>
+        </div>
       </div>
-
 
       <div class="setup-grp">Trucking</div>
       <div class="card">
@@ -1001,7 +1010,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.115'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.116'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1332,6 +1341,7 @@ function fillSettings() {
   document.getElementById('s_exitMode').value = (S.exitMode==='kg'||S.exitMode==='fin') ? S.exitMode : 'hd';
   renderSExit();
   document.getElementById('s_useCarry').value = String(S.useCarry == 0 ? 0 : 1);
+  biOpen(false);
   document.getElementById('s_smsTail').value = S.smsTail || '';
   tailRender();
   tailEdit(false);
@@ -1341,6 +1351,7 @@ function fillSettings() {
   fillWho();
   document.getElementById('agistFilledNote').classList.add('hidden');
   refreshAgistCalcDisplay();
+  biRender();
 }
 
 function agistCalcValue() {
@@ -1380,6 +1391,27 @@ function flip(k) {
   if (k === 'showSex') renderSexToggles();
 }
 
+/* Buy indicator card folds to a two-line summary; Edit opens it, Done folds it back */
+function biSummaryText() {
+  const mode = S.exitMode === 'kg' ? 'Expected $/kg' : (S.exitMode === 'fin' ? ('Financed · sell on ' + (S.finExit === 'kg' ? '$/kg' : '$/hd')) : 'Last sale $/hd');
+  const useKg = S.exitMode === 'kg' || (S.exitMode === 'fin' && S.finExit === 'kg');
+  const sale = useKg ? ('$' + Number(S.saleKg || 0).toFixed(2) + '/kg') : ('$' + Math.round(S.saleBench || 0).toLocaleString());
+  const l1 = mode + ' · Target ' + (S.targetWt || 0) + ' kg · ADG ' + (S.adg || 0) + ' kg/day' + (S.exitMode === 'fin' ? (' · ' + (S.interestRate || 0) + '%') : '');
+  const l2 = 'Sale ' + sale + ' · Agist $' + (S.agistRate || 0) + '/wk · Fixed $' + (S.fixedCosts || 0) + ' · Profit $' + (S.targetProfit || 0) + ' · CoC ' + (S.useCarry == 0 ? 'off' : 'on');
+  return [l1, l2];
+}
+function biRender() {
+  const t = biSummaryText();
+  const a = document.getElementById('biLine1'), b = document.getElementById('biLine2');
+  if (a) a.textContent = t[0];
+  if (b) b.textContent = t[1];
+}
+function biOpen(open) {
+  const sm = document.getElementById('biSummary'), bd = document.getElementById('biBody');
+  if (sm) sm.classList.toggle('hidden', !!open);
+  if (bd) bd.classList.toggle('hidden', !open);
+  if (!open) biRender();
+}
 function setSExit(v) {
   document.getElementById('s_exitMode').value = v;
   S.exitMode = (v === 'kg' || v === 'fin') ? v : 'hd';
@@ -1387,6 +1419,7 @@ function setSExit(v) {
   applyExitMode();
   renderSExit();
   calculate();
+  biRender();
 }
 function renderSExit() {
   const v = document.getElementById('s_exitMode').value;
@@ -1428,6 +1461,7 @@ function setSFin(v) {
   persist();
   renderSExit();
   calculate();
+  biRender();
 }
 /* Delivery / SMS sign-off — one-line preview with Edit; the editor saves on its own, not via SAVE SETTINGS */
 function tailRender() {
@@ -1460,6 +1494,7 @@ function saveNumericSetting(k) {
   if (live) live.value = S[k];
   persist();
   calculate();
+  biRender();
 }
 SETTING_NUMS.forEach(function(k){
   const el = document.getElementById('s_' + k);
@@ -1470,7 +1505,7 @@ SETTING_NUMS.forEach(function(k){
   if (uc) uc.addEventListener('change', function(){
     S.useCarry = uc.value === '0' ? 0 : 1;
     const live = document.getElementById('useCarry'); if (live) live.value = String(S.useCarry);
-    persist(); calculate();
+    persist(); calculate(); biRender();
   });
 })();
 /* saveSettings retired in v.113 — every Setup control saves itself the moment it changes */
@@ -3804,6 +3839,7 @@ window.toggleCarrierForm = toggleCarrierForm;
 window.toggleAddForm = toggleAddForm;
 window.tailEdit = tailEdit;
 window.tailSave = tailSave;
+window.biOpen = biOpen;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
