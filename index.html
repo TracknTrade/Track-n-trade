@@ -225,6 +225,13 @@
     .lot { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); color: var(--ink-2); }
     .lot b { color: var(--ink); }
     .toggle { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
+    .bw-row { border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: 8px; overflow: hidden; background: var(--paper); }
+    .bw-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 12px 12px; background: none; border: none; font-family: var(--font-ui); font-weight: 700; font-size: 15px; color: var(--ink); text-align: left; }
+    .bw-head .pills { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+    .bw-row.open .bw-head { border-bottom: 1px solid var(--line-2); }
+    .bw-body { padding: 10px 12px 12px; display: grid; gap: 10px; }
+    .bw-body input, .bw-body select { margin: 0; }
+    .bw-remove { justify-self: end; }
     .pin-row { padding: 10px 0; border-bottom: 1px solid var(--line-2); }
     .pin-row:last-child { border-bottom: none; }
     .pin-name { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 6px; }
@@ -899,19 +906,12 @@
 
       <div class="card">
         <div class="title">Buyer Way</div>
-        <p class="note desc">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. The short name is all that goes anywhere — the driver's text just reads "Drop-off JS:" with the map link, and the export shows the same.</p>
-        <div id="clientChips"></div>
+        <p class="note desc">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. Tap a buyer way to open its profile: the drop-off map pin and PIC go into the driver's text, the preferred carrier is picked for you on the Truck tab, and email and phone are kept for reference.</p>
+        <div id="buyerWayList"></div>
         <div class="grid-2">
           <input id="newClient" class="native" placeholder="Buyer way">
           <button class="btn btn-g" style="margin-top:0;" onclick="addClient()">Add buyer way</button>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="title">Drop-off pins for drivers</div>
-        <p class="note desc">A map link for each buyer way's ramp. It goes into the text to the carrier so the driver can tap it and navigate straight to the unloading point. Stand at the ramp and tap <b>Use my location</b>, or paste a Google Maps link.</p>
-        <div id="pinList"></div>
-        <p class="note" id="pinStatus"></p>
       </div>
 
       <div class="card">
@@ -948,9 +948,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.101'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.102'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'kg',
   opCost: 0, headPerYr: 0,
@@ -1097,6 +1097,12 @@ function load() {
     if (!S.mktDefaultOffDone) { S.showMarketTrend = false; S.mktDefaultOffDone = true; }
     if (!S.profitDefaultDone) { if (S.targetProfit === 1) S.targetProfit = 100; S.profitDefaultDone = true; }
     if (!S.finDefaultDone) { S.finExit = 'kg'; S.finDefaultDone = true; }
+    // v.53–v.101 kept drop-off pins in their own list; they now live in each buyer way's profile.
+    if (!S.profiles || typeof S.profiles !== 'object') S.profiles = {};
+    if (S.pins && typeof S.pins === 'object') {
+      Object.keys(S.pins).forEach(function(k){ if (S.pins[k]) { if (!S.profiles[k]) S.profiles[k] = {}; if (!S.profiles[k].pin) S.profiles[k].pin = S.pins[k]; } });
+      delete S.pins;
+    }
   } catch(e) {}
 }
 function persist() {
@@ -1263,7 +1269,7 @@ function fillSettings() {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderSexToggles();
-  renderPins();
+  renderBuyerWays();
   ['s_saleBench','s_saleKg','s_interestRate'].forEach(function(id){ setNA(id, false); });
   ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     const el = document.getElementById('s_'+k);
@@ -1388,9 +1394,6 @@ function renderChips() {
   document.getElementById('agentChips').innerHTML = S.agents.map(a =>
     '<span class="chip">' + a + ' <button class="btn-r" onclick="delAgent(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
   ).join('');
-  document.getElementById('clientChips').innerHTML = S.clients.map(a =>
-    '<span class="chip">' + a + ' <button class="btn-r" onclick="delClient(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
-  ).join('');
 }
 
 function addAgent() {
@@ -1409,67 +1412,104 @@ function addClient() {
   const n = (document.getElementById('newClient').value || '').trim();
   if (!n || S.clients.indexOf(n) >= 0) return;
   S.clients.push(n); document.getElementById('newClient').value = '';
-  persist(); renderChips(); fillWho(); renderPins(); fillBuyerPick();
+  profileFor(n);
+  openProfile = n;
+  persist(); renderChips(); fillWho(); renderBuyerWays(); fillBuyerPick();
 }
 function delClient(n) {
   if (S.clients.length <= 1) { alert('Add another buyer way first — there needs to be at least one.'); return; }
   S.clients = S.clients.filter(x => x !== n);
   if (S.meClient === n) S.meClient = S.clients[0];
-  setPin(n, '');
+  if (S.profiles) delete S.profiles[n];
+  if (openProfile === n) openProfile = null;
   if (document.getElementById('lotBuyer').value === n) document.getElementById('lotBuyer').value = S.meClient || '';
-  persist(); renderChips(); fillWho(); renderPins(); fillBuyerPick();
+  persist(); renderChips(); fillWho(); renderBuyerWays(); fillBuyerPick();
 }
-/* drop-off pins (one map link per buyer way) */
-function pinFor(name) { return (S.pins && S.pins[name]) || ''; }
-function setPin(name, url) {
-  if (!S.pins || typeof S.pins !== 'object') S.pins = {};
-  url = (url || '').trim();
-  if (url) S.pins[name] = url; else delete S.pins[name];
+/* Buyer-way profiles — drop-off pin, PIC, preferred carrier, contact details */
+const PROFILE_FIELDS = ['pin','pic','carrier','email','phone'];
+let openProfile = null;
+function profileFor(name) {
+  if (!S.profiles || typeof S.profiles !== 'object') S.profiles = {};
+  if (!S.profiles[name]) S.profiles[name] = {};
+  return S.profiles[name];
+}
+function pinFor(name) { return (S.profiles && S.profiles[name] && S.profiles[name].pin) || ''; }
+function picFor(name) { return (S.profiles && S.profiles[name] && S.profiles[name].pic) || ''; }
+function setProfileField(name, field, value) {
+  if (PROFILE_FIELDS.indexOf(field) < 0) return;
+  const pr = profileFor(name);
+  value = (value == null ? '' : String(value)).trim();
+  if (value) pr[field] = value; else delete pr[field];
   persist();
 }
-function renderPins() {
-  const box = document.getElementById('pinList');
+function renderBuyerWays() {
+  const box = document.getElementById('buyerWayList');
   if (!box) return;
+  const carriers = (S.carriers || []).map(function(c){ return c.name; });
   box.innerHTML = (S.clients || []).map(function(c, i) {
-    const url = pinFor(c);
-    return '<div class="pin-row">'
-      + '<div class="pin-name"><span>' + xmlEsc(c) + '</span>' + (url ? '<span class="pill pill-ok">Pin set</span>' : '<span class="pill pill-muted">No pin</span>') + '</div>'
-      + '<input class="native" data-pin="' + i + '" placeholder="Paste a Google Maps link" value="' + xmlEsc(url).replace(/"/g, '&quot;') + '">'
-      + '<div class="pin-actions">'
-      + '<button type="button" data-act="gps" data-pin="' + i + '">Use my location</button>'
-      + '<button type="button" data-act="open" data-pin="' + i + '"' + (url ? '' : ' disabled') + '>Open</button>'
-      + '<button type="button" data-act="clear" data-pin="' + i + '"' + (url ? '' : ' disabled') + '>Clear</button>'
-      + '</div></div>';
+    const pr = profileFor(c);
+    const isOpen = openProfile === c;
+    const pills = [
+      pr.pin ? '<span class="pill pill-ok">Pin</span>' : '',
+      pr.pic ? '<span class="pill pill-info">PIC</span>' : '',
+      pr.carrier ? '<span class="pill pill-muted">' + xmlEsc(pr.carrier) + '</span>' : ''
+    ].join('');
+    const body = !isOpen ? '' : '<div class="bw-body">'
+      + '<div><label>Drop-off map pin</label><input class="native" data-bw="' + i + '" data-f="pin" placeholder="Paste a Google Maps link" value="' + xmlEsc(pr.pin || '').replace(/"/g, '&quot;') + '">'
+      + '<div class="pin-actions" style="margin-top:6px;">'
+      + '<button type="button" data-act="gps" data-bw="' + i + '">Use my location</button>'
+      + '<button type="button" data-act="open" data-bw="' + i + '"' + (pr.pin ? '' : ' disabled') + '>Open</button>'
+      + '<button type="button" data-act="clear" data-bw="' + i + '"' + (pr.pin ? '' : ' disabled') + '>Clear</button>'
+      + '</div><p class="note" id="bwStatus" style="margin:6px 0 0;"></p></div>'
+      + '<div><label>PIC number</label><input class="native" data-bw="' + i + '" data-f="pic" placeholder="Property Identification Code" value="' + xmlEsc(pr.pic || '').replace(/"/g, '&quot;') + '" autocapitalize="characters"></div>'
+      + '<div><label>Preferred carrier</label><select class="native" data-bw="' + i + '" data-f="carrier"><option value="">— none —</option>'
+      + carriers.map(function(nm){ return '<option value="' + xmlEsc(nm).replace(/"/g, '&quot;') + '"' + (pr.carrier === nm ? ' selected' : '') + '>' + xmlEsc(nm) + '</option>'; }).join('')
+      + (pr.carrier && carriers.indexOf(pr.carrier) < 0 ? '<option value="' + xmlEsc(pr.carrier).replace(/"/g, '&quot;') + '" selected>' + xmlEsc(pr.carrier) + ' (not in carriers list)</option>' : '')
+      + '</select></div>'
+      + '<div><label>Email</label><input class="native" type="email" data-bw="' + i + '" data-f="email" placeholder="name@example.com" value="' + xmlEsc(pr.email || '').replace(/"/g, '&quot;') + '"></div>'
+      + '<div><label>Phone</label><input class="native" type="tel" data-bw="' + i + '" data-f="phone" placeholder="04xx xxx xxx" value="' + xmlEsc(pr.phone || '').replace(/"/g, '&quot;') + '"></div>'
+      + '<button type="button" class="btn-r bw-remove" data-act="remove" data-bw="' + i + '">Remove buyer way</button>'
+      + '</div>';
+    return '<div class="bw-row' + (isOpen ? ' open' : '') + '">'
+      + '<button type="button" class="bw-head" data-act="toggle" data-bw="' + i + '"><span>' + xmlEsc(c) + '</span><span class="pills">' + pills + '</span></button>'
+      + body + '</div>';
   }).join('');
   if (!box.dataset.bound) {
     box.dataset.bound = '1';
     box.addEventListener('change', function(e) {
-      const inp = e.target.closest('input[data-pin]');
-      if (!inp) return;
-      setPin(S.clients[+inp.dataset.pin], inp.value);
-      renderPins();
+      const el = e.target.closest('[data-bw][data-f]');
+      if (!el) return;
+      const name = S.clients[+el.dataset.bw];
+      if (name == null) return;
+      setProfileField(name, el.dataset.f, el.value);
+      if (el.dataset.f === 'pin' || el.dataset.f === 'carrier' || el.dataset.f === 'pic') renderBuyerWays();
     });
     box.addEventListener('click', function(e) {
       const b = e.target.closest('button[data-act]');
       if (!b) return;
-      const name = S.clients[+b.dataset.pin];
-      if (b.dataset.act === 'gps') pinFromGps(name);
-      if (b.dataset.act === 'open') { const u = pinFor(name); if (u) window.open(u, '_blank'); }
-      if (b.dataset.act === 'clear') { setPin(name, ''); renderPins(); }
+      const name = S.clients[+b.dataset.bw];
+      if (name == null) return;
+      const act = b.dataset.act;
+      if (act === 'toggle') { openProfile = (openProfile === name) ? null : name; renderBuyerWays(); }
+      if (act === 'gps') pinFromGps(name);
+      if (act === 'open') { const u = pinFor(name); if (u) window.open(u, '_blank'); }
+      if (act === 'clear') { setProfileField(name, 'pin', ''); renderBuyerWays(); }
+      if (act === 'remove') delClient(name);
     });
   }
 }
 function pinFromGps(name) {
-  const st = document.getElementById('pinStatus');
-  if (!navigator.geolocation) { if (st) st.textContent = 'This phone will not share its location with the app.'; return; }
-  if (st) st.textContent = 'Getting your location…';
+  const say = function(msg){ const st = document.getElementById('bwStatus'); if (st) st.textContent = msg; };
+  if (!navigator.geolocation) { say('This phone will not share its location with the app.'); return; }
+  say('Getting your location…');
   navigator.geolocation.getCurrentPosition(function(pos) {
     const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
-    setPin(name, 'https://maps.google.com/?q=' + lat + ',' + lng);
-    renderPins();
-    if (st) st.textContent = 'Pin saved for ' + name + ' (accurate to about ' + Math.round(pos.coords.accuracy) + ' m).';
-  }, function(err) {
-    if (st) st.textContent = 'Could not get a location — check Location Services is allowed for Safari/Chrome, then try again.';
+    setProfileField(name, 'pin', 'https://maps.google.com/?q=' + lat + ',' + lng);
+    openProfile = name;
+    renderBuyerWays();
+    say('Pin saved for ' + name + ' (accurate to about ' + Math.round(pos.coords.accuracy) + ' m).');
+  }, function() {
+    say('Could not get a location — check Location Services is allowed for Safari/Chrome, then try again.');
   }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
 }
 function renderMarkChips() {
@@ -1579,11 +1619,11 @@ function addCarrier() {
   S.carriers.push({name, phone});
   document.getElementById('newCarrierName').value='';
   document.getElementById('newCarrierPhone').value='';
-  persist(); renderCarriers(); fillCarriers();
+  persist(); renderCarriers(); fillCarriers(); renderBuyerWays();
 }
 function delCarrier(i) {
   if (!S.carriers || S.carriers.length<=1) { alert('Add another carrier first — there needs to be at least one.'); return; }
-  S.carriers.splice(i,1); persist(); renderCarriers(); fillCarriers();
+  S.carriers.splice(i,1); persist(); renderCarriers(); fillCarriers(); renderBuyerWays();
 }
 function fillCarriers() {
   const sel = document.getElementById('carrierPick');
@@ -3107,6 +3147,13 @@ function fillBuyerWaySelect(names) {
 function selectByBuyerWay(name) {
   if (!name) return;
   lots.forEach(function(l){ l.selected = (l.client === name); });
+  // preferred carrier from the buyer way's profile, if it's still in the carriers list
+  const pref = (S.profiles && S.profiles[name] && S.profiles[name].carrier) || '';
+  const pick = document.getElementById('carrierPick');
+  if (pref && pick && (S.carriers || []).some(function(c){ return c.name === pref; })) {
+    pick.value = pref;
+    syncCarrierPhone();
+  }
   renderLots();
 }
 function toggleLot(id, on) {
@@ -3172,11 +3219,14 @@ function pickupMessage(list) {
   });
   const ways = [];
   list.forEach(l => { const k = l.client || 'Self'; if (ways.indexOf(k) < 0) ways.push(k); });
-  const pinned = ways.filter(function(w){ return !!pinFor(w); });
-  if (pinned.length) {
+  const withDest = ways.filter(function(w){ return !!(pinFor(w) || picFor(w)); });
+  if (withDest.length) {
     lines.push('');
-    pinned.forEach(function(w) {
-      lines.push((ways.length > 1 ? 'Drop-off ' + w + ': ' : 'Drop-off: ') + pinFor(w));
+    withDest.forEach(function(w) {
+      const parts = [];
+      if (pinFor(w)) parts.push(pinFor(w));
+      if (picFor(w)) parts.push('PIC ' + picFor(w));
+      lines.push((ways.length > 1 ? 'Drop-off ' + w + ': ' : 'Drop-off: ') + parts.join(' · '));
     });
   }
   lines.push('');
