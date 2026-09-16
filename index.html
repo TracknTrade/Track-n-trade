@@ -149,6 +149,7 @@
     }
     .title { font-size: 1rem; font-weight: 900; margin-bottom: 10px; color: var(--ink); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #pageSettings .grid-2 > div { display: flex; flex-direction: column; justify-content: flex-end; }
 
     /* ── Field label + inputs ───────────────────────────────────────────── */
     label {
@@ -245,6 +246,8 @@
     .tool-grp { font-size: 10px; font-weight: 700; color: var(--tt-800); text-transform: uppercase; letter-spacing: .1em; padding: 12px 0 2px; }
     .sub-toggles { padding: 2px 0 8px; border-bottom: 1px solid var(--line-2); }
     .type-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .type-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0 2px; font-size: var(--fs-sm); color: var(--ink-2); }
+    .type-sum .btn-r { color: var(--tt-800); }
     .type-pick .mark-chip { min-height: 36px; padding: 0 12px; font-size: 13px; scroll-snap-align: none; }
     #pageSettings * { scroll-snap-align: none; }
     .sub-toggles .toggle { padding: 9px 0; font-weight: 500; }
@@ -863,8 +866,8 @@
         <div class="title">Agistment cost calculator</div>
         <p class="note desc">Work this out if you don't already know your $/wk agistment-equivalent cost. The answer goes straight into Agistment $/wk above. Takes your whole farm's yearly running cost, spreads it across the head you turn off (sell or run) each year, then divides by 52 weeks. The result is a $/head/week figure directly comparable to Agistment $/wk above — if you run your own land instead of paying an outside agistment provider, it's automatically filled into that field for you as you type below.</p>
         <div class="grid-2">
-          <div><label>Farm operating cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
-          <div><label>Head sold/run per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
+          <div><label>Farm cost $/yr</label><input id="s_opCost" inputmode="decimal"></div>
+          <div><label>Head per yr</label><input id="s_headPerYr" inputmode="decimal"></div>
         </div>
         <div class="cost-calc-out">
           <span class="muted">Cost per head, per week</span>
@@ -892,12 +895,18 @@
         <div class="title">Livestock carriers</div>
         <p class="note desc">Add trucking companies. You pick one on the Truck tab when sending lots.</p>
         <div id="carrierList"></div>
-        <input id="newCarrierName" class="native" style="margin-top:8px;" placeholder="Carrier name">
-        <div class="phone-row" style="margin-top:8px;">
-          <input id="newCarrierPhone" class="native" type="tel" placeholder="Mobile">
-          <button type="button" id="contactBtnNew" class="contact-btn hidden" onclick="pickContact('newCarrierPhone')">Contacts</button>
+        <button type="button" class="btn btn-g" id="addCarrierBtn" onclick="toggleCarrierForm(true)">Add carrier</button>
+        <div id="carrierForm" class="hidden">
+          <input id="newCarrierName" class="native" style="margin-top:8px;" placeholder="Carrier name">
+          <div class="phone-row" style="margin-top:8px;">
+            <input id="newCarrierPhone" class="native" type="tel" placeholder="Mobile">
+            <button type="button" id="contactBtnNew" class="contact-btn hidden" onclick="pickContact('newCarrierPhone')">Contacts</button>
+          </div>
+          <div class="send-minor">
+            <button type="button" class="btn-ghost" onclick="toggleCarrierForm(false)">Cancel</button>
+            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="addCarrier()">Save carrier</button>
+          </div>
         </div>
-        <button class="btn btn-g" onclick="addCarrier()">Add carrier</button>
       </div>
 
       <div class="card">
@@ -956,7 +965,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.106'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.107'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1624,10 +1633,17 @@ function renderCarriers() {
     '<div class="lot"><span><b>'+c.name+'</b><br><span class="muted">'+(c.phone||'no number')+'</span></span><button class="btn-r" onclick="delCarrier('+i+')">Remove</button></div>'
   ).join('') || '<div class="note">No carriers yet.</div>';
 }
+function toggleCarrierForm(open) {
+  const f = document.getElementById('carrierForm'), b = document.getElementById('addCarrierBtn');
+  if (f) f.classList.toggle('hidden', !open);
+  if (b) b.classList.toggle('hidden', !!open);
+  if (open) { const nm = document.getElementById('newCarrierName'); if (nm) setTimeout(function(){ nm.focus(); }, 50); }
+}
 function addCarrier() {
   const name = (document.getElementById('newCarrierName').value||'').trim();
   const phone = (document.getElementById('newCarrierPhone').value||'').trim();
-  if (!name) return;
+  if (!name) { const nm = document.getElementById('newCarrierName'); if (nm) nm.focus(); return; }
+  toggleCarrierForm(false);
   if (!S.carriers) S.carriers = [];
   S.carriers.push({name, phone});
   document.getElementById('newCarrierName').value='';
@@ -2137,13 +2153,22 @@ function pickSexChip(v) {
   saveDraft();
 }
 function sexWord(l) { return (l.sex && SEX_WORDS[l.sex]) || 'hd'; }
+let sexPickOpen = false;
 function renderSexToggles() {
   const box = document.getElementById('sexTypeToggles');
   if (!box) return;
   box.classList.toggle('hidden', !S.showSex);
+  if (!S.showSex) sexPickOpen = false;
+  const on = SEX_TYPES.filter(sexEnabled);
+  if (!sexPickOpen) {
+    box.innerHTML = '<div class="type-sum"><span>' + (on.length === SEX_TYPES.length ? 'All types shown' : (on.length ? xmlEsc(on.join(', ')) : 'No types shown')) + '</span>'
+      + '<button type="button" class="btn-r" onclick="sexPickOpen=true;renderSexToggles()">Change</button></div>';
+    return;
+  }
   box.innerHTML = '<div class="type-pick">' + SEX_TYPES.map(function(t){
     return '<button type="button" class="mark-chip'+(sexEnabled(t)?' on':'')+'" onclick="flipSex(\''+t.replace(/&/g,'&amp;')+'\')">'+xmlEsc(t)+'</button>';
-  }).join('') + '</div><p class="note" style="margin-top:4px;">Tap to hide the ones you never buy.</p>';
+  }).join('') + '</div><div class="type-sum"><span class="note" style="margin:0;">Tap to hide the ones you never buy.</span>'
+  + '<button type="button" class="btn-r" onclick="sexPickOpen=false;renderSexToggles()">Done</button></div>';
 }
 function flipSex(t) {
   if (!S.sexOn || typeof S.sexOn !== 'object') { S.sexOn = {}; SEX_TYPES.forEach(function(x){ S.sexOn[x] = true; }); }
@@ -3688,6 +3713,7 @@ window.setSExit = setSExit;
 window.setSFin = setSFin;
 window.markSentTap = markSentTap;
 window.openInfo = openInfo;
+window.toggleCarrierForm = toggleCarrierForm;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
