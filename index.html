@@ -922,22 +922,6 @@
 
       <div class="setup-grp">People &amp; places</div>
       <div class="card">
-        <div class="title">Agency/Staff Buyers</div>
-        <p class="note desc">Use this to facilitate multiple buyers, buying multiple ways for the one organisation</p>
-        <label>I am Individual or Agency/Staff buyer</label>
-        <select id="meAgent" class="native" onchange="saveWho()" style="margin-bottom:12px;"></select>
-        <div id="agentChips"></div>
-        <button type="button" class="btn btn-g" id="addAgentBtn" onclick="toggleAddForm('agent', true)">Add agent</button>
-        <div id="agentForm" class="hidden">
-          <input id="newAgent" class="native" style="margin-top:8px;" placeholder="Agent name">
-          <div class="send-minor">
-            <button type="button" class="btn-ghost" onclick="toggleAddForm('agent', false)">Cancel</button>
-            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="addAgent()">Save agent</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
         <div class="title">Buyer Way</div>
         <p class="note desc">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. Tap a buyer way to open its profile: the drop-off map pin goes into the driver's text, the preferred carrier is picked for you on the Truck tab, and email and phone are kept for reference.</p>
         <div id="buyerWayList"></div>
@@ -968,7 +952,9 @@
       <div class="setup-grp">Account</div>
       <div class="card">
         <div class="title">Team sync</div>
-        <p class="note desc">For paid team/district licences. Leave blank and nothing changes — the app works exactly as it does today.</p>
+        <p class="note desc">Your name is stamped on each lot you record, so an office running several buyers can tell whose lots are whose in the export and the shared spreadsheet. The licence code is for paid team/district licences — leave it blank and nothing changes.</p>
+        <label>Your name</label>
+        <input id="s_meAgent" class="native" placeholder="e.g. Hagen" autocapitalize="words" style="margin-bottom:10px;">
         <label>Licence code</label>
         <input id="s_licenseCode" class="native" placeholder="Leave blank if you don't have one">
         <p class="note" id="syncStatusNote">No licence code entered.</p>
@@ -1002,7 +988,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.111'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.112'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1462,6 +1448,7 @@ function saveSettings() {
   S.useCarry = document.getElementById('s_useCarry').value === '0' ? 0 : 1;
   document.getElementById('useCarry').value = String(S.useCarry);
   if (!document.getElementById('tailEditBox').classList.contains('hidden')) S.smsTail = document.getElementById('s_smsTail').value;
+  saveWho();
   S.licenseCode = (document.getElementById('s_licenseCode').value || '').trim();
   persist();
   fillCarriers();
@@ -1469,25 +1456,8 @@ function saveSettings() {
   trySyncQueue();
 }
 
-function renderChips() {
-  document.getElementById('agentChips').innerHTML = S.agents.map(a =>
-    '<span class="chip">' + a + ' <button class="btn-r" onclick="delAgent(\'' + a.replace(/'/g,"") + '\')">x</button></span>'
-  ).join('');
-}
+function renderChips() {}
 
-function addAgent() {
-  const n = (document.getElementById('newAgent').value || '').trim();
-  if (!n || S.agents.indexOf(n) >= 0) return;
-  S.agents.push(n); document.getElementById('newAgent').value = '';
-  toggleAddForm('agent', false);
-  persist(); renderChips(); fillWho();
-}
-function delAgent(n) {
-  if (S.agents.length <= 1) { alert('Add another agent first — there needs to be at least one.'); return; }
-  S.agents = S.agents.filter(x => x !== n);
-  if (S.meAgent === n) S.meAgent = S.agents[0];
-  persist(); renderChips(); fillWho();
-}
 function addClient() {
   const n = (document.getElementById('newClient').value || '').trim();
   if (!n || S.clients.indexOf(n) >= 0) return;
@@ -1613,12 +1583,14 @@ function delMark(n) {
   persist(); renderMarkChips(); fillMarkSelect(); resetMarkSelect();
 }
 function fillWho() {
-  const a = document.getElementById('meAgent');
-  a.innerHTML = S.agents.map(x => '<option>' + x + '</option>').join('');
-  a.value = S.meAgent;
+  const a = document.getElementById('s_meAgent');
+  // the old list's placeholder entries aren't a name — show them as blank so the user types their own
+  if (a) a.value = (S.meAgent === 'Self' || S.meAgent === 'Agency/Staff Buyer') ? '' : (S.meAgent || '');
 }
 function saveWho() {
-  S.meAgent = document.getElementById('meAgent').value;
+  const a = document.getElementById('s_meAgent');
+  if (!a) return;
+  S.meAgent = (a.value || '').trim() || 'Self';
   persist();
 }
 
@@ -1698,7 +1670,7 @@ function renderCarriers() {
     '<div class="lot"><span><b>'+c.name+'</b><br><span class="muted">'+(c.phone||'no number')+'</span></span><button class="btn-r" onclick="delCarrier('+i+')">Remove</button></div>'
   ).join('') || '<div class="note">No carriers yet.</div>';
 }
-const ADD_FORMS = { agent: ['agentForm','addAgentBtn','newAgent'], client: ['clientForm','addClientBtn','newClient'], mark: ['markForm','addMarkBtn','newMark'] };
+const ADD_FORMS = { client: ['clientForm','addClientBtn','newClient'], mark: ['markForm','addMarkBtn','newMark'] };
 function toggleAddForm(kind, open) {
   const ids = ADD_FORMS[kind]; if (!ids) return;
   const f = document.getElementById(ids[0]), b = document.getElementById(ids[1]), inp = document.getElementById(ids[2]);
@@ -3665,7 +3637,9 @@ function init() {
   document.getElementById('modeSpecial').classList.toggle('on', S.saleMode !== 'prime');
   document.getElementById('modePrime').classList.toggle('on', S.saleMode === 'prime');
   applyRecorderMode();
-  fillWho(); fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
+  fillWho();
+  const nmEl = document.getElementById('s_meAgent'); if (nmEl) nmEl.addEventListener('change', saveWho);
+  fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
   foldSettingsNotes();
   document.getElementById('lotSex').value = '';
@@ -3748,8 +3722,6 @@ window.logWatch = logWatch;
 window.showTab = showTab;
 window.flip = flip;
 window.saveSettings = saveSettings;
-window.addAgent = addAgent;
-window.delAgent = delAgent;
 window.addClient = addClient;
 window.delClient = delClient;
 window.saveWho = saveWho;
