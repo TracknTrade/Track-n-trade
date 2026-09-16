@@ -163,7 +163,9 @@
       min-height: 62px; text-align: center; color: var(--ink); font-family: var(--font-ui);
     }
     input::placeholder, textarea::placeholder { color: var(--faint); font-weight: 500; }
-    input.kp-active { border-color: var(--tt-500); box-shadow: 0 0 0 4px rgba(16,185,129,.16); }
+    /* the box the keypad is pointed at — one bright mint ring across the whole app */
+    input.kp-active { border-color: #6ee7b7 !important; box-shadow: 0 0 0 5px #6ee7b7, 0 0 0 9px rgba(110,231,183,.45); background: #ecfdf5; }
+    input.native:focus, textarea.native:focus, select.native:focus { border-color: #6ee7b7 !important; box-shadow: 0 0 0 5px #6ee7b7, 0 0 0 9px rgba(110,231,183,.45); background: #ecfdf5; outline: none; }
     textarea { min-height: 88px; text-align: left; font-weight: 500; font-size: var(--fs-sm); line-height: 1.45; }
     .native { text-align: left; font-weight: 600; font-size: 1rem; }
     select.native { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
@@ -195,7 +197,7 @@
     .watch label { color: var(--tt-300); }
     .watch input { background: var(--paper); color: var(--ink); text-align: center; font-size: 2.2rem; min-height: 76px; border-color: transparent; }
     /* the dark card swallows the normal green halo, so the active box gets a bright ring instead */
-    .watch input.kp-active { border-color: #6ee7b7; box-shadow: 0 0 0 5px #6ee7b7, 0 0 0 9px rgba(110,231,183,.45); background: #ecfdf5; }
+    .watch input.kp-active { border-color: #6ee7b7 !important; box-shadow: 0 0 0 5px #6ee7b7, 0 0 0 9px rgba(110,231,183,.45); background: #ecfdf5; }
     .ring-row { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
     .trend-row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
     .mkt-row { display: flex; align-items: flex-end; gap: 14px; }
@@ -372,7 +374,7 @@
       .mark-chip { min-height: 34px; font-size: 13px; padding: 0 12px; }
     }
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .rec-fields .on-field { border-color: var(--tt-500) !important; box-shadow: 0 0 0 4px rgba(16,185,129,.16); background: var(--paper); }
+    .rec-fields .on-field { border-color: #6ee7b7 !important; box-shadow: 0 0 0 5px #6ee7b7, 0 0 0 9px rgba(110,231,183,.45); background: #ecfdf5; }
     .rec-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border-radius: var(--r-md); overflow: hidden; flex: 0 0 auto; }
     .rec-stats .stat { padding: 7px 1px; min-width: 0; }
     .rec-stats .stat-k { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -946,7 +948,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.99'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.100'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
