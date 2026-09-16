@@ -948,7 +948,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.100'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.101'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3390,12 +3390,25 @@ function buildXlsxBlob(sheets){
   return new Blob(zipBuild(files), {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 
+/* Timestamps are stored as UTC (ISO); anything shown to a person is in the phone's own time zone. */
+function localStamp(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return String(iso).slice(0,16).replace('T',' ');
+  const p = function(x){ return (x < 10 ? '0' : '') + x; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function localDate(d) {
+  d = d || new Date();
+  const p = function(x){ return (x < 10 ? '0' : '') + x; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
 function exportExcel() {
   const headers = ['Date','Sale','Yard','Pen','Type','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
   const lotRows = [headers];
   lots.forEach(l => {
     lotRows.push([
-      (l.t||'').slice(0,16).replace('T',' '),
+      localStamp(l.t),
       l.sale||'', l.yard||'', l.pen||'', l.sex||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
       Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
     ]);
@@ -3429,14 +3442,14 @@ function exportExcel() {
     ...Object.keys(byClient).map(k => [k, byClient[k].hd, Math.round(byClient[k].dol)])
   ];
   const watchRows = [['Time','Side','Weight','$/hd','$/kg','Agent','Buyer way']];
-  watches.forEach(w => watchRows.push([(w.t||'').slice(0,16).replace('T',' '), w.side, w.wt, w.hd, w.kg, w.agent||'', w.client||'']));
+  watches.forEach(w => watchRows.push([localStamp(w.t), w.side, w.wt, w.hd, w.kg, w.agent||'', w.client||'']));
 
   const blob = buildXlsxBlob([
     {name:'Lots', rows: lotRows},
     {name:'Summary', rows: sumRows},
     {name:'Watch', rows: watchRows}
   ]);
-  const name = 'track-n-trade-' + new Date().toISOString().slice(0,10) + '.xlsx';
+  const name = 'track-n-trade-' + localDate() + '.xlsx';
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, name);
     return;
