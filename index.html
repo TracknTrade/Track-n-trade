@@ -831,6 +831,11 @@
       <div class="card">
         <div class="title">Show or hide tools</div>
         <p class="note desc">Switch off anything you don't use and it disappears from its page. Grouped by the tab it lives on.</p>
+        <div id="stSummary" class="bi-sum">
+          <div class="bi-sum-lines"><div id="stLine"></div></div>
+          <button type="button" class="btn-ghost" style="flex:0 0 auto;padding:0 16px;" onclick="stOpen(true)">Edit</button>
+        </div>
+        <div id="stBody" class="hidden">
         <div class="tool-grp">Tools</div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
@@ -841,6 +846,8 @@
         <div id="sexTypeToggles" class="sub-toggles"></div>
         <div class="tool-grp">Truck</div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
+        <button type="button" class="btn btn-g" style="margin-top:12px;" onclick="stOpen(false)">Done</button>
+        </div>
       </div>
 
       <div class="setup-grp">Numbers</div>
@@ -895,7 +902,7 @@
         </div>
         <p class="note hidden" id="agistFilledNote">Filled into Agistment $/wk above</p>
         </div>
-        <button type="button" class="btn-ghost" style="width:100%;margin-top:12px;" onclick="biOpen(false)">Done</button>
+        <button type="button" class="btn btn-g" style="margin-top:12px;" onclick="biOpen(false)">Done</button>
         </div>
       </div>
 
@@ -1010,7 +1017,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.116'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.118'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1342,6 +1349,7 @@ function fillSettings() {
   renderSExit();
   document.getElementById('s_useCarry').value = String(S.useCarry == 0 ? 0 : 1);
   biOpen(false);
+  stOpen(false);
   document.getElementById('s_smsTail').value = S.smsTail || '';
   tailRender();
   tailEdit(false);
@@ -1389,8 +1397,23 @@ function flip(k) {
   document.getElementById('sw_'+k).classList.toggle('on', S[k]);
   persist();
   if (k === 'showSex') renderSexToggles();
+  stRender();
 }
 
+/* Show or hide tools folds to "what's off"; Edit opens the switches, Done folds them back */
+const TOOL_NAMES = { showMarketTrend: 'Last market', showTradeAnalysis: 'Trade analysis', showRing: 'Sales watch ring', showWatchlist: 'Pen watchlist', showSex: 'Stock type chips', showText: 'Text trucking agent' };
+function stRender() {
+  const el = document.getElementById('stLine');
+  if (!el) return;
+  const off = Object.keys(TOOL_NAMES).filter(function(k){ return !S[k]; }).map(function(k){ return TOOL_NAMES[k]; });
+  el.textContent = off.length ? ('Off: ' + off.join(', ')) : 'All tools on';
+}
+function stOpen(open) {
+  const sm = document.getElementById('stSummary'), bd = document.getElementById('stBody');
+  if (sm) sm.classList.toggle('hidden', !!open);
+  if (bd) bd.classList.toggle('hidden', !open);
+  if (!open) { stRender(); sexPickOpen = false; renderSexToggles(); }
+}
 /* Buy indicator card folds to a two-line summary; Edit opens it, Done folds it back */
 function biSummaryText() {
   const mode = S.exitMode === 'kg' ? 'Expected $/kg' : (S.exitMode === 'fin' ? ('Financed · sell on ' + (S.finExit === 'kg' ? '$/kg' : '$/hd')) : 'Last sale $/hd');
@@ -3840,6 +3863,7 @@ window.toggleAddForm = toggleAddForm;
 window.tailEdit = tailEdit;
 window.tailSave = tailSave;
 window.biOpen = biOpen;
+window.stOpen = stOpen;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
