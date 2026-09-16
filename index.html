@@ -936,7 +936,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.94'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.95'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1210,6 +1210,7 @@ function showTab(name) {
     return;
   }
   applyFeatures();
+  if (name === 'record') { fillBuyerPick(); syncMarkChips(); fillSexChips(); }
   if (name === 'record' && !ringPositioned) scrollRing(S.ringLast || 2000);
   if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
   if (name === 'truck') renderLots();
@@ -1355,14 +1356,15 @@ function addClient() {
   const n = (document.getElementById('newClient').value || '').trim();
   if (!n || S.clients.indexOf(n) >= 0) return;
   S.clients.push(n); document.getElementById('newClient').value = '';
-  persist(); renderChips(); fillWho(); renderPins();
+  persist(); renderChips(); fillWho(); renderPins(); fillBuyerPick();
 }
 function delClient(n) {
   if (S.clients.length <= 1) { alert('Add another buyer way first — there needs to be at least one.'); return; }
   S.clients = S.clients.filter(x => x !== n);
   if (S.meClient === n) S.meClient = S.clients[0];
   setPin(n, '');
-  persist(); renderChips(); fillWho(); renderPins();
+  if (document.getElementById('lotBuyer').value === n) document.getElementById('lotBuyer').value = S.meClient || '';
+  persist(); renderChips(); fillWho(); renderPins(); fillBuyerPick();
 }
 /* drop-off pins (one map link per buyer way) */
 function pinFor(name) { return (S.pins && S.pins[name]) || ''; }
