@@ -485,7 +485,7 @@
     .modal-body { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.5; margin-bottom: 18px; }
     .slide-confirm { position: relative; height: 56px; border-radius: 28px; background: var(--wash); border: 1.5px solid var(--line); overflow: hidden; margin-bottom: 12px; touch-action: none; user-select: none; }
     .slide-track { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-2); font-weight: 600; font-size: var(--fs-sm); letter-spacing: .02em; }
-    .slide-knob { position: absolute; top: 2px; left: 2px; width: 50px; height: 50px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 1px 4px rgba(9,9,11,.25); }
+    .slide-knob { position: absolute; top: 2px; left: 2px; width: 50px; height: 50px; border-radius: 50%; background: #fff; border: 1.5px solid var(--line); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 1px 4px rgba(9,9,11,.25); }
     .modal-cancel { width: 100%; background: var(--paper); color: var(--tt-800); border: 1.5px solid var(--line); border-radius: var(--r-md); padding: 14px; font-weight: 600; font-size: 15px; min-height: 50px; }
 
     /* ── Buyer-way chips (on the dark keypad ground) ───────────────────── */
@@ -948,7 +948,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.103'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.104'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
