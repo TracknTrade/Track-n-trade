@@ -906,7 +906,7 @@
 
       <div class="card">
         <div class="title">Buyer Way</div>
-        <p class="note desc">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. Tap a buyer way to open its profile: the drop-off map pin and PIC go into the driver's text, the preferred carrier is picked for you on the Truck tab, and email and phone are kept for reference.</p>
+        <p class="note desc">Who each lot is bought for — a client, or <b>Self</b> if you're buying direct. They show as one-tap chips on the Sale tab, so keep the names short: <b>JS</b>, <b>Smith</b> or <b>Back Ck</b> fits far more on the row than "J &amp; M Smith Pastoral Co" and you'll still know who's who. Tap a buyer way to open its profile: the drop-off map pin goes into the driver's text, the preferred carrier is picked for you on the Truck tab, and email and phone are kept for reference.</p>
         <div id="buyerWayList"></div>
         <div class="grid-2">
           <input id="newClient" class="native" placeholder="Buyer way">
@@ -948,7 +948,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.102'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.103'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3219,14 +3219,11 @@ function pickupMessage(list) {
   });
   const ways = [];
   list.forEach(l => { const k = l.client || 'Self'; if (ways.indexOf(k) < 0) ways.push(k); });
-  const withDest = ways.filter(function(w){ return !!(pinFor(w) || picFor(w)); });
-  if (withDest.length) {
+  const pinned = ways.filter(function(w){ return !!pinFor(w); });
+  if (pinned.length) {
     lines.push('');
-    withDest.forEach(function(w) {
-      const parts = [];
-      if (pinFor(w)) parts.push(pinFor(w));
-      if (picFor(w)) parts.push('PIC ' + picFor(w));
-      lines.push((ways.length > 1 ? 'Drop-off ' + w + ': ' : 'Drop-off: ') + parts.join(' · '));
+    pinned.forEach(function(w) {
+      lines.push((ways.length > 1 ? 'Drop-off ' + w + ': ' : 'Drop-off: ') + pinFor(w));
     });
   }
   lines.push('');
