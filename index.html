@@ -791,8 +791,8 @@
 
       <div class="screen screen-tight">
         <div class="card">
-        <button class="btn btn-n" onclick="exportExcel()">EXPORT TO EXCEL</button>
-        <p class="note">One workbook: Lots sheet + Summary sheet. Excel, Sheets and most offices open it. On phones that support it, this opens your share sheet so you can email or send it straight to the office.</p>
+        <div class="title-row" style="margin:0 0 8px;"><span class="title" style="margin:0;">Export</span><button type="button" class="info-btn" onclick="openInfo('Export to Excel', this.getAttribute('data-body'))" data-body="One workbook: Lots sheet + Summary sheet. Excel, Sheets and most offices open it. On phones that support it, this opens your share sheet so you can email or send it straight to the office." aria-label="About the export">i</button></div>
+        <button class="btn btn-n" style="margin-top:0;" onclick="exportExcel()">EXPORT TO EXCEL</button>
         </div>
       </div>
     </section>
@@ -956,7 +956,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.105'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.106'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1599,6 +1599,11 @@ function foldSettingsNotes() {
     title.classList.add('title-row');
     title.appendChild(b);
   });
+}
+function openInfo(title, body) {
+  document.getElementById('toolInfoTitle').textContent = title;
+  document.getElementById('toolInfoBody').innerHTML = body || '';
+  document.getElementById('toolInfoModal').classList.remove('hidden');
 }
 function openToolInfo(key, ev) {
   if (ev) ev.stopPropagation();
@@ -3682,6 +3687,7 @@ window.cancelEditTap = cancelEditTap;
 window.setSExit = setSExit;
 window.setSFin = setSFin;
 window.markSentTap = markSentTap;
+window.openInfo = openInfo;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
