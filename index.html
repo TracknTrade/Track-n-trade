@@ -194,6 +194,8 @@
     .watch { background: var(--tt-900); color: #fff; border-radius: var(--r-lg); padding: 16px; margin: 16px 0; }
     .watch label { color: var(--tt-300); }
     .watch input { background: var(--paper); color: var(--ink); text-align: center; font-size: 2.2rem; min-height: 76px; border-color: transparent; }
+    /* the dark card swallows the normal green halo, so the active box gets a bright ring instead */
+    .watch input.kp-active { border-color: var(--tt-500); box-shadow: 0 0 0 4px rgba(255,255,255,.55), 0 0 0 7px var(--tt-500); }
     .ring-row { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
     .trend-row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
     .mkt-row { display: flex; align-items: flex-end; gap: 14px; }
@@ -944,7 +946,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.97'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.98'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
