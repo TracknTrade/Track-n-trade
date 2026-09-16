@@ -273,6 +273,11 @@
     .grid-2 > div.na label { color: var(--faint); }
     .grid-2 > div.na input { background: var(--wash); color: var(--faint); border-style: dashed; }
     .grid-2 > div.na input::placeholder { color: var(--faint); font-weight: 600; }
+    .acct-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .acct-chip { min-height: 44px; padding: 0 14px; font-size: 14px; }
+    .acct-chip.unset { border-style: dashed; color: var(--muted); }
+    .acct-chip.on::before { content: "✓"; margin-right: 6px; font-weight: 800; }
+    #acctEditBox { margin-top: 10px; }
     .tail-view { display: flex; gap: 8px; align-items: center; }
     .tail-preview { flex: 1 1 0; min-width: 0; min-height: 46px; display: flex; align-items: center; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: var(--r-md); background: var(--wash); color: var(--ink-2); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tail-preview.empty { color: var(--faint); font-style: italic; }
@@ -836,7 +841,7 @@
       <div class="setup-grp">Numbers</div>
       <div class="card">
         <div class="title">Buy indicator</div>
-        <p class="note desc">Drives the Trade analysis on the Tools tab. Tap SAVE SETTINGS at the bottom to apply. Set Use carry costs to No if you know your desired gross margin.</p>
+        <p class="note desc">Drives the Trade analysis on the Tools tab. Changes apply as you type. Set Use carry costs to No if you know your desired gross margin.</p>
         <div class="mode-sw" id="sExitSw">
           <button type="button" data-v="hd" onclick="setSExit('hd')">Last sale $/hd</button>
           <button type="button" data-v="kg" onclick="setSExit('kg')">Expected $/kg</button>
@@ -953,11 +958,20 @@
       <div class="card">
         <div class="title">Team sync</div>
         <p class="note desc">Your name is stamped on each lot you record, so an office running several buyers can tell whose lots are whose in the export and the shared spreadsheet. The licence code is for paid team/district licences — leave it blank and nothing changes.</p>
-        <label>Your name</label>
-        <input id="s_meAgent" class="native" placeholder="e.g. Hagen" autocapitalize="words" style="margin-bottom:10px;">
-        <label>Licence code</label>
-        <input id="s_licenseCode" class="native" placeholder="Leave blank if you don't have one">
-        <p class="note" id="syncStatusNote">No licence code entered.</p>
+        <div class="acct-row">
+          <button type="button" class="mark-chip acct-chip" id="chipName" onclick="acctEdit('name')">Your name</button>
+          <button type="button" class="mark-chip acct-chip" id="chipLic" onclick="acctEdit('lic')">Licence code</button>
+        </div>
+        <div id="acctEditBox" class="hidden">
+          <label id="acctEditLabel">Your name</label>
+          <input id="acctEditInput" class="native" autocapitalize="words">
+          <div class="send-minor">
+            <button type="button" class="btn-ghost" onclick="acctEdit(null)">Cancel</button>
+            <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="acctSave()">Save</button>
+          </div>
+        </div>
+        <input type="hidden" id="s_meAgent"><input type="hidden" id="s_licenseCode">
+        <p class="note hidden" id="syncStatusNote" style="margin-top:8px;">No licence code entered.</p>
       </div>
 
       <div class="card">
@@ -966,7 +980,6 @@
         <button type="button" class="btn" style="width:auto;min-height:44px;padding:10px 18px;font-size:14px;background:var(--paper);color:var(--tt-800);border:1.5px solid var(--line);" onclick="sendFeedback()">Send feedback</button>
       </div>
 
-      <button class="btn btn-g" onclick="saveSettings(); showToast('Settings saved');">SAVE SETTINGS</button>
       <p class="note" id="verNote" style="text-align:center;margin-top:10px;"></p>
     </section>
   </main>
@@ -988,7 +1001,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.112'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.113'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1322,8 +1335,7 @@ function fillSettings() {
   document.getElementById('s_smsTail').value = S.smsTail || '';
   tailRender();
   tailEdit(false);
-  document.getElementById('s_licenseCode').value = S.licenseCode || '';
-  updateSyncStatusNote();
+  renderAcct();
   renderCarriers();
   renderChips();
   fillWho();
@@ -1370,7 +1382,11 @@ function flip(k) {
 
 function setSExit(v) {
   document.getElementById('s_exitMode').value = v;
+  S.exitMode = (v === 'kg' || v === 'fin') ? v : 'hd';
+  persist();
+  applyExitMode();
   renderSExit();
+  calculate();
 }
 function renderSExit() {
   const v = document.getElementById('s_exitMode').value;
@@ -1435,26 +1451,29 @@ function tailSave() {
   tailEdit(false);
   showToast('Sign-off saved');
 }
-function saveSettings() {
-  ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
-    const inp = document.getElementById('s_'+k);
-    S[k] = parseFloat(inp.dataset.na ? (inp.dataset.val || '') : inp.value) || 0;
-    const el = document.getElementById(k);
-    if (el) el.value = S[k];
-  });
-  const em = document.getElementById('s_exitMode').value;
-  S.exitMode = (em==='kg'||em==='fin') ? em : 'hd';
-  applyExitMode();
-  S.useCarry = document.getElementById('s_useCarry').value === '0' ? 0 : 1;
-  document.getElementById('useCarry').value = String(S.useCarry);
-  if (!document.getElementById('tailEditBox').classList.contains('hidden')) S.smsTail = document.getElementById('s_smsTail').value;
-  saveWho();
-  S.licenseCode = (document.getElementById('s_licenseCode').value || '').trim();
+const SETTING_NUMS = ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'];
+function saveNumericSetting(k) {
+  const inp = document.getElementById('s_' + k);
+  if (!inp) return;
+  S[k] = parseFloat(inp.dataset.na ? (inp.dataset.val || '') : inp.value) || 0;
+  const live = document.getElementById(k);
+  if (live) live.value = S[k];
   persist();
-  fillCarriers();
   calculate();
-  trySyncQueue();
 }
+SETTING_NUMS.forEach(function(k){
+  const el = document.getElementById('s_' + k);
+  if (el) el.addEventListener('input', function(){ saveNumericSetting(k); });
+});
+(function(){
+  const uc = document.getElementById('s_useCarry');
+  if (uc) uc.addEventListener('change', function(){
+    S.useCarry = uc.value === '0' ? 0 : 1;
+    const live = document.getElementById('useCarry'); if (live) live.value = String(S.useCarry);
+    persist(); calculate();
+  });
+})();
+/* saveSettings retired in v.113 — every Setup control saves itself the moment it changes */
 
 function renderChips() {}
 
@@ -1582,16 +1601,41 @@ function delMark(n) {
   S.markings = S.markings.filter(x => x !== n);
   persist(); renderMarkChips(); fillMarkSelect(); resetMarkSelect();
 }
-function fillWho() {
-  const a = document.getElementById('s_meAgent');
-  // the old list's placeholder entries aren't a name — show them as blank so the user types their own
-  if (a) a.value = (S.meAgent === 'Self' || S.meAgent === 'Agency/Staff Buyer') ? '' : (S.meAgent || '');
+/* Account chips — name and licence code; tap to edit, save on the spot */
+function myName() { return (S.meAgent === 'Self' || S.meAgent === 'Agency/Staff Buyer') ? '' : (S.meAgent || ''); }
+let acctEditing = null;
+function fillWho() { renderAcct(); }
+function saveWho() {}
+function renderAcct() {
+  const cn = document.getElementById('chipName'), cl = document.getElementById('chipLic');
+  if (!cn || !cl) return;
+  const nm = myName(), lic = S.licenseCode || '';
+  cn.textContent = nm || 'Your name'; cn.classList.toggle('on', !!nm); cn.classList.toggle('unset', !nm);
+  cl.textContent = lic ? ('Licence ' + lic) : 'Licence code'; cl.classList.toggle('on', !!lic); cl.classList.toggle('unset', !lic);
+  const note = document.getElementById('syncStatusNote');
+  if (note) { note.classList.toggle('hidden', !lic); updateSyncStatusNote(); }
 }
-function saveWho() {
-  const a = document.getElementById('s_meAgent');
-  if (!a) return;
-  S.meAgent = (a.value || '').trim() || 'Self';
+function acctEdit(which) {
+  const box = document.getElementById('acctEditBox'), inp = document.getElementById('acctEditInput'), lab = document.getElementById('acctEditLabel');
+  if (!which || acctEditing === which) { acctEditing = null; box.classList.add('hidden'); return; }
+  acctEditing = which;
+  lab.textContent = which === 'name' ? 'Your name' : 'Licence code';
+  inp.placeholder = which === 'name' ? 'e.g. Hagen' : 'From your licence email';
+  inp.setAttribute('autocapitalize', which === 'name' ? 'words' : 'characters');
+  inp.value = which === 'name' ? myName() : (S.licenseCode || '');
+  box.classList.remove('hidden');
+  setTimeout(function(){ inp.focus(); }, 50);
+}
+function acctSave() {
+  const v = (document.getElementById('acctEditInput').value || '').trim();
+  if (acctEditing === 'name') { S.meAgent = v || 'Self'; }
+  else if (acctEditing === 'lic') { S.licenseCode = v; }
   persist();
+  acctEditing = null;
+  document.getElementById('acctEditBox').classList.add('hidden');
+  renderAcct();
+  trySyncQueue();
+  showToast(v ? 'Saved' : 'Cleared');
 }
 
 const TOOL_INFO = {
@@ -3638,7 +3682,6 @@ function init() {
   document.getElementById('modePrime').classList.toggle('on', S.saleMode === 'prime');
   applyRecorderMode();
   fillWho();
-  const nmEl = document.getElementById('s_meAgent'); if (nmEl) nmEl.addEventListener('change', saveWho);
   fillCarriers(); initContactPicker(); initSlideConfirm(); initPullToRefresh(); initPrimeRecordButton(); checkForUpdate();
   fillMarkSelect(); resetMarkSelect(); renderMarkChips();
   foldSettingsNotes();
@@ -3721,7 +3764,6 @@ window.addLot = addLot;
 window.logWatch = logWatch;
 window.showTab = showTab;
 window.flip = flip;
-window.saveSettings = saveSettings;
 window.addClient = addClient;
 window.delClient = delClient;
 window.saveWho = saveWho;
