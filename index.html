@@ -268,6 +268,12 @@
     .grid-2 > div.na label { color: var(--faint); }
     .grid-2 > div.na input { background: var(--wash); color: var(--faint); border-style: dashed; }
     .grid-2 > div.na input::placeholder { color: var(--faint); font-weight: 600; }
+    .send-minor { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .btn-ghost {
+      min-height: 46px; border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--paper);
+      color: var(--tt-800); font-family: var(--font-ui); font-weight: 600; font-size: 14px; padding: 8px 6px;
+    }
+    .btn-ghost.arm { background: var(--ink); border-color: var(--ink); color: #fff; }
     .info-btn {
       width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; border: none;
       background: var(--faint); color: #fff; font-size: 0.8rem; font-weight: 600;
@@ -776,8 +782,10 @@
         <p class="note" id="selectedLotsInfo">No lots selected.</p>
         <p class="note">Tick the lots above, pick the carrier, check the number, then send.</p>
         <button type="button" id="smsLink" class="btn btn-g">TEXT SELECTED LOTS</button>
-        <button class="btn btn-d" onclick="copyPickup()">COPY SELECTED LOTS</button>
-        <button class="btn btn-n" onclick="markSelectedSent()">MARK SELECTED AS SENT</button>
+        <div class="send-minor">
+          <button type="button" class="btn-ghost" onclick="copyPickup()">Copy selected lots</button>
+          <button type="button" class="btn-ghost" id="markSentBtn" onclick="markSentTap()">Mark selected as sent</button>
+        </div>
         <p class="note" id="smsStatus"></p>
       </div></div>
 
@@ -948,7 +956,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.104'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-16.105'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3230,6 +3238,21 @@ function pickupMessage(list) {
   lines.push(S.smsTail || '');
   return lines.join('\n');
 }
+let markSentArmTimer = null;
+function markSentTap() {
+  const b = document.getElementById('markSentBtn');
+  if (!b) { markSelectedSent(); return; }
+  if (!selectedLots().length) { document.getElementById('smsStatus').textContent = 'Tick the lots to send.'; return; }
+  if (!b.classList.contains('arm')) {
+    b.classList.add('arm'); b.textContent = 'Tap again to confirm';
+    if (markSentArmTimer) clearTimeout(markSentArmTimer);
+    markSentArmTimer = setTimeout(function(){ b.classList.remove('arm'); b.textContent = 'Mark selected as sent'; }, 3000);
+    return;
+  }
+  if (markSentArmTimer) { clearTimeout(markSentArmTimer); markSentArmTimer = null; }
+  b.classList.remove('arm'); b.textContent = 'Mark selected as sent';
+  markSelectedSent();
+}
 function markSelectedSent() {
   const list = selectedLots();
   if (!list.length) { document.getElementById('smsStatus').textContent='Tick the lots to send.'; return; }
@@ -3658,6 +3681,7 @@ window.cancelEditLot = cancelEditLot;
 window.cancelEditTap = cancelEditTap;
 window.setSExit = setSExit;
 window.setSFin = setSFin;
+window.markSentTap = markSentTap;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
