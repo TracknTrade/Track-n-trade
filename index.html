@@ -939,7 +939,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.91'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.93'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1570,8 +1570,7 @@ function openKp(inp, label) {
   if (activeIn && activeIn !== inp) activeIn.classList.remove('kp-active');
   activeIn = inp;
   activeIn.classList.add('kp-active');
-  inp.value = '';
-  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  kpFresh = true;
   document.getElementById('keypad').classList.add('show');
   document.body.classList.add('kp-open');
   document.body.classList.remove('kp-locked');
@@ -1598,9 +1597,11 @@ function closeKp() {
   activeIn = null;
   showKpVal();
 }
+let kpFresh = false;
 function handleK(k) {
   if (!activeIn) return;
   let v = String(activeIn.value || '');
+  if (kpFresh) { kpFresh = false; if (k !== 'back' && k !== 'clear') v = ''; }
   if (k === 'clear') v = '';
   else if (k === 'back') v = v.slice(0,-1);
   else if (k === '.') { if (v.indexOf('.') < 0) v = v === '' ? '0.' : v + '.'; }
@@ -1609,18 +1610,19 @@ function handleK(k) {
   showKpVal();
   activeIn.dispatchEvent(new Event('input', {bubbles:true}));
 }
-let lastK = 0;
 function pressK(e) {
   const b = e.target.closest('.k'); if (!b || !activeIn) return;
   e.preventDefault();
-  const now = Date.now();
-  if (now - lastK < 180) return;
-  lastK = now;
   handleK(b.getAttribute('data-k'));
 }
 const kpBox = document.getElementById('keypad');
-kpBox.addEventListener('click', pressK);
-kpBox.addEventListener('touchend', pressK, {passive:false});
+if (window.PointerEvent) {
+  // one event per finger-down, whatever the device — keys register the instant they're touched
+  kpBox.addEventListener('pointerdown', pressK);
+  kpBox.addEventListener('click', function(e){ if (e.target.closest('.k')) e.preventDefault(); });
+} else {
+  kpBox.addEventListener('click', pressK);
+}
 
 function bindKp() {
   document.querySelectorAll('input').forEach(function(inp) {
