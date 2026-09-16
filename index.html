@@ -206,8 +206,8 @@
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-size: 1.1rem; font-weight: 900; line-height: 1;
     }
-    .trend-light.up { background: var(--tt-700); }
-    .trend-light.down { background: var(--warn); }
+    .trend-light.up { background: var(--warn); }
+    .trend-light.down { background: var(--tt-700); }
     .trend-diff { font-size: var(--fs-lg); font-weight: 900; color: var(--ink); }
     .ring-btns { display: flex; flex-direction: column; gap: 12px; }
     .ring-btns button { background: var(--tt-700); color: #fff; border: none; border-radius: var(--r-md); width: 78px; height: 58px; font-weight: 600; font-size: var(--fs-sm); }
@@ -597,7 +597,6 @@
                 <option value="kg">Use expected $/kg</option>
               </select>
             </div>
-            <div><label>Head to buy</label><input id="headCount" inputmode="decimal"></div>
             <div><label>Agistment $/wk</label><input id="agistRate" inputmode="decimal"></div>
             <div><label>Fixed costs $/hd</label><input id="fixedCosts" inputmode="decimal"></div>
             <div><label>Net profit $/hd</label><input id="targetProfit" inputmode="decimal"></div>
@@ -811,13 +810,19 @@
           <button type="button" data-v="fin" onclick="setSExit('fin')">Financed</button>
         </div>
         <input type="hidden" id="s_exitMode" value="hd">
+        <div id="sFinRow" class="hidden">
+          <label>Financed trade — sell on</label>
+          <div class="mode-sw" id="sFinSw" style="grid-template-columns:1fr 1fr;">
+            <button type="button" data-v="hd" onclick="setSFin('hd')">Last sale $/hd</button>
+            <button type="button" data-v="kg" onclick="setSFin('kg')">Expected $/kg</button>
+          </div>
+        </div>
         <div class="grid-2">
           <div><label>Target kg</label><input id="s_targetWt" inputmode="decimal"></div>
           <div><label>ADG kg/day</label><input id="s_adg" inputmode="decimal"></div>
           <div><label>Last sale $/hd</label><input id="s_saleBench" inputmode="decimal"></div>
           <div><label>Expected sale $/kg</label><input id="s_saleKg" inputmode="decimal"></div>
           <div><label>Interest % p.a.</label><input id="s_interestRate" inputmode="decimal"></div>
-          <div><label>Head to buy</label><input id="s_headCount" inputmode="decimal"></div>
           <div><label>Agistment $/wk</label><input id="s_agistRate" inputmode="decimal"></div>
           <div><label>Fixed costs $/hd</label><input id="s_fixedCosts" inputmode="decimal"></div>
           <div><label>Net profit $/hd</label><input id="s_targetProfit" inputmode="decimal"></div>
@@ -936,11 +941,11 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-15.95'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-15.96'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, pins: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
-  targetWt: 420, adg: 1.2, saleBench: 2400, headCount: 50, agistRate: 20, fixedCosts: 90, targetProfit: 1, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
+  targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'hd',
   opCost: 0, headPerYr: 0,
   mktAvgKg: 0, mktAvgWt: 0, ringLast: 2000,
   agentPhone: '',
@@ -1083,6 +1088,7 @@ function load() {
     delete S.showIndicatorCalcs;
     // Last market is off by default from v.84; switch it off once for existing installs (Setup turns it back on).
     if (!S.mktDefaultOffDone) { S.showMarketTrend = false; S.mktDefaultOffDone = true; }
+    if (!S.profitDefaultDone) { if (S.targetProfit === 1) S.targetProfit = 100; S.profitDefaultDone = true; }
   } catch(e) {}
 }
 function persist() {
@@ -1250,7 +1256,7 @@ function fillSettings() {
   });
   renderSexToggles();
   renderPins();
-  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
+  ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     const el = document.getElementById('s_'+k);
     if (el) el.value = S[k];
   });
@@ -1311,9 +1317,21 @@ function setSExit(v) {
 function renderSExit() {
   const v = document.getElementById('s_exitMode').value;
   Array.from(document.querySelectorAll('#sExitSw button')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === v); });
+  const row = document.getElementById('sFinRow');
+  if (row) row.classList.toggle('hidden', v !== 'fin');
+  const f = S.finExit === 'kg' ? 'kg' : 'hd';
+  Array.from(document.querySelectorAll('#sFinSw button')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === f); });
+}
+function setSFin(v) {
+  S.finExit = (v === 'kg') ? 'kg' : 'hd';
+  const sel = document.getElementById('finExit');
+  if (sel) sel.value = S.finExit;
+  persist();
+  renderSExit();
+  calculate();
 }
 function saveSettings() {
-  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
+  ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','opCost','headPerYr'].forEach(k => {
     S[k] = parseFloat(document.getElementById('s_'+k).value) || 0;
     const el = document.getElementById(k);
     if (el) el.value = S[k];
@@ -1462,7 +1480,7 @@ const TOOL_INFO = {
   },
   showMarketTrend: {
     title: 'Last market',
-    body: "Type in the last market's Avg $/kg once you know it, and this compares it to what you're actually paying today. Green means you're buying above last market, red means you're paying below it."
+    body: "Type in the last market's Avg $/kg once you know it, and this compares it to what you're actually paying today. Green means you're paying under last market, amber means you're paying over it."
   },
   showRing: {
     title: 'Sales watch ring',
@@ -1771,7 +1789,7 @@ function calculate() {
   });
 }
 
-['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate'].forEach(id => {
+['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', calculate);
 });
@@ -1845,7 +1863,9 @@ function logWatch(side) {
   renderWatches();
 }
 function sendWatchToRecorder(wt, hd) {
-  document.getElementById('lotPrice').value = hd;
+  // recorder prices in $/hd for a special sale, $/kg for a prime sale
+  const kg = parseFloat(document.getElementById('wKg').value) || (wt ? hd / wt : 0);
+  document.getElementById('lotPrice').value = (S.saleMode === 'prime') ? (Math.round(kg * 100) / 100) : hd;
   document.getElementById('lotWt').value = wt;
   recOrder = ALL_FIELDS.filter(function(id){ return id !== 'lotPrice' && id !== 'lotWt'; });
   recStep = 0;
@@ -1891,7 +1911,9 @@ function buyFromWatchlist(id) {
   document.getElementById('lotPen').value = w.pen || '';
   document.getElementById('lotHd').value = w.hd || '';
   document.getElementById('lotWt').value = w.wt || '';
-  document.getElementById('lotPrice').value = w.price || '';
+  // watchlist max is $/hd; a prime sale records $/kg, so convert when we know the weight
+  const prime = S.saleMode === 'prime';
+  document.getElementById('lotPrice').value = prime ? ((w.price && w.wt) ? (Math.round(w.price / w.wt * 100) / 100) : '') : (w.price || '');
   const missing = ALL_FIELDS.filter(function(fid){ return !document.getElementById(fid).value; });
   recOrder = missing.length ? missing : ['lotPrice'];
   recStep = 0;
@@ -3412,7 +3434,7 @@ function init() {
   load();
   loadLots();
   syncHeaderH();
-  ['targetWt','adg','saleBench','saleKg','headCount','agistRate','fixedCosts','targetProfit','interestRate','mktAvgKg'].forEach(k => {
+  ['targetWt','adg','saleBench','saleKg','agistRate','fixedCosts','targetProfit','interestRate','mktAvgKg'].forEach(k => {
     const el = document.getElementById(k);
     if (el) el.value = S[k] || '';
   });
@@ -3540,6 +3562,7 @@ window.editLot = editLot;
 window.cancelEditLot = cancelEditLot;
 window.cancelEditTap = cancelEditTap;
 window.setSExit = setSExit;
+window.setSFin = setSFin;
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
 window.buyFromWatchlist = buyFromWatchlist;
