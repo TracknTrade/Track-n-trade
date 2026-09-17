@@ -886,6 +886,7 @@
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
         <div class="toggle" onclick="flip('showSex')"><span>Stock type chips <button type="button" class="info-btn" onclick="openToolInfo('showSex',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showSex"><i></i></div></div>
         <div id="sexTypeToggles" class="sub-toggles"></div>
+        <div class="toggle" onclick="flip('showMoneyRecord')"><span>Lot summary $ on Sale page <button type="button" class="info-btn" onclick="openToolInfo('showMoneyRecord',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMoneyRecord"><i></i></div></div>
         <div class="tool-grp">Truck</div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
         <button type="button" class="btn btn-g" style="margin-top:12px;" onclick="stOpen(false)">Done</button>
@@ -1059,9 +1060,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.123'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.124'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'kg',
   opCost: 0, headPerYr: 0,
@@ -1401,11 +1402,12 @@ function applyFeatures() {
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
   document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
+  document.getElementById('recMoneyCard').classList.toggle('hidden', !S.showMoneyRecord);
   document.getElementById('blockText').classList.toggle('hidden', !S.showText);
 }
 
 function fillSettings() {
-  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showText','showSex'].forEach(k => {
+  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showMoneyRecord','showText','showSex'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderSexToggles();
@@ -1467,11 +1469,12 @@ function flip(k) {
   document.getElementById('sw_'+k).classList.toggle('on', S[k]);
   persist();
   if (k === 'showSex') renderSexToggles();
+  applyFeatures();
   stRender();
 }
 
 /* Show or hide tools folds to "what's off"; Edit opens the switches, Done folds them back */
-const TOOL_NAMES = { showMarketTrend: 'Last market', showTradeAnalysis: 'Trade analysis', showRing: 'Sales watch ring', showWatchlist: 'Pen watchlist', showSex: 'Stock type chips', showText: 'Text trucking agent' };
+const TOOL_NAMES = { showMarketTrend: 'Last market', showTradeAnalysis: 'Trade analysis', showRing: 'Sales watch ring', showWatchlist: 'Pen watchlist', showMoneyRecord: 'Lot summary $ on Sale', showSex: 'Stock type chips', showText: 'Text trucking agent' };
 function stRender() {
   const el = document.getElementById('stLine');
   if (!el) return;
@@ -1790,6 +1793,10 @@ const TOOL_INFO = {
   showWatchlist: {
     title: 'Pen watchlist',
     body: "For walking the pens ahead of where the sale's up to. Note the pen number, head count, avg weight and your max $/hd for each one you're interested in — they sit here as cards until the sale reaches them. Mark a card Bought to send it straight into the recorder ready to finish off, or Not bought to drop it. Clears automatically when you start a new sale."
+  },
+  showMoneyRecord: {
+    title: 'Lot summary $ on Sale page',
+    body: "The running $ tally by buyer way that sits below the recorder on the Sale page. Turn it off and the recorder becomes the very bottom of the page — nothing below it to slide into, so a bump while you're entering lots can't move the screen. The same summary is always on the Truck page."
   },
   showRecorder: {
     title: 'Purchase recorder',
