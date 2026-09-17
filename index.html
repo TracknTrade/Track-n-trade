@@ -1047,7 +1047,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.120'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.121'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2279,7 +2279,12 @@ function buyFromWatchlist(id) {
 function renderWatchlist() {
   const box = document.getElementById('watchlistCards');
   if (!box) return;
-  box.innerHTML = penWatch.map(function(w) {
+  // pens in yard order — by number first, then any letter suffix (12, 12A, 13)
+  const penKey = function(p) { const m = /^\s*(\d+)/.exec(String(p)); return m ? parseInt(m[1],10) : 1e9; };
+  const sorted = penWatch.slice().sort(function(a,b) {
+    return penKey(a.pen) - penKey(b.pen) || String(a.pen).localeCompare(String(b.pen), undefined, {numeric:true});
+  });
+  box.innerHTML = sorted.map(function(w) {
     return '<div class="watchlist-card">'
       + '<div class="wl-pen">Pen ' + xmlEsc(w.pen) + '</div>'
       + '<div class="wl-detail">' + (w.hd || '—') + ' hd</div>'
