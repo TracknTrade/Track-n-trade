@@ -420,6 +420,10 @@
     }
     .edit-banner button { background: var(--warn); color: #fff; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 600; font-size: 13px; }
     .edit-banner button.arm { background: var(--ink); }
+    .edit-note { flex: 0 0 auto; margin-top: 4px; }
+    .edit-note input { min-height: 44px; font-size: 16px; text-align: left; padding: 8px 12px; font-weight: 600; }
+    .edit-note input::placeholder { font-weight: 500; font-size: 14px; }
+    .lot-note { display: block; color: var(--warn); font-weight: 700; font-size: 12px; margin-top: 3px; white-space: normal; }
     .tnt-toast {
       position: fixed; left: 12px; right: 12px; top: calc(var(--header-h) + 10px); z-index: 160;
       background: var(--tt-800); color: #fff; border-radius: var(--r-md); padding: 12px 16px;
@@ -758,6 +762,7 @@
               <span id="editingBannerText">Editing…</span>
               <button type="button" id="editCancelBtn" onclick="cancelEditTap()">Cancel</button>
             </div>
+            <div class="edit-note hidden" id="editNoteRow"><input type="text" id="lotNote" class="native" placeholder="Note for driver &amp; office — e.g. 2 out, eyes" maxlength="80" autocapitalize="sentences" autocomplete="off"></div>
             <div class="card" style="margin-top:4px;">
               <div class="rec-fields">
                 <div><input id="lotPrice" class="rec-field" data-step="0" placeholder="$/HD" readonly></div>
@@ -1060,7 +1065,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.124'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.125'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1293,7 +1298,7 @@ function syncLotToSheet(lot) {
       id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
       pen: lot.pen, hd: lot.hd, wt: lot.wt,
       priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
-      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || ''
+      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || '', note: lot.note || ''
     })
   });
 }
@@ -2657,6 +2662,7 @@ function recNext() {
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
   ALL_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('lotNote').value = '';
   recHighlight();
   clearDraft();
   applyRecorderMode();
@@ -3260,6 +3266,7 @@ function addLot() {
       existingLot.price = price; existingLot.hd = hd; existingLot.wt = wt;
       existingLot.pen = pen; existingLot.priceUnit = priceUnit;
       existingLot.desc = desc; existingLot.client = client; existingLot.sex = sex;
+      existingLot.note = (document.getElementById('lotNote').value || '').trim();
       existingLot.synced = false;
     }
     editingLotId = null;
@@ -3340,9 +3347,11 @@ function renderLots() {
     stdBar.classList.add('hidden');
     bwBar.classList.add('hidden');
     editBanner.classList.remove('hidden');
+    document.getElementById('editNoteRow').classList.remove('hidden');
     document.getElementById('editingBannerText').textContent = 'Editing pen ' + (editingLot.pen || '—') + ' — still in the sale';
   } else {
     editBanner.classList.add('hidden');
+    document.getElementById('editNoteRow').classList.add('hidden');
     if (wayNames.length > 1) {
       stdBar.classList.add('hidden');
       bwBar.classList.remove('hidden');
@@ -3409,7 +3418,7 @@ function renderLots() {
         return '<tr data-id="'+l.id+'" class="'+(editingLotId != null && l.id === editingLotId ? 'editing-row' : '')+'" onclick="editLot('+l.id+')">'
           + (dispatch ? '<td class="c-tick" onclick="event.stopPropagation()"><input type="checkbox" '+(l.selected?'checked':'')+' onchange="toggleLot('+l.id+', this.checked)"></td>' : '')
           + '<td class="c-thumb">'+thumb+'</td>'
-          + '<td>'+(l.pen||'—')+((l.sex||l.desc) ? '<span class="sub">'+xmlEsc([l.sex,l.desc].filter(Boolean).join(' · '))+'</span>' : '')+incomplete+'</td>'
+          + '<td>'+(l.pen||'—')+((l.sex||l.desc) ? '<span class="sub">'+xmlEsc([l.sex,l.desc].filter(Boolean).join(' · '))+'</span>' : '')+(l.note ? '<span class="lot-note">'+xmlEsc(l.note)+'</span>' : '')+incomplete+'</td>'
           + '<td>'+(l.hd||'—')+'</td>'
           + '<td>'+(l.wt||'—')+'</td>'
           + priceCell
@@ -3441,6 +3450,7 @@ function editLot(id) {
   document.getElementById('lotWt').value = l.wt || '';
   document.getElementById('lotBuyer').value = l.client || '';
   document.getElementById('lotSex').value = l.sex || '';
+  document.getElementById('lotNote').value = l.note || '';
   chipsCollapseAll();
   fillSexChips();
   updateSexStrip();
@@ -3484,6 +3494,7 @@ function cancelEditTap() {
 }
 function cancelEditLot() {
   editingLotId = null;
+  document.getElementById('lotNote').value = '';
   updateCamButtons();
   document.getElementById('lotPrice').value = '';
   document.getElementById('lotHd').value = '';
@@ -3578,7 +3589,7 @@ function pickupMessage(list) {
   lines.push('');
   list.forEach(l => {
     const live = Math.round(l.hd * l.wt);
-    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' '+sexWord(l)+' @ '+l.wt+' kg = '+live.toLocaleString()+' kg' + (l.desc ? ' — '+l.desc : ''));
+    lines.push('Pen '+(l.pen||'?')+': '+l.hd+' '+sexWord(l)+' @ '+l.wt+' kg = '+live.toLocaleString()+' kg' + (l.desc ? ' — '+l.desc : '') + (l.note ? ' — NOTE: '+l.note : ''));
   });
   const ways = [];
   list.forEach(l => { const k = l.client || 'Self'; if (ways.indexOf(k) < 0) ways.push(k); });
@@ -3829,13 +3840,13 @@ function localDate(d) {
   return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
 }
 function exportExcel() {
-  const headers = ['Date','Sale','Yard','Pen','Type','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description'];
+  const headers = ['Date','Sale','Yard','Pen','Type','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description','Note'];
   const lotRows = [headers];
   lots.forEach(l => {
     lotRows.push([
       localStamp(l.t),
       l.sale||'', l.yard||'', l.pen||'', l.sex||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
-      Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||''
+      Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||'', l.note||''
     ]);
   });
   let th=0, td=0;
