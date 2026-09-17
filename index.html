@@ -502,6 +502,20 @@
     #recBotPrime .rec-next { flex: 1.5 1 0; font-size: clamp(14px, 3.8vw, 20px); }
     #primeSaveBtn:disabled { background: var(--kp-alt); opacity: .7; }
 
+    /* calculator icon tucked inside the right end of a box */
+    .in-ico { position: relative; }
+    .in-ico input { padding-right: 46px; }
+    .ico-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: none; border-radius: 8px; background: var(--tt-50); color: var(--tt-700); display: flex; align-items: center; justify-content: center; padding: 0; }
+    .ico-btn svg { width: 22px; height: 22px; }
+    /* pop-up ring (watchlist Max $/hd) — same dark card, trimmed to leave room for the keypad */
+    #ringModal { align-items: flex-start; padding: 12px; }
+    .rm-card { margin: 0; width: 100%; max-width: 380px; padding: 14px 16px; }
+    .rm-card input { min-height: 60px; font-size: 1.8rem; }
+    .rm-card .ring-wrap, .rm-card .ring { height: 160px; }
+    .rm-card .ring-row { margin-top: 8px; }
+    .rm-btns { display: flex; gap: 10px; margin-top: 10px; }
+    .rm-btns .btn { flex: 1; margin: 0; }
+    .rm-btns .btn.rm-cancel { background: var(--tt-700); color: #fff; }
     /* ── Modals ─────────────────────────────────────────────────────────── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,10,11,.72); z-index: 210; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.hidden { display: none !important; }
@@ -528,7 +542,7 @@
     body.kp-locked main { overflow: hidden; }
     #keypad {
       position: fixed; bottom: 0; left: 0; right: 0;
-      height: calc((100svh - var(--header-h)) / 2); background: var(--kp-ground); color: #fff; z-index: 80;
+      height: calc((100svh - var(--header-h)) / 2); background: var(--kp-ground); color: #fff; z-index: 215;
       display: none; padding-bottom: env(safe-area-inset-bottom, 8px);
     }
     #keypad.show { display: flex; flex-direction: column; }
@@ -553,6 +567,22 @@
 </head>
 <body>
   <div class="tnt-toast" id="tntToast" role="status" aria-live="polite"></div>
+  <div id="ringModal" class="modal-overlay hidden">
+    <div class="watch rm-card">
+      <div class="title" style="text-align:center;color:#fff;">Work out $/hd</div>
+      <div class="grid-2">
+        <div><label>Weight</label><input id="rmWt" inputmode="decimal"></div>
+        <div><label>$/Kg</label><input id="rmKg" inputmode="decimal"></div>
+      </div>
+      <div class="ring-row">
+        <div class="ring-wrap"><div class="ring" id="rmRing"></div><div class="ring-lines"></div></div>
+      </div>
+      <div class="rm-btns">
+        <button type="button" class="btn rm-cancel" onclick="closeRingModal()">Cancel</button>
+        <button type="button" class="btn btn-g" id="rmUse" onclick="useRingPrice()">Use $2,000</button>
+      </div>
+    </div>
+  </div>
   <div id="keypad">
     <div class="kp-in">
       <div class="kp-g" id="kpBtns">
@@ -681,7 +711,7 @@
         </div>
         <div class="grid-2">
           <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
-          <div><label>Max $/hd</label><input id="wlPrice" inputmode="decimal"></div>
+          <div><label>Max $/hd</label><div class="in-ico"><input id="wlPrice" inputmode="decimal"><button type="button" class="ico-btn" onclick="openRingModal()" aria-label="Work out $/hd from weight and $/kg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg></button></div></div>
         </div>
         <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
         <div id="watchlistCards" class="watchlist-cards"></div>
@@ -1017,7 +1047,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-16.118'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.119'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2092,6 +2122,77 @@ function scrollRing(price) {
   document.getElementById('wHd').value = snap;
   if (snap !== S.ringLast) { S.ringLast = snap; persist(); }
   setTimeout(()=>{ringLock=false;},160);
+}
+/* pop-up ring for the watchlist Max $/hd box — its own ring, never touches the Sales watch */
+let rmHd = 0, rmLock = false;
+function rmBuild() {
+  const ring = document.getElementById('rmRing');
+  if (ring.dataset.built) return;
+  let h = '';
+  for (let i=0;i<4;i++) h += '<div class="ring-item" style="visibility:hidden">0</div>';
+  for (let p=4500;p>=400;p-=5) h += '<div class="ring-item" data-p="'+p+'">'+p+'</div>';
+  for (let i=0;i<4;i++) h += '<div class="ring-item" style="visibility:hidden">0</div>';
+  ring.innerHTML = h; ring.dataset.built = '1';
+  ring.addEventListener('scroll', rmOnRing, {passive:true});
+}
+function rmSetHd(hd) {
+  rmHd = hd;
+  document.getElementById('rmUse').textContent = 'Use $' + hd.toLocaleString();
+}
+function rmOnRing() {
+  if (rmLock) return;
+  const ring = document.getElementById('rmRing');
+  const items = ring.querySelectorAll('[data-p]');
+  const mid = ring.scrollTop + ring.clientHeight/2;
+  let best=null, bd=1e9;
+  items.forEach(it => { const d = Math.abs(it.offsetTop + it.offsetHeight/2 - mid); if (d<bd){bd=d;best=it;} });
+  if (!best) return;
+  ring.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));
+  best.classList.add('sel');
+  const hd = parseInt(best.getAttribute('data-p'),10);
+  rmSetHd(hd);
+  const wt = parseFloat(document.getElementById('rmWt').value)||0;
+  if (wt) document.getElementById('rmKg').value = (hd/wt).toFixed(2);
+}
+function rmScroll(price) {
+  const snap = Math.min(4500, Math.max(400, Math.round(price/5)*5));
+  const ring = document.getElementById('rmRing');
+  const it = ring.querySelector('[data-p="'+snap+'"]');
+  if (!it) return;
+  rmLock = true;
+  ring.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));
+  it.classList.add('sel');
+  ring.scrollTop = it.offsetTop - (ring.clientHeight - it.offsetHeight) / 2;
+  rmSetHd(snap);
+  setTimeout(()=>{rmLock=false;},160);
+}
+function rmCalc() {
+  const wt = parseFloat(document.getElementById('rmWt').value)||0;
+  const kg = parseFloat(document.getElementById('rmKg').value);
+  if (wt && !isNaN(kg)) rmScroll(Math.round(wt*kg));
+}
+document.getElementById('rmKg').addEventListener('input', rmCalc);
+document.getElementById('rmWt').addEventListener('input', rmCalc);
+function openRingModal() {
+  if (activeIn) closeKp();
+  rmBuild();
+  const wt = parseFloat(document.getElementById('wlWt').value) || 0;
+  const cur = parseFloat(document.getElementById('wlPrice').value) || 0;
+  document.getElementById('rmWt').value = wt ? wt : '';
+  document.getElementById('ringModal').classList.remove('hidden');
+  const start = cur || S.ringLast || 2000;
+  rmScroll(start);
+  document.getElementById('rmKg').value = wt ? (rmHd/wt).toFixed(2) : '';
+}
+function closeRingModal() {
+  if (activeIn && activeIn.closest('#ringModal')) closeKp();
+  document.getElementById('ringModal').classList.add('hidden');
+}
+function useRingPrice() {
+  const inp = document.getElementById('wlPrice');
+  inp.value = rmHd;
+  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  closeRingModal();
 }
 function calcWatch() {
   const wt = parseFloat(document.getElementById('wWt').value)||0;
