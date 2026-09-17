@@ -441,6 +441,16 @@
     .watchlist-card .wl-pen { font-size: 1.25rem; font-weight: 900; }
     .watchlist-card .wl-detail { font-size: 12px; color: var(--muted); margin: 2px 0; }
     .watchlist-card .wl-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .watchlist-card .wl-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .wl-cam-sm { width: 34px; height: 34px; border-radius: var(--r-sm); border: 1.5px solid var(--line); background: var(--paper); color: var(--ink-2); display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+    .wl-cam-sm svg { width: 18px; height: 18px; }
+    .wl-cam-sm.has-photo { background: var(--tt-700); border-color: var(--tt-700); color: #fff; }
+    .wl-thumb { width: 100%; height: 64px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--line); display: block; margin: 8px 0 2px; background: var(--line-2); }
+    .wl-add-row { display: flex; gap: 10px; align-items: stretch; margin-top: 10px; }
+    .wl-add-row .btn { flex: 1; margin-top: 0; }
+    .wl-cam { width: 64px; flex: 0 0 64px; border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--paper); color: var(--ink-2); display: flex; align-items: center; justify-content: center; padding: 0; }
+    .wl-cam svg { width: 26px; height: 26px; }
+    .wl-cam.has-photo { background: var(--tt-700); border-color: var(--tt-700); color: #fff; }
     .watchlist-card .wl-buy { flex: 1; background: var(--tt-700); color: #fff; border: none; border-radius: var(--r-sm); padding: 9px 2px; font-weight: 600; font-size: 13px; min-height: 40px; }
     .watchlist-card .wl-skip { flex: 1; background: var(--paper); color: var(--ink-2); border: 1.5px solid var(--line); border-radius: var(--r-sm); padding: 9px 2px; font-weight: 600; font-size: 13px; min-height: 40px; }
     .way-group { margin-bottom: 14px; }
@@ -713,7 +723,7 @@
           <div><label>Avg weight</label><input id="wlWt" inputmode="decimal"></div>
           <div><label>Max $/hd</label><div class="in-ico"><input id="wlPrice" inputmode="decimal"><button type="button" class="ico-btn" onclick="openRingModal()" aria-label="Work out $/hd from weight and $/kg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg></button></div></div>
         </div>
-        <button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button>
+        <div class="wl-add-row"><button type="button" class="wl-cam" id="wlCam" onclick="openWatchCamera()" aria-label="Photograph pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button><button type="button" class="btn btn-g" onclick="addToWatchlist()">ADD TO WATCHLIST</button></div>
         <div id="watchlistCards" class="watchlist-cards"></div>
       </div></div>
 
@@ -1047,7 +1057,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.121'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.122'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1070,6 +1080,16 @@ let classes = [{id:1,weight:260,buyPrice:0}];
 let nextId = 3, lots = [], nextLot = 1, watches = [], nextWatch = 1;
 let editingLotId = null;
 let penWatch = [], nextPenWatch = 1;
+const WATCH_KEY = 'cbpro_watch'; // DO NOT RENAME — walked pens survive an app reload
+function saveWatch() {
+  try { localStorage.setItem(WATCH_KEY, JSON.stringify({list: penWatch, next: nextPenWatch})); } catch(e) {}
+}
+function loadWatch() {
+  try {
+    const d = JSON.parse(localStorage.getItem(WATCH_KEY) || 'null');
+    if (d && Array.isArray(d.list)) { penWatch = d.list; nextPenWatch = d.next || (penWatch.length + 1); }
+  } catch(e) {}
+}
 let activeIn = null, watchLast = 'kg', ringLock = false;
 
 /* Pen card photos — stored in IndexedDB keyed by lot id, never in
@@ -1140,14 +1160,32 @@ function downscaleImage(file) {
     img.src = url;
   });
 }
+let camTarget = null;      // null = recorder, 'wlNew' = watchlist form, number = a watched pen's id
+let wlPendingPhoto = null; // photo taken before the pen is added to the watchlist
 function openPenCardCamera() {
+  camTarget = null;
   document.getElementById('penCardInput').click();
+}
+function openWatchCamera(id) {
+  camTarget = (id == null) ? 'wlNew' : id;
+  document.getElementById('penCardInput').click();
+}
+function updateWlCam() {
+  const b = document.getElementById('wlCam');
+  if (b) b.classList.toggle('has-photo', !!wlPendingPhoto);
 }
 function onPenCardPicked(inp) {
   const file = inp.files && inp.files[0];
   inp.value = '';
   if (!file) return;
+  const tgt = camTarget; camTarget = null;
   downscaleImage(file).then(function(dataUrl){
+    if (tgt === 'wlNew') { wlPendingPhoto = dataUrl; updateWlCam(); return; }
+    if (typeof tgt === 'number') {
+      const w = penWatch.find(function(x){ return x.id === tgt; });
+      if (w) { w.hasPhoto = true; photoPut('w' + w.id, dataUrl); saveWatch(); renderWatchlist(); }
+      return;
+    }
     if (editingLotId != null) {
       const l = lots.find(function(x){ return x.id === editingLotId; });
       if (l) { l.hasPhoto = true; photoPut(l.id, dataUrl); renderLots(); }
@@ -2241,7 +2279,10 @@ function addToWatchlist() {
   const price = parseFloat(document.getElementById('wlPrice').value) || 0;
   if (!pen) return;
   closeKp();
-  penWatch.push({id: nextPenWatch++, pen, hd, wt, price});
+  const w = {id: nextPenWatch++, pen, hd, wt, price, hasPhoto: !!wlPendingPhoto};
+  penWatch.push(w);
+  if (wlPendingPhoto) { photoPut('w' + w.id, wlPendingPhoto); wlPendingPhoto = null; updateWlCam(); }
+  saveWatch();
   document.getElementById('wlPen').value = '';
   document.getElementById('wlHd').value = '';
   document.getElementById('wlWt').value = '';
@@ -2251,6 +2292,8 @@ function addToWatchlist() {
 }
 function removeFromWatchlist(id) {
   penWatch = penWatch.filter(function(w){ return w.id !== id; });
+  photoDel('w' + id);
+  saveWatch();
   renderWatchlist();
 }
 function buyFromWatchlist(id) {
@@ -2258,8 +2301,13 @@ function buyFromWatchlist(id) {
   if (!w) return;
   closeKp();
   penWatch = penWatch.filter(function(x){ return x.id !== id; });
+  saveWatch();
   renderWatchlist();
   editingLotId = null;
+  // the pen's photo comes with it and is saved on the lot
+  pendingPhoto = (w.hasPhoto && photoCache['w' + id]) || null;
+  if (w.hasPhoto) photoDel('w' + id);
+  updateCamButtons();
   document.getElementById('lotPen').value = w.pen || '';
   document.getElementById('lotHd').value = w.hd || '';
   document.getElementById('lotWt').value = w.wt || '';
@@ -2276,6 +2324,7 @@ function buyFromWatchlist(id) {
   saveDraft();
   goRecorder();
 }
+const WL_CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 function renderWatchlist() {
   const box = document.getElementById('watchlistCards');
   if (!box) return;
@@ -2285,8 +2334,11 @@ function renderWatchlist() {
     return penKey(a.pen) - penKey(b.pen) || String(a.pen).localeCompare(String(b.pen), undefined, {numeric:true});
   });
   box.innerHTML = sorted.map(function(w) {
+    const pic = w.hasPhoto && photoCache['w' + w.id];
     return '<div class="watchlist-card">'
-      + '<div class="wl-pen">Pen ' + xmlEsc(w.pen) + '</div>'
+      + '<div class="wl-head"><div class="wl-pen">Pen ' + xmlEsc(w.pen) + '</div>'
+      + '<button type="button" class="wl-cam-sm' + (w.hasPhoto ? ' has-photo' : '') + '" onclick="openWatchCamera(' + w.id + ')" aria-label="Photograph pen">' + WL_CAM_SVG + '</button></div>'
+      + (pic ? '<img class="wl-thumb" src="' + pic + '" alt="Pen photo" onclick="openPhoto(\'w' + w.id + '\')">' : '')
       + '<div class="wl-detail">' + (w.hd || '—') + ' hd</div>'
       + '<div class="wl-detail">' + (w.wt || '—') + ' kg avg</div>'
       + '<div class="wl-detail">$' + (w.price || 0).toFixed(2) + '/hd</div>'
@@ -3024,7 +3076,10 @@ function startNewSale() {
   pendingPhoto = null;
   lots = [];
   editingLotId = null;
+  penWatch.forEach(function(w){ if (w.hasPhoto) photoDel('w' + w.id); });
   penWatch = [];
+  wlPendingPhoto = null; updateWlCam();
+  saveWatch();
   renderWatchlist();
   recStep = 0;
   recOrder = ALL_FIELDS.slice();
@@ -3859,8 +3914,9 @@ function init() {
   foldSettingsNotes();
   document.getElementById('lotSex').value = '';
   fillSexChips();
+ loadWatch();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
-  photoLoadAll().then(function(){ renderLots(); updateCamButtons(); });
+  photoLoadAll().then(function(){ renderLots(); renderWatchlist(); updateCamButtons(); });
   trySyncQueue();
   restoreDraft();
   recHighlight();
