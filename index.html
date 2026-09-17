@@ -1047,7 +1047,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.119'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.120'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2325,6 +2325,14 @@ function clearDraft() {
 }
 document.addEventListener('visibilitychange', function(){ if (document.hidden) saveDraft(); });
 function recActive() { return document.getElementById(recOrder[recStep]); }
+/* true when every box after the current one already has a value — nothing left to step through */
+function recRestFilled() {
+  for (let i = recStep + 1; i < recOrder.length; i++) {
+    const el = document.getElementById(recOrder[i]);
+    if (!el || String(el.value).trim() === '') return false;
+  }
+  return true;
+}
 function recHighlight() {
   ALL_FIELDS.forEach(function(id) {
     const el = document.getElementById(id);
@@ -2334,7 +2342,7 @@ function recHighlight() {
   const activeEl = document.getElementById(activeId);
   if (activeEl) activeEl.classList.add('on-field');
   const btn = document.getElementById('recNext');
-  if (btn) btn.textContent = (recStep === recOrder.length - 1) ? (editingLotId != null ? 'SAVE CHANGES' : 'SAVE LOT') : 'NEXT';
+  if (btn) btn.textContent = (recStep === recOrder.length - 1 || recRestFilled()) ? (editingLotId != null ? 'SAVE CHANGES' : 'SAVE LOT') : 'NEXT';
   fillBuyerPick();
 }
 function fillBuyerPick() {
@@ -2571,7 +2579,7 @@ function recType(k) {
   saveDraft();
 }
 function recNext() {
-  if (recStep < recOrder.length - 1) {
+  if (recStep < recOrder.length - 1 && !recRestFilled()) {
     recStep += 1;
     recFieldFresh = true;
     recHighlight();
