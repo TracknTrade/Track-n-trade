@@ -355,10 +355,10 @@
       display: flex; flex-direction: column; gap: 4px;
       scroll-snap-align: start; overflow: hidden;
     }
-    .rec-top { flex: 1 1 55%; min-height: 0; display: flex; flex-direction: column; }
+    .rec-top { flex: 1 1 52%; min-height: 0; display: flex; flex-direction: column; }
     .rec-top .card { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 4px; padding: 10px !important; }
     .rec-bot {
-      flex: 1 1 45%; min-height: 0; overflow: hidden; background: var(--kp-ground); color: #fff;
+      flex: 1 1 48%; min-height: 0; overflow: hidden; background: var(--kp-ground); color: #fff;
       border-radius: var(--r-lg); padding: 10px; display: flex; flex-direction: column;
     }
     .rec-fields { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; flex: 1; min-height: 0; }
@@ -367,8 +367,10 @@
     .rec-fields label { margin-bottom: 3px; }
     .rec-fields input, .rec-fields select {
       flex: 1; min-height: 0; height: auto; width: 100%;
-      font-size: clamp(24px, 6.8vw, 40px); margin: 0; padding: 4px 8px;
+      font-size: clamp(26px, 7.4vw, 44px); margin: 0; padding: 4px 8px;
     }
+    /* the header lives inside the box and clears the moment a number goes in */
+    .rec-fields input::placeholder { font-size: clamp(15px, 4.2vw, 20px); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); opacity: 1; }
     .mark-strip { flex: 0 0 auto; margin-top: 6px; min-height: 0; position: relative; }
     .mark-strip label { margin-bottom: 4px; }
     .mark-chips {
@@ -408,7 +410,7 @@
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .rec-fields .on-field { border-color: #6ee7b7 !important; box-shadow: 0 0 0 5px #6ee7b7; background: #ecfdf5; }
     .rec-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border-radius: var(--r-md); overflow: hidden; flex: 0 0 auto; }
-    .rec-stats .stat { padding: 7px 1px; min-width: 0; }
+    .rec-stats .stat { padding: 5px 1px; min-width: 0; }
     .rec-stats .stat-k { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rec-stats .stat-v { font-size: 1.05rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .edit-banner {
@@ -758,10 +760,10 @@
             </div>
             <div class="card" style="margin-top:4px;">
               <div class="rec-fields">
-                <div><label id="lblPrice">$/HD</label><input id="lotPrice" class="rec-field" data-step="0" readonly></div>
-                <div><label>HD</label><input id="lotHd" class="rec-field" data-step="2" readonly></div>
-                <div><label>PEN</label><input id="lotPen" class="rec-field" data-step="1" readonly></div>
-                <div><label>WEIGHT</label><input id="lotWt" class="rec-field" data-step="3" readonly></div>
+                <div><input id="lotPrice" class="rec-field" data-step="0" placeholder="$/HD" readonly></div>
+                <div><input id="lotHd" class="rec-field" data-step="2" placeholder="HD" readonly></div>
+                <div><input id="lotPen" class="rec-field" data-step="1" placeholder="PEN" readonly></div>
+                <div><input id="lotWt" class="rec-field" data-step="3" placeholder="WEIGHT" readonly></div>
               </div>
               <div class="mark-strip">
                 <div class="mark-chips dual">
@@ -1057,7 +1059,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.122'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-17.123'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2672,7 +2674,7 @@ function applyRecorderMode() {
   const prime = S.saleMode === 'prime';
   if (!prime) primeEditField = null;
   else if (!primeEditField) { primeEditField = 'lotPrice'; primeHighlightActiveField(); }
-  document.getElementById('lblPrice').textContent = prime ? '$/KG' : '$/HD';
+  document.getElementById('lotPrice').placeholder = prime ? '$/KG' : '$/HD';
   document.getElementById('recBotSpecial').classList.toggle('hidden', prime);
   document.getElementById('recBotPrime').classList.toggle('hidden', !prime);
   if (!prime && primeListening) {
