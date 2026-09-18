@@ -420,6 +420,11 @@
     }
     .edit-banner button { background: var(--warn); color: #fff; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 600; font-size: 13px; }
     .edit-banner button.arm { background: var(--ink); }
+    .edit-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+    .edit-banner button.del { background: transparent; color: var(--warn); border: 1.5px solid var(--warn-line); }
+    /* undo toast — the safety net under Delete */
+    .tnt-toast.undo { pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
+    .tnt-toast.undo button { background: #fff; color: var(--tt-900); border: none; border-radius: 8px; padding: 8px 14px; font-weight: 800; font-size: 14px; letter-spacing: .04em; flex: 0 0 auto; }
     .edit-note { flex: 0 0 auto; margin-top: 4px; }
     .edit-note input { min-height: 44px; font-size: 16px; text-align: left; padding: 8px 12px; font-weight: 600; }
     .edit-note input::placeholder { font-weight: 500; font-size: 14px; }
@@ -569,6 +574,14 @@
     .dk-status { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
     .dk-open { margin-top: 12px; }
     .dk-open small { display: block; font-size: 12px; font-weight: 600; opacity: .85; margin-top: 2px; }
+    /* ── Left-handed: the big action rows mirror so the thumb lands on the main button ── */
+    body.lefty .rec-next-row, body.lefty .ring-row, body.lefty .wl-add-row, body.lefty .rm-btns,
+    body.lefty .dk-add, body.lefty .dk-head, body.lefty .edit-banner, body.lefty .send-minor { flex-direction: row-reverse; }
+    body.lefty .send-minor { direction: rtl; }
+    body.lefty .send-minor > * { direction: ltr; }
+    body.lefty .in-ico input { padding-right: 14px; padding-left: 46px; }
+    body.lefty .ico-btn { right: auto; left: 6px; }
+    body.lefty .edit-actions { flex-direction: row-reverse; }
     /* ── Modals ─────────────────────────────────────────────────────────── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,10,11,.72); z-index: 210; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.hidden { display: none !important; }
@@ -810,7 +823,7 @@
             <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
             <div class="edit-banner hidden" id="editingBanner">
               <span id="editingBannerText">Editing…</span>
-              <button type="button" id="editCancelBtn" onclick="cancelEditTap()">Cancel</button>
+              <span class="edit-actions"><button type="button" id="editDeleteBtn" class="del" onclick="openDeleteLot()">Delete</button><button type="button" id="editCancelBtn" onclick="cancelEditTap()">Cancel</button></span>
             </div>
             <div class="edit-note hidden" id="editNoteRow"><input type="text" id="lotNote" class="native" placeholder="Note for driver &amp; office — e.g. 2 out, eyes" maxlength="80" autocapitalize="sentences" autocomplete="off"></div>
             <div class="card" style="margin-top:4px;">
@@ -922,6 +935,7 @@
           <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">Special sale</button>
           <button type="button" id="modePrime" onclick="setSaleMode('prime')">Prime sale</button>
         </div>
+        <div class="toggle" style="margin-top:6px;border-bottom:none;" onclick="flip('lefty')"><span>Left-handed layout</span><div class="switch" id="sw_lefty"><i></i></div></div>
         <p class="note desc">Prime sale swaps the Purchase recorder for one-tap voice entry — record price ($/kg), pen, head and weight in one go, then tap Markings and Buyer-Way to set those, check the fields, then Save Lot. Needs microphone access and works best in Safari on iPhone.</p>
       </div>
 
@@ -1126,9 +1140,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.127'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.128'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'kg',
   opCost: 0, headPerYr: 0,
@@ -1463,6 +1477,7 @@ function updateSexStrip() {
   if (ss) ss.classList.toggle('hidden', !S.showSex || editingLotId == null);
 }
 function applyFeatures() {
+  document.body.classList.toggle('lefty', !!S.lefty);
   updateSexStrip();
   document.getElementById('blockMarketTrend').classList.toggle('hidden', !S.showMarketTrend);
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
@@ -1473,7 +1488,7 @@ function applyFeatures() {
 }
 
 function fillSettings() {
-  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showMoneyRecord','showText','showSex'].forEach(k => {
+  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showMoneyRecord','showText','showSex','lefty'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderSexToggles();
@@ -3215,6 +3230,52 @@ function showToast(msg, kind) {
   t.className = 'tnt-toast show' + (kind === 'warn' ? ' warn' : '');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+/* a toast with an UNDO button — stays 8s, tapping UNDO runs fn and hides it */
+function showUndoToast(msg, fn) {
+  const t = document.getElementById('tntToast');
+  if (!t) return;
+  t.innerHTML = '<span>' + xmlEsc(msg) + '</span><button type="button">UNDO</button>';
+  t.querySelector('button').addEventListener('click', function(){ t.classList.remove('show'); t.className = 'tnt-toast'; fn(); });
+  t.className = 'tnt-toast show warn undo';
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); t.className = 'tnt-toast'; }, 8000);
+}
+/* Delete lot — only from the edit banner, then slide-to-confirm, then 8 seconds to undo. */
+let deleteHold = null;
+function openDeleteLot() {
+  const l = lots.find(function(x){ return x.id === editingLotId; });
+  if (!l) return;
+  document.querySelector('#newSaleModal .modal-title').textContent = 'Delete ' + lotLabel(l).toLowerCase() + '?';
+  document.getElementById('newSaleModalBody').textContent =
+    (l.hd || '—') + ' hd · ' + (l.priceUnit === 'kg' ? ('$' + (+l.price).toFixed(2) + '/kg') : ('$' + Math.round(l.price).toLocaleString() + '/hd')) +
+    (l.client ? ' · ' + l.client : '') + (l.sent ? ' · already sent to a carrier' : '') +
+    '. It comes off the tally, the truck list and the export. You get a few seconds to undo.';
+  slideAction = deleteEditingLot;
+  resetSlideConfirm();
+  document.getElementById('newSaleModal').classList.remove('hidden');
+}
+function deleteEditingLot() {
+  document.getElementById('newSaleModal').classList.add('hidden');
+  const idx = lots.findIndex(function(x){ return x.id === editingLotId; });
+  if (idx < 0) return;
+  const l = lots[idx];
+  deleteHold = { lot: l, idx: idx, photo: l.hasPhoto ? photoCache[l.id] : null };
+  lots.splice(idx, 1);
+  persistLots();
+  cancelEditLot();
+  showUndoToast(lotLabel(l) + ' deleted' + (lotBlurb(l) ? ' · ' + lotBlurb(l) : ''), undoDeleteLot);
+  // the photo is only really dropped once the undo window has passed
+  setTimeout(function(){ if (deleteHold && deleteHold.lot === l) { if (l.hasPhoto) photoDel(l.id); deleteHold = null; } }, 8500);
+}
+function undoDeleteLot() {
+  const h = deleteHold; deleteHold = null;
+  if (!h) return;
+  lots.splice(Math.min(h.idx, lots.length), 0, h.lot);
+  if (h.photo) photoCache[h.lot.id] = h.photo;
+  persistLots();
+  renderLots();
+  showToast(lotLabel(h.lot) + ' back in the sale');
 }
 function lotLabel(l) { return 'Pen ' + (l.pen || '?'); }
 function lotBlurb(l) { return (l.hd ? l.hd + ' ' + sexWord(l) : '') ; }
