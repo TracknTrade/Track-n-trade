@@ -1266,7 +1266,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.143'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.144'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3143,7 +3143,8 @@ function confirmAddBuyer() {
 /* markings */
 let markSelectPrevValue = null;
 let markPicked = [];                       // markings chosen for the lot being recorded (multi-select)
-function isNoMark(m) { return /^no\s*marks?$/i.test(String(m || '')); }
+/* "No Mark" in any of the spellings people actually use — it is exclusive; every other mark can combine */
+function isNoMark(m) { return /^(no\s*marks?|nm|n\/m|nil|none)$/i.test(String(m || '').trim()); }
 function noMarkName() { return (S.markings || []).find(isNoMark) || ''; }
 function markListFromDesc(desc) {
   return String(desc || '').split(/\s*,\s*/).map(function(x){ return x.trim(); }).filter(Boolean);
