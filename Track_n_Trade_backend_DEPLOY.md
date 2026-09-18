@@ -26,9 +26,13 @@ Send me two things:
 
 I put them into `SYNC_ENDPOINT_URL` and `SYNC_SECRET` in the app and ship the version. From then on:
 - free phones (no licence code) send anonymised market rows → **market** tab
-- licensed phones send full lots → **lots** tab (one row per lot; edits update the row)
+- licensed phones send full lots → **lots** tab (one row per lot; edits and deletes update the row) and their settings → **settings** tab (one row per licence code)
+- a licensed phone can **Restore from licence** (Setup → Team sync) — it reads everything under its code back down. That's the paid tier's backup.
 
-The two tabs create themselves with headers on the first row received.
+The tabs create themselves with headers on the first row received.
+
+## Test the restore read
+Open `<Web app URL>?code=TEST&k=<your SECRET>` in a browser. You should see `{"ok":true,"lots":[],"settings":null}`. Wrong secret shows `{"ok":false}`.
 
 ## Changing the script later
 Edit the code → **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**. The URL stays the same. If you only click Save without a new deployment, the phones keep hitting the old code.
