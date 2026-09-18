@@ -1197,7 +1197,7 @@
           <button type="button" class="btn-ghost" onclick="pickRestore()">Restore</button>
           <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="backupApp()">Back up</button>
         </div>
-        <input type="file" id="restoreInput" accept=".json,application/json,text/plain" style="display:none" onchange="onRestorePicked(this)">
+        <input type="file" id="restoreInput" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="onRestorePicked(this)">
         <p class="note" id="backupStatus" style="margin-top:8px;"></p>
       </div>
 
@@ -1230,7 +1230,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.140'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.141'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3690,9 +3690,11 @@ function backupApp() {
   const st = document.getElementById('backupStatus');
   const name = 'TracknTrade-backup-' + localDate().replace(/[^0-9A-Za-z]+/g, '-') + '.json';
   const blob = backupBlob();
-  const file = new File([blob], name, {type: 'application/json'});
-  if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
-    navigator.share({files: [file], title: 'Track n Trade backup'}).then(function(){
+  // Android Chrome's share sheet refuses .json but takes plain text, so offer the same bytes as .txt if it must
+  const tries = [new File([blob], name, {type: 'application/json'}), new File([blob], name.replace(/\.json$/, '.txt'), {type: 'text/plain'})];
+  const shareable = (navigator.share && navigator.canShare) ? tries.find(function(f){ try { return navigator.canShare({files: [f]}); } catch(e) { return false; } }) : null;
+  if (shareable) {
+    navigator.share({files: [shareable], title: 'Track n Trade backup'}).then(function(){
       st.textContent = 'Backed up · ' + lots.length + ' lot' + (lots.length === 1 ? '' : 's') + ' · ' + localDate();
     }).catch(function(){ st.textContent = 'Backup cancelled.'; });
     return;
@@ -3701,7 +3703,7 @@ function backupApp() {
   a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-  st.textContent = 'Backup file saved · ' + name;
+  st.textContent = 'Backup file saved to Downloads · ' + name;
 }
 let restorePending = null;
 function pickRestore() { document.getElementById('restoreInput').click(); }
