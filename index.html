@@ -532,6 +532,43 @@
     .rm-btns { display: flex; gap: 10px; margin-top: 10px; }
     .rm-btns .btn { flex: 1; margin: 0; }
     .rm-btns .btn.rm-cancel { background: var(--tt-700); color: #fff; }
+    /* ── Docket check — read down the yard's printout and ours side by side ── */
+    #docketModal { align-items: flex-start; padding: 10px; }
+    .dk-card { background: var(--paper); border-radius: var(--r-lg); width: 100%; max-width: 520px; max-height: calc(100% - 4px); display: flex; flex-direction: column; overflow: hidden; }
+    .dk-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
+    .dk-head .modal-title { margin: 0; }
+    .dk-close { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); font-size: 18px; font-weight: 700; }
+    .dk-tabs { display: flex; gap: 8px; padding: 0 16px 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex: 0 0 auto; }
+    .dk-tab { flex: 0 0 auto; border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 14px; color: var(--ink); text-align: left; }
+    .dk-tab small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+    .dk-tab.on { background: var(--tt-900); border-color: var(--tt-900); color: #fff; }
+    .dk-tab.on small { color: var(--tt-300); }
+    .dk-tab.diff small { color: var(--warn); }
+    .dk-tab.on.diff small { color: #fcd34d; }
+    .dk-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px; }
+    .dk-cols, .dk-row { display: grid; grid-template-columns: 1.1fr .8fr 1.2fr 1fr; gap: 6px; align-items: center; }
+    .dk-cols { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 4px 10px; }
+    .dk-row { width: 100%; text-align: left; background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--r-md); padding: 12px 10px; margin-bottom: 8px; font-variant-numeric: tabular-nums; font-family: var(--font-ui); color: var(--ink); }
+    .dk-row b { font-size: 24px; font-weight: 800; }
+    .dk-row .dk-v { font-size: 20px; font-weight: 700; }
+    .dk-row .dk-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+    .dk-row.ok { background: var(--tt-100); border-color: var(--tt-700); }
+    .dk-row.ok b { color: var(--tt-800); }
+    .dk-row.diff { background: var(--warn-bg); border-color: var(--warn); }
+    .dk-row.diff b { color: var(--warn); }
+    .dk-row.extra { grid-template-columns: 1.1fr 1fr auto; }
+    .dk-row.extra .dk-x { justify-self: end; font-size: 13px; font-weight: 700; color: var(--warn); }
+    .dk-empty { color: var(--muted); font-size: 14px; padding: 12px 10px; }
+    .dk-add { display: flex; gap: 8px; align-items: stretch; margin: 6px 0 10px; }
+    .dk-add input { flex: 1; min-height: 52px; font-size: 22px; }
+    .dk-add input::placeholder { font-size: 16px; }
+    .dk-add button { flex: 0 0 auto; min-width: 92px; margin: 0; }
+    .dk-foot { padding: 10px 16px 14px; border-top: 1px solid var(--line-2); flex: 0 0 auto; }
+    .dk-foot .btn { margin-top: 0; }
+    .dk-foot .btn.arm { background: var(--ink); }
+    .dk-status { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+    .dk-open { margin-top: 12px; }
+    .dk-open small { display: block; font-size: 12px; font-weight: 600; opacity: .85; margin-top: 2px; }
     /* ── Modals ─────────────────────────────────────────────────────────── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,10,11,.72); z-index: 210; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.hidden { display: none !important; }
@@ -583,6 +620,19 @@
 </head>
 <body>
   <div class="tnt-toast" id="tntToast" role="status" aria-live="polite"></div>
+  <div id="docketModal" class="modal-overlay hidden">
+    <div class="dk-card">
+      <div class="dk-head"><div class="modal-title">Check docket</div><button type="button" class="dk-close" onclick="closeDocket()" aria-label="Close">✕</button></div>
+      <div class="dk-tabs" id="dkTabs"></div>
+      <div class="dk-cols"><span>Pen</span><span>Hd</span><span id="dkPriceHead">$/hd</span><span>Avg kg</span></div>
+      <div class="dk-body" id="dkBody"></div>
+      <div class="dk-foot">
+        <div class="dk-add"><input id="dkExtraPen" inputmode="numeric" placeholder="Pen not in app"><button type="button" class="btn-ghost" onclick="dkAddExtra()">Add</button></div>
+        <div class="dk-status" id="dkStatus"></div>
+        <button type="button" class="btn btn-g" id="dkCheckBtn" onclick="dkCheckTap()">Mark this way as checked</button>
+      </div>
+    </div>
+  </div>
   <div id="ringModal" class="modal-overlay hidden">
     <div class="watch rm-card">
       <div class="title" style="text-align:center;color:#fff;">Work out $/hd</div>
@@ -827,7 +877,7 @@
 
     <!-- TRUCK -->
     <section id="pageTruck" class="hidden">
-        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lots for trucking</div><p class="note">Tick the lots going on this load, then send below.</p><div id="lotsSummaryTrucking"></div></div></div>
+        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lots for trucking</div><p class="note">Tick the lots going on this load, then send below.</p><div id="lotsSummaryTrucking"></div><button type="button" class="btn btn-g dk-open" id="dkOpenBtn" onclick="openDocket()">Check docket<small id="dkOpenSub"></small></button></div></div>
       <div id="blockText" class="screen screen-tight"><div class="card">
         <div class="title">Send selected lots</div>
         <label>Select by buyer way</label>
@@ -1076,7 +1126,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.126'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.127'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1309,7 +1359,7 @@ function syncLotToSheet(lot) {
       id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
       pen: lot.pen, hd: lot.hd, wt: lot.wt,
       priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
-      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || '', note: lot.note || ''
+      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || '', note: lot.note || '', docket: lot.chk || ''
     })
   });
 }
@@ -2186,6 +2236,126 @@ function scrollRing(price) {
   if (snap !== S.ringLast) { S.ringLast = snap; persist(); }
   setTimeout(()=>{ringLock=false;},160);
 }
+/* ── Docket check — our lots vs the yard's printout, pen by pen, one buyer way at a time ── */
+const DOCKET_KEY = 'cbpro_docket'; // DO NOT RENAME — per-sale check state; cleared on New sale
+let docket = { ways: {} };
+let dkWay = null, dkArmTimer = null;
+function saveDocket() { try { localStorage.setItem(DOCKET_KEY, JSON.stringify(docket)); } catch(e) {} }
+function loadDocket() {
+  try { const d = JSON.parse(localStorage.getItem(DOCKET_KEY) || 'null'); if (d && d.ways) docket = d; } catch(e) {}
+}
+function dkWayState(w) { return docket.ways[w] || (docket.ways[w] = { checked: false, extra: [] }); }
+function dkWays() {
+  const ways = [];
+  lots.forEach(function(l){ const k = l.client || 'Self'; if (ways.indexOf(k) < 0) ways.push(k); });
+  Object.keys(docket.ways).forEach(function(w){ if (ways.indexOf(w) < 0 && (docket.ways[w].extra||[]).length) ways.push(w); });
+  return ways;
+}
+function penKeyOf(p) { const m = /^\s*(\d+)/.exec(String(p)); return m ? parseInt(m[1],10) : 1e9; }
+function dkWaySummary(w) {
+  const st = dkWayState(w);
+  const mine = lots.filter(function(l){ return (l.client || 'Self') === w; });
+  const diffs = mine.filter(function(l){ return l.chk === 'diff'; }).length + (st.extra||[]).length;
+  const ticked = mine.filter(function(l){ return l.chk; }).length;
+  return { st: st, mine: mine, diffs: diffs, ticked: ticked };
+}
+function dkUnchecked() { return dkWays().filter(function(w){ return !dkWayState(w).checked; }); }
+function dkOpenLabel() {
+  const b = document.getElementById('dkOpenSub');
+  if (!b) return;
+  const ways = dkWays();
+  if (!ways.length) { b.textContent = ''; return; }
+  const left = dkUnchecked().length;
+  const diffs = ways.reduce(function(n, w){ return n + dkWaySummary(w).diffs; }, 0);
+  b.textContent = left ? (left + ' of ' + ways.length + ' buyer way' + (ways.length === 1 ? '' : 's') + ' not checked') : ('All checked' + (diffs ? ' · ' + diffs + ' differ' : ''));
+}
+function openDocket() {
+  const ways = dkWays();
+  if (!ways.length) { showToast('No lots to check yet', 'warn'); return; }
+  if (!dkWay || ways.indexOf(dkWay) < 0) dkWay = ways[0];
+  document.getElementById('dkExtraPen').value = '';
+  renderDocket();
+  document.getElementById('docketModal').classList.remove('hidden');
+}
+function closeDocket() {
+  if (activeIn && activeIn.closest('#docketModal')) closeKp();
+  document.getElementById('docketModal').classList.add('hidden');
+  renderLots();
+}
+function dkPick(w) { dkWay = w; renderDocket(); }
+function renderDocket() {
+  const ways = dkWays();
+  document.getElementById('dkTabs').innerHTML = ways.map(function(w) {
+    const sm = dkWaySummary(w);
+    const sub = sm.st.checked ? ('Checked' + (sm.diffs ? ' · ' + sm.diffs + ' differ' : '')) : (sm.diffs ? sm.diffs + ' differ' : 'Not checked');
+    return '<button type="button" class="dk-tab' + (w === dkWay ? ' on' : '') + (sm.diffs ? ' diff' : '') + '" onclick="dkPick(' + JSON.stringify(w).replace(/"/g, '&quot;') + ')">' + xmlEsc(w) + '<small>' + xmlEsc(sub) + '</small></button>';
+  }).join('');
+  const sm = dkWaySummary(dkWay);
+  const prime = sm.mine.some(function(l){ return l.priceUnit === 'kg'; });
+  document.getElementById('dkPriceHead').textContent = prime ? '$/kg · $/hd' : '$/hd';
+  const rows = sm.mine.slice().sort(function(a, b) {
+    return penKeyOf(a.pen) - penKeyOf(b.pen) || String(a.pen).localeCompare(String(b.pen), undefined, {numeric: true});
+  }).map(function(l) {
+    const hd = l.hd || '—', kg = l.wt || '—';
+    const price = l.priceUnit === 'kg'
+      ? '<span class="dk-v">$' + (+l.price).toFixed(2) + '</span><span class="dk-sub">$' + Math.round(lotPriceHd(l)).toLocaleString() + '/hd</span>'
+      : '<span class="dk-v">$' + Math.round(l.price).toLocaleString() + '</span>';
+    return '<button type="button" class="dk-row' + (l.chk ? ' ' + l.chk : '') + '" onclick="dkTap(' + l.id + ')"><b>' + xmlEsc(l.pen || '—') + '</b><span class="dk-v">' + hd + '</span>' + price + '<span class="dk-v">' + kg + '</span></button>';
+  });
+  (sm.st.extra || []).forEach(function(x, i) {
+    rows.push('<button type="button" class="dk-row diff extra" onclick="dkDropExtra(' + i + ')"><b>' + xmlEsc(x.pen) + '</b><span class="dk-sub">On docket, not in app</span><span class="dk-x">remove</span></button>');
+  });
+  document.getElementById('dkBody').innerHTML = rows.length ? rows.join('') : '<div class="dk-empty">No lots for this buyer way.</div>';
+  const st = document.getElementById('dkStatus');
+  st.textContent = 'Tap a pen once if it matches the docket, twice if it differs. ' + sm.ticked + ' of ' + sm.mine.length + ' ticked' + (sm.diffs ? ' · ' + sm.diffs + ' differ' : '') + '.';
+  const b = document.getElementById('dkCheckBtn');
+  b.classList.remove('arm');
+  b.textContent = sm.st.checked ? 'Checked ✓ — tap to undo' : 'Mark this way as checked';
+  dkOpenLabel();
+}
+function dkTap(id) {
+  const l = lots.find(function(x){ return x.id === id; });
+  if (!l) return;
+  l.chk = !l.chk ? 'ok' : (l.chk === 'ok' ? 'diff' : '');
+  if (!l.chk) delete l.chk;
+  persistLots();
+  renderDocket();
+}
+function dkAddExtra() {
+  const inp = document.getElementById('dkExtraPen');
+  const pen = (inp.value || '').trim();
+  if (!pen) return;
+  if (activeIn === inp) closeKp();
+  const st = dkWayState(dkWay);
+  st.extra = st.extra || [];
+  st.extra.push({ pen: pen });
+  inp.value = '';
+  saveDocket();
+  renderDocket();
+}
+function dkDropExtra(i) {
+  const st = dkWayState(dkWay);
+  (st.extra || []).splice(i, 1);
+  saveDocket();
+  renderDocket();
+}
+function dkCheckTap() {
+  const b = document.getElementById('dkCheckBtn');
+  const st = dkWayState(dkWay);
+  if (st.checked) { st.checked = false; saveDocket(); renderDocket(); return; }
+  if (!b.classList.contains('arm')) {
+    b.classList.add('arm'); b.textContent = 'Tap again to confirm';
+    if (dkArmTimer) clearTimeout(dkArmTimer);
+    dkArmTimer = setTimeout(function(){ b.classList.remove('arm'); b.textContent = 'Mark this way as checked'; }, 3000);
+    return;
+  }
+  if (dkArmTimer) { clearTimeout(dkArmTimer); dkArmTimer = null; }
+  st.checked = true;
+  saveDocket();
+  renderDocket();
+  showToast(dkWay + ' checked against the docket');
+}
+
 /* pop-up ring for the watchlist Max $/hd box — its own ring, never touches the Sales watch */
 let rmHd = 0, rmLock = false;
 function rmBuild() {
@@ -3082,6 +3252,8 @@ function openNewSaleConfirm() {
     ? ('This archives the current ' + total + ' lot' + (total === 1 ? '' : 's') + ' and clears the list for a fresh sale.')
     : 'No lots entered yet — this just resets the entry fields.';
   if (total && unsent) msg += ' ' + unsent + ' lot' + (unsent === 1 ? '' : 's') + ' not yet sent to a carrier.';
+  const unchecked = total ? dkUnchecked() : [];
+  if (unchecked.length) msg += ' Docket not checked for ' + unchecked.join(', ') + '.';
   document.getElementById('newSaleModalBody').textContent = msg;
   document.querySelector('#newSaleModal .modal-title').textContent = 'Start a new sale?';
   slideAction = function(){ startNewSale(); };
@@ -3096,7 +3268,7 @@ function backupBlob() {
   try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) {}
   try { watch = JSON.parse(localStorage.getItem(WATCH_KEY) || 'null'); } catch(e) {}
   const data = { app: BACKUP_TAG, appVersion: APP_VERSION, t: new Date().toISOString(),
-    settings: S, lots: lots, history: hist, watch: watch };
+    settings: S, lots: lots, history: hist, watch: watch, docket: docket };
   return new Blob([JSON.stringify(data)], {type: 'application/json'});
 }
 function backupApp() {
@@ -3154,6 +3326,7 @@ function applyRestore() {
     localStorage.setItem(LOTS_KEY, JSON.stringify(d.lots));
     localStorage.setItem(HISTORY_KEY, JSON.stringify(Array.isArray(d.history) ? d.history : []));
     if (d.watch) localStorage.setItem(WATCH_KEY, JSON.stringify(d.watch)); else localStorage.removeItem(WATCH_KEY);
+    if (d.docket && d.docket.ways) localStorage.setItem(DOCKET_KEY, JSON.stringify(d.docket)); else localStorage.removeItem(DOCKET_KEY);
     localStorage.removeItem(DRAFT_KEY);
   } catch(e) {
     document.getElementById('backupStatus').textContent = "Restore failed — phone storage wouldn't take it.";
@@ -3177,6 +3350,7 @@ function startNewSale() {
   pendingPhoto = null;
   lots = [];
   editingLotId = null;
+  docket = { ways: {} }; dkWay = null; saveDocket();
   penWatch.forEach(function(w){ if (w.hasPhoto) photoDel('w' + w.id); });
   penWatch = [];
   wlPendingPhoto = null; updateWlCam();
@@ -3523,6 +3697,7 @@ function renderLots() {
   document.getElementById('lotsSummaryTrucking').innerHTML = lotTable(true);
   const recBox = document.getElementById('lotsSummaryRecord');
   if (recBox) recBox.innerHTML = lotTable(false);
+  dkOpenLabel();
 }
 function editLot(id) {
   const l = lots.find(function(x){ return x.id === id; });
@@ -3927,14 +4102,20 @@ function localDate(d) {
   return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
 }
 function exportExcel() {
-  const headers = ['Date','Sale','Yard','Pen','Type','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description','Note'];
+  const headers = ['Date','Sale','Yard','Pen','Type','Head','Weight kg','$/hd','$/kg','Total $','Agent','Buyer way','Sent','Carrier','Description','Note','Docket'];
   const lotRows = [headers];
   lots.forEach(l => {
     lotRows.push([
       localStamp(l.t),
       l.sale||'', l.yard||'', l.pen||'', l.sex||'', l.hd, l.wt, Math.round(lotPriceHd(l)*100)/100,
-      Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||'', l.note||''
+      Math.round(lotPriceKg(l)*100)/100, lotDollars(l), l.agent||'', l.client||'', l.sent?'Yes':'No', l.carrier||'', l.desc||'', l.note||'',
+      l.chk === 'ok' ? 'Matches' : (l.chk === 'diff' ? 'Differs' : (dkWayState(l.client || 'Self').checked ? 'Not ticked' : ''))
     ]);
+  });
+  Object.keys(docket.ways).forEach(function(w) {
+    (docket.ways[w].extra || []).forEach(function(x) {
+      lotRows.push([localDate(), '', '', x.pen, '', '', '', '', '', '', S.meAgent||'', w, '', '', '', 'On docket, not in app', 'Differs']);
+    });
   });
   let th=0, td=0;
   lots.forEach(l=>{ th+=l.hd; td+=lotDollars(l); });
@@ -4021,7 +4202,7 @@ function init() {
   foldSettingsNotes();
   document.getElementById('lotSex').value = '';
   fillSexChips();
- loadWatch();
+ loadWatch(); loadDocket();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); renderWatchlist(); updateCamButtons(); });
   trySyncQueue();
