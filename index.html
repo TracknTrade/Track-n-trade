@@ -1267,7 +1267,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.145'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.146'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1781,7 +1781,7 @@ function showTab(name) {
   if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
   if (name === 'truck' || name === 'summary') renderLots();
   if (main) {
-    if (name === 'record' && pageScroll[name] == null) scrollMainTo(document.getElementById('recSplit'), 'start');
+    if (name === 'record') scrollMainTo(document.getElementById('recSplit'), 'start');
     else if (name === 'summary') scrollMainTo(document.getElementById('pageSummary'), 'start');
     else main.scrollTop = pageScroll[name] || 0;
   }
@@ -2436,7 +2436,7 @@ function bindKp() {
    boxes, chips or number keys never moves the page. On the summary the whole page swipes back. */
 (function(){
   const split = document.getElementById('recSplit'), sum = document.getElementById('pageSummary');
-  let sx = null, sy = null, ok = false;
+  let sx = null, sy = null, ok = false, busyUntil = 0;
   function start(zoneEl, e) {
     const t = e.touches[0]; sx = t.clientX; sy = t.clientY; ok = false;
     if (zoneEl === split) {
@@ -2445,21 +2445,27 @@ function bindKp() {
       ok = y <= 0.25 || y >= 0.75;
     } else ok = true;
   }
-  function end(e, dir, go) {
+  function end(e, dir, from, go) {
     if (!ok || sx == null) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - sx, dy = t.clientY - sy;
     sx = sy = null; ok = false;
     if (Math.abs(dx) < 70 || Math.abs(dx) < 2 * Math.abs(dy)) return;
-    if ((dir === 'left' && dx < 0) || (dir === 'right' && dx > 0)) go();
+    if (!((dir === 'left' && dx < 0) || (dir === 'right' && dx > 0))) return;
+    // a flurry of swipes must not stack page changes on top of each other — one every half second, from the right page
+    const now = Date.now();
+    if (now < busyUntil || currentTab !== from) return;
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+    busyUntil = now + 500;
+    setTimeout(go, 30);
   }
   if (split) {
     split.addEventListener('touchstart', function(e){ start(split, e); }, {passive:true});
-    split.addEventListener('touchend', function(e){ end(e, 'left', function(){ if (!document.getElementById('newSaleModal').classList.contains('hidden')) return; showTab('summary'); }); }, {passive:true});
+    split.addEventListener('touchend', function(e){ end(e, 'left', 'record', function(){ showTab('summary'); }); }, {passive:true});
   }
   if (sum) {
     sum.addEventListener('touchstart', function(e){ start(sum, e); }, {passive:true});
-    sum.addEventListener('touchend', function(e){ end(e, 'right', goRecorder); }, {passive:true});
+    sum.addEventListener('touchend', function(e){ end(e, 'right', 'summary', goRecorder); }, {passive:true});
   }
 })();
 /* indicator */
@@ -3638,7 +3644,8 @@ function scrollMainTo(el, block) {
   if (scrollJumpTimer) { clearTimeout(scrollJumpTimer); scrollJumpTimer = null; }
   main.style.scrollSnapType = 'none';
   main.scrollTop = y;
-  requestAnimationFrame(function(){ main.scrollTop = y; });
+  const seq = (scrollMainTo._seq = (scrollMainTo._seq || 0) + 1);
+  requestAnimationFrame(function(){ if (scrollMainTo._seq === seq) main.scrollTop = y; });
   scrollJumpTimer = setTimeout(function(){
     main.scrollTop = y;
     main.style.scrollSnapType = '';
