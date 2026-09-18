@@ -184,7 +184,7 @@
     .btn-r { background: none; border: none; color: var(--ink-2); font-size: 14px; font-weight: 600; padding: 6px 4px; }
     .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: var(--fs-sm); color: var(--ink-2); }
     .muted { color: var(--muted); }
-    .max { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .max { text-align: center; margin: 6px 0 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
     .max b { display: block; font-size: 2.75rem; font-weight: 900; letter-spacing: -.02em; line-height: 1.05; }
     /* discreet max-buy: a grey veil sits over the figure until the user swipes across it, then it hides again */
     .max-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
@@ -1230,7 +1230,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.139'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.140'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2414,8 +2414,11 @@ function renderClasses() {
   classes.forEach(c => {
     const d = document.createElement('div');
     d.className = 'card'; d.id = 'card'+c.id;
-    d.innerHTML = (classes.length>1?'<button type="button" class="card-x" onclick="removeClass('+c.id+')">x</button>':'') + '<div><label>Buying weight</label><input class="wt" value="'+c.weight+'" oninput="updateClass('+c.id+',\'weight\',this.value)"></div>'
+    d.innerHTML = (classes.length>1?'<button type="button" class="card-x" onclick="removeClass('+c.id+')">x</button>':'')
+      + '<div><label>Buying weight</label><input class="wt" value="'+c.weight+'" oninput="updateClass('+c.id+',\'weight\',this.value)"></div>'
       + '<input class="hdr" placeholder="Purchase $/hd" value="'+(c.buyPrice ? c.buyPrice : '')+'" oninput="updateClass('+c.id+',\'buyPrice\',this.value)">'
+      // the three big things first: weight, price paid, max buy — the working numbers sit underneath
+      + '<div class="max"><span class="muted" id="maxlab'+c.id+'">Max buy</span><div class="max-row"><div class="max-num"><b id="max'+c.id+'">—</b><div class="veil">Hidden</div></div><button type="button" class="hold-eye" aria-label="Hold to view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>'
       + '<div class="row"><span class="muted">Days</span><span id="days'+c.id+'">—</span></div>'
       + '<div class="row"><span class="muted">Exit</span><span id="exit'+c.id+'">—</span></div>'
       + '<div class="row"><span class="muted">CoC</span><span id="coc'+c.id+'">—</span></div>'
@@ -2423,13 +2426,11 @@ function renderClasses() {
       + '<div class="row"><span class="muted">Gain</span><span id="gain'+c.id+'">—</span></div>'
       + '<div class="row"><span class="muted">Interest</span><span id="int'+c.id+'">—</span></div>'
       + '<div class="row"><span>Gross</span><b id="gross'+c.id+'">—</b></div>'
-      + '<div class="row"><span>Net</span><b id="net'+c.id+'">—</b></div>'
-      + '<div class="max"><span class="muted" id="maxlab'+c.id+'">Max buy</span><div class="max-row"><div class="max-num"><b id="max'+c.id+'">—</b><div class="veil">Hidden</div></div><button type="button" class="hold-eye" aria-label="Hold to view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>';
+      + '<div class="row"><span>Net</span><b id="net'+c.id+'">—</b></div>';
     box.appendChild(d);
   });
   bindKp();
 }
-
 function applyExitMode() {
   const mode = S.exitMode || 'hd';
   const hdBtn = document.getElementById('modeHd');
