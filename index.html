@@ -1169,6 +1169,8 @@
         </div>
         <input type="hidden" id="s_meAgent"><input type="hidden" id="s_licenseCode">
         <p class="note hidden" id="syncStatusNote" style="margin-top:8px;">No licence code entered.</p>
+        <div class="toggle hidden" id="contribRow" onclick="flip('contribMarket')"><span>Contribute anonymised market data</span><div class="switch" id="sw_contribMarket"><i></i></div></div>
+        <p class="note" id="marketNote" style="margin-top:8px;"></p>
       </div>
 
       <div class="card">
@@ -1211,9 +1213,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.133'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.134'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'kg',
   opCost: 0, headPerYr: 0,
@@ -1440,7 +1442,7 @@ function syncLotToSheet(lot) {
     mode: 'no-cors',
     headers: {'Content-Type': 'text/plain'},
     body: JSON.stringify({
-      code: S.licenseCode,
+      kind: 'lot', k: SYNC_SECRET, code: S.licenseCode,
       id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
       pen: lot.pen, hd: lot.hd, wt: lot.wt,
       priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
@@ -1466,6 +1468,107 @@ function trySyncQueue() {
   });
 }
 window.addEventListener('online', trySyncQueue);
+
+/* ── Free-tier market data — anonymised, one row per lot saved ────────────────
+   Sent only when: an endpoint is set, the terms have been agreed, and either there is
+   no licence code (free) or a licensed user has switched "Contribute" on. The row builder
+   is the whole privacy design: only the fields listed here ever leave the phone. */
+const SYNC_SECRET = '';
+const MARKET_KEY = 'cbpro_market'; // DO NOT RENAME — queued rows waiting for signal
+const YARD_SNAP_KM = 25;
+const YARDS = [
+['NVLX Barnawatha (Wodonga)',-36.09,146.68],['Wangaratta',-36.36,146.32],['Euroa',-36.75,145.57],['Shepparton',-36.38,145.40],['Echuca',-36.13,144.75],['Swan Hill',-35.34,143.55],['Kerang',-35.73,143.92],['Wycheproof',-36.08,143.23],['Horsham',-36.71,142.20],['Ballarat',-37.56,143.85],['Hamilton',-37.74,142.02],['Warrnambool',-38.38,142.48],['Mortlake',-38.08,142.81],['Colac',-38.34,143.59],['Camperdown',-38.23,143.15],['Leongatha',-38.48,145.95],['VLE Pakenham',-38.07,145.48],['Bairnsdale',-37.83,147.63],['Sale',-38.10,147.07],['Yea',-37.21,145.43],['Kyneton',-37.25,144.45],['Bendigo',-36.76,144.28],['Ouyen',-35.07,142.32],['Traralgon',-38.20,146.54],['Warragul',-38.16,145.93],['Ararat',-37.28,142.93],['Casterton',-37.58,141.40],
+['Wagga Wagga',-35.12,147.37],['Dubbo',-32.24,148.61],['Tamworth',-31.09,150.93],['Inverell',-29.78,151.11],['Casino',-28.86,153.05],['Gunnedah',-30.98,150.25],['Forbes',-33.38,148.01],['Yass',-34.84,148.91],['CTLX Carcoar',-33.61,149.14],['Armidale',-30.51,151.67],['Glen Innes',-29.74,151.74],['Grafton',-29.69,152.93],['Kempsey',-31.08,152.84],['Wauchope',-31.46,152.73],['Taree',-31.91,152.46],['Gloucester',-32.00,151.96],['Singleton',-32.57,151.17],['Maitland',-32.73,151.55],['Scone',-32.05,150.87],['Cootamundra',-34.64,148.03],['Finley',-35.65,145.57],['Corowa',-36.00,146.39],['Deniliquin',-35.53,144.96],['Griffith',-34.29,146.04],['Narrandera',-34.75,146.55],['Cowra',-33.83,148.69],['Orange',-33.28,149.10],['Bathurst',-33.42,149.58],['Mudgee',-32.59,149.59],['Coonamble',-30.95,148.39],['Narrabri',-30.33,149.78],['Moree',-29.46,149.84],['Nyngan',-31.56,147.19],['Moss Vale',-34.55,150.37],['Goulburn',-34.75,149.72],['Bega',-36.67,149.84],['Camden',-34.05,150.70],['Braidwood',-35.44,149.80],['Tumut',-35.30,148.22],['Holbrook',-35.72,147.32],['Cooma',-36.24,149.13],['Walcha',-30.98,151.60],['Lismore',-28.81,153.28],['Tenterfield',-29.05,152.02],['Warren',-31.70,147.83],['Condobolin',-33.09,147.15],['Wellington',-32.56,148.95],['Hay',-34.51,144.85],
+['Roma',-26.57,148.79],['Dalby',-27.18,151.26],['Toowoomba',-27.56,151.95],['Warwick',-28.22,152.03],['Gympie',-26.19,152.66],['Emerald',-23.52,148.16],['Blackall',-24.42,145.46],['Longreach',-23.44,144.25],['Charters Towers',-20.08,146.26],['Mareeba',-17.00,145.42],['Biggenden',-25.51,152.05],['Silverdale',-27.99,152.87],['Goondiwindi',-28.55,150.31],['Beaudesert',-27.99,152.99],['Murgon',-26.24,151.94],['Monto',-24.87,151.12],['CQLX Gracemere',-23.44,150.46],['Sarina',-21.42,149.30],['Clermont',-22.82,147.64],['Miles',-26.66,150.19],['Eidsvold',-25.37,151.12],['Stanthorpe',-28.66,151.93],['Coolabunia (Kingaroy)',-26.60,151.90],['Laidley',-27.63,152.39],
+['Naracoorte',-36.96,140.74],['Mount Gambier',-37.83,140.78],['Dublin SA',-34.45,138.35],['Mount Compass',-35.35,138.62],['Strathalbyn',-35.26,138.90],
+['Muchea',-31.58,115.97],['Boyanup',-33.49,115.73],['Katanning',-33.69,117.56],['Mount Barker WA',-34.63,117.67],
+['Powranna',-41.62,147.24],['Quoiba (Devonport)',-41.19,146.33],['Killafaddy (Launceston)',-41.44,147.18],['Oatlands',-42.30,147.37],['Smithton',-40.84,145.12]
+];
+let marketQ = [], marketInFlight = false;
+function loadMarketQ() { try { marketQ = JSON.parse(localStorage.getItem(MARKET_KEY) || '[]') || []; } catch(e) { marketQ = []; } }
+function saveMarketQ() { try { localStorage.setItem(MARKET_KEY, JSON.stringify(marketQ.slice(-500))); } catch(e) {} }
+function marketOn() {
+  return !!SYNC_ENDPOINT_URL && termsAccepted() && (!S.licenseCode || !!S.contribMarket);
+}
+function deviceId() {
+  if (!S.deviceId) {
+    let id = '';
+    try { id = (crypto.randomUUID && crypto.randomUUID()) || ''; } catch(e) {}
+    if (!id) id = 'd' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+    S.deviceId = id; persist();
+  }
+  return S.deviceId;
+}
+function yardDistKm(lat, lon, y) {
+  const R = 6371, dLat = (y[1]-lat)*Math.PI/180, dLon = (y[2]-lon)*Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat*Math.PI/180)*Math.cos(y[1]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+function snapYard(lat, lon) {
+  let best = null, bd = 1e9;
+  YARDS.forEach(function(y){ const d = yardDistKm(lat, lon, y); if (d < bd) { bd = d; best = y; } });
+  return (best && bd <= YARD_SNAP_KM) ? best[0] : '';
+}
+/* One location read, snapped to a yard name, coordinates thrown away. Never blocks anything. */
+function refreshYardAuto() {
+  if (!marketOn() || !navigator.geolocation) return;
+  const fresh = S.yardAuto && (Date.now() - (S.yardAuto.t || 0) < 6*3600*1000);
+  if (fresh) return;
+  try {
+    navigator.geolocation.getCurrentPosition(function(pos){
+      const name = snapYard(pos.coords.latitude, pos.coords.longitude);
+      S.yardAuto = { name: name, t: Date.now() }; persist();
+      marketNoteRender();
+    }, function(){ S.yardAuto = { name: '', t: Date.now() }; persist(); }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 30*60*1000 });
+  } catch(e) {}
+}
+function marketYard() {
+  const auto = S.yardAuto && S.yardAuto.name && (Date.now() - S.yardAuto.t < 12*3600*1000) ? S.yardAuto.name : '';
+  if (auto) return { yard: auto, how: 'gps' };
+  const typed = (document.getElementById('pickupLoc') || {}).value || '';
+  if (typed.trim()) return { yard: typed.trim(), how: 'typed' };
+  return { yard: 'unknown', how: 'none' };
+}
+/* The anonymised row. Deliberately absent: buyer way, agent, pen, carrier, note, exact time, coordinates. */
+function marketRow(l) {
+  const d = new Date(l.t || Date.now());
+  const p = function(x){ return (x < 10 ? '0' : '') + x; };
+  const y = marketYard();
+  return {
+    kind: 'market', k: SYNC_SECRET, dev: deviceId(),
+    day: d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()), hour: d.getHours(),
+    yard: y.yard, yardHow: y.how,
+    hd: l.hd || 0, wt: l.wt || 0, price: l.price || 0, unit: l.priceUnit === 'kg' ? 'kg' : 'hd',
+    sex: l.sex || '', marks: l.desc || '', mode: S.saleMode === 'prime' ? 'prime' : 'store', appVersion: APP_VERSION
+  };
+}
+function queueMarketRow(l) {
+  if (!marketOn()) return;
+  marketQ.push(marketRow(l));
+  saveMarketQ();
+  refreshYardAuto();
+  tryMarketQueue();
+}
+function tryMarketQueue() {
+  if (!marketOn() || marketInFlight || !marketQ.length) { marketNoteRender(); return; }
+  marketInFlight = true;
+  const row = marketQ[0];
+  fetch(SYNC_ENDPOINT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(row) })
+    .then(function(){ marketQ.shift(); saveMarketQ(); marketInFlight = false; marketNoteRender(); if (marketQ.length) tryMarketQueue(); })
+    .catch(function(){ marketInFlight = false; marketNoteRender(); });
+}
+window.addEventListener('online', tryMarketQueue);
+function marketNoteRender() {
+  const el = document.getElementById('marketNote'), row = document.getElementById('contribRow');
+  if (!el) return;
+  if (row) row.classList.toggle('hidden', !S.licenseCode);
+  const sw = document.getElementById('sw_contribMarket');
+  if (sw) sw.classList.toggle('on', !!S.contribMarket);
+  if (!SYNC_ENDPOINT_URL) { el.textContent = 'Market data: not yet switched on in this version.'; return; }
+  if (!marketOn()) { el.textContent = 'Market data: off (licensed).'; return; }
+  const yard = marketYard();
+  el.textContent = 'Market data: contributing anonymised rows' + (S.licenseCode ? '' : ' (free version)') + ' · yard ' + (yard.how === 'none' ? 'unknown — turn on location or type it on the Truck page' : yard.yard) + (marketQ.length ? ' · ' + marketQ.length + ' waiting for signal' : '');
+}
 function loadLots() {
   try {
     const raw = localStorage.getItem(LOTS_KEY);
@@ -1527,6 +1630,7 @@ function showTab(name) {
   applyFeatures();
   if (name === 'record') { fillBuyerPick(); syncMarkChips(); fillSexChips(); }
   if (name === 'record' && !ringPositioned) scrollRing(S.ringLast || 2000);
+  if (name === 'record') refreshYardAuto();
   if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
   if (name === 'truck') renderLots();
   if (main) {
@@ -1562,7 +1666,7 @@ function applyFeatures() {
 }
 
 function fillSettings() {
-  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showMoneyRecord','showText','showSex','lefty'].forEach(k => {
+  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showMoneyRecord','showText','showSex','lefty','contribMarket'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderSexToggles();
@@ -1624,6 +1728,7 @@ function flip(k) {
   document.getElementById('sw_'+k).classList.toggle('on', S[k]);
   persist();
   if (k === 'showSex') renderSexToggles();
+  if (k === 'contribMarket') { refreshYardAuto(); tryMarketQueue(); }
   applyFeatures();
   stRender();
 }
@@ -2356,6 +2461,7 @@ function acceptTerms() {
   }
   document.getElementById('termsModal').classList.add('hidden');
   termsNoteRender();
+  marketNoteRender(); refreshYardAuto(); tryMarketQueue();
 }
 function termsNoteRender() {
   const el = document.getElementById('termsNote');
@@ -3446,7 +3552,7 @@ function backupBlob() {
   try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) {}
   try { watch = JSON.parse(localStorage.getItem(WATCH_KEY) || 'null'); } catch(e) {}
   const data = { app: BACKUP_TAG, appVersion: APP_VERSION, t: new Date().toISOString(),
-    settings: S, lots: lots, history: hist, watch: watch, docket: docket };
+    settings: S, lots: lots, history: hist, watch: watch, docket: docket, market: marketQ };
   return new Blob([JSON.stringify(data)], {type: 'application/json'});
 }
 function backupApp() {
@@ -3505,6 +3611,7 @@ function applyRestore() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(Array.isArray(d.history) ? d.history : []));
     if (d.watch) localStorage.setItem(WATCH_KEY, JSON.stringify(d.watch)); else localStorage.removeItem(WATCH_KEY);
     if (d.docket && d.docket.ways) localStorage.setItem(DOCKET_KEY, JSON.stringify(d.docket)); else localStorage.removeItem(DOCKET_KEY);
+    if (Array.isArray(d.market)) localStorage.setItem(MARKET_KEY, JSON.stringify(d.market));
     localStorage.removeItem(DRAFT_KEY);
   } catch(e) {
     document.getElementById('backupStatus').textContent = "Restore failed — phone storage wouldn't take it.";
@@ -3722,6 +3829,7 @@ function addLot() {
     };
     lots.push(newLot);
     if (pendingPhoto) { photoPut(newLot.id, pendingPhoto); pendingPhoto = null; }
+    queueMarketRow(newLot);
   }
   updateCamButtons();
   document.getElementById('lotPrice').value='';
@@ -4380,8 +4488,9 @@ function init() {
   foldSettingsNotes();
   document.getElementById('lotSex').value = '';
   fillSexChips();
- loadWatch(); loadDocket();
+ loadWatch(); loadDocket(); loadMarketQ();
  termsNoteRender(); if (!termsAccepted()) openTerms(false);
+ marketNoteRender(); tryMarketQueue();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); renderWatchlist(); updateCamButtons(); });
   trySyncQueue();
