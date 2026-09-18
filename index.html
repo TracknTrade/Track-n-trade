@@ -585,6 +585,24 @@
     body.lefty .in-ico input { padding-right: 14px; padding-left: 46px; }
     body.lefty .ico-btn { right: auto; left: 6px; }
     body.lefty .edit-actions { flex-direction: row-reverse; }
+    /* ── First-run terms & disclaimer — above everything, can't be tapped away ── */
+    #termsModal { z-index: 240; align-items: flex-start; padding: 14px 10px; }
+    .terms-card { background: var(--paper); border-radius: var(--r-lg); width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+    .terms-head { padding: 18px 18px 6px; }
+    .terms-head .modal-title { margin: 0; }
+    .terms-head .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+    .terms-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 18px 12px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+    .terms-body h4 { font-size: 14px; font-weight: 800; color: var(--ink); margin: 14px 0 4px; }
+    .terms-body p { margin: 0 0 8px; }
+    .terms-body ul { margin: 0 0 8px 18px; padding: 0; }
+    .terms-body li { margin: 2px 0; }
+    .terms-body .fill { background: var(--warn-bg); color: var(--warn); border-radius: 4px; padding: 0 4px; font-weight: 700; }
+    .terms-foot { padding: 12px 18px 16px; border-top: 1px solid var(--line-2); flex: 0 0 auto; }
+    .terms-agree { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 12px; text-transform: none; letter-spacing: 0; line-height: 1.4; }
+    .terms-agree input { -webkit-appearance: checkbox; appearance: auto; width: 28px; height: 28px; min-height: 0; margin: 0; padding: 0; border: none; box-shadow: none !important; flex: 0 0 auto; accent-color: var(--tt-700); }
+    .terms-foot .btn { margin-top: 0; }
+    .terms-foot .btn:disabled { opacity: .45; }
+    .terms-stamp { font-size: 12px; color: var(--muted); margin-top: 8px; text-align: center; }
     /* ── Modals ─────────────────────────────────────────────────────────── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,10,11,.72); z-index: 210; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.hidden { display: none !important; }
@@ -636,6 +654,53 @@
 </head>
 <body>
   <div class="tnt-toast" id="tntToast" role="status" aria-live="polite"></div>
+  <div id="termsModal" class="modal-overlay hidden">
+    <div class="terms-card">
+      <div class="terms-head"><div class="modal-title">Before you start</div><div class="eyebrow">Terms of use &amp; disclaimer</div></div>
+      <div class="terms-body" id="termsBody">
+        <p>Please read this once. It says what Track n Trade is, what it isn't, and what you're agreeing to by using it.</p>
+
+        <h4>1. What Track n Trade is</h4>
+        <p>Track n Trade is a recording and calculation tool for people buying livestock. It records what you enter and does arithmetic on it. It is not a stock agent, a financial adviser, an accountant or a lawyer, and nothing in it is financial, legal, veterinary or professional advice.</p>
+
+        <h4>2. The maths</h4>
+        <p>We have checked every calculator in the app against worked examples. But every result depends entirely on the numbers you enter and the assumptions you set — target weight, daily gain, costs, interest rate, sale price and the rest. A wrong, stale or missing input gives a wrong answer. You must check any figure yourself before you rely on it.</p>
+
+        <h4>3. Your decisions are yours</h4>
+        <p>Every bid, purchase, sale, price, trucking, delivery and animal-husbandry decision is made by you, using your own judgement. To the fullest extent permitted by law, <span class="fill">[Company Pty Ltd]</span> and its directors, staff and contractors are not liable for any loss, cost or damage arising from your use of, or reliance on, the app or anything in it — including lost profit, stock bought or sold at the wrong price, miscounts, wrong or missed deliveries, animal welfare or biosecurity outcomes, or any difference between the app's records and a saleyard's or agency's records.</p>
+
+        <h4>4. Your data lives on your phone</h4>
+        <p>Your sales, lots, settings, photos and contacts are stored on this device, not on our servers (except as set out in section 6). You are responsible for backing them up — Setup → Backup makes a file you can keep. We are not liable for data lost through a lost, damaged, reset or replaced phone, a browser clearing its storage, or an app update.</p>
+
+        <h4>5. Texts, exports and photos</h4>
+        <p>Messages to carriers, exports and photos are yours. Check them before you send them; we don't verify recipients or content. Photos of pen cards, dockets and paperwork may contain other people's information — how you use and share them is your responsibility.</p>
+
+        <h4>6. What we collect</h4>
+        <p><b>Free version:</b> to keep it free, the free version sends us an anonymised summary of each lot you record — date and hour, saleyard, head, average weight, price and whether it's $/hd or $/kg, stock type, markings, store or prime — with a random device number so we can count distinct users. That's all. We never collect your name, buyer ways, pen numbers, carriers, phone numbers, free-text notes, exact times or GPS coordinates. The phone's location is used once, at save, only to work out which saleyard you're at; turn off Location Services for this app and we'll only know the yard if you type it in. We use this data to build aggregated market information, which we may publish or sell in aggregated form only.</p>
+        <p><b>Paid version:</b> we collect nothing. Your sales stay on your phone and sync only to your own spreadsheet if you set that up.</p>
+        <p>Any personal information we do hold (for example your email if you contact us, or licence details if you subscribe) is handled in accordance with the Privacy Act 1988 (Cth). Questions: <span class="fill">[privacy email]</span>.</p>
+
+        <h4>7. Saleyards and agencies</h4>
+        <p>Track n Trade is not affiliated with, endorsed by, or connected to any saleyard, livestock agency, or saleyard software provider. The saleyard's and selling agent's records are the official record of a sale. The Check docket feature helps you compare your record against theirs; it does not verify either, and it does not tell you which one is right.</p>
+
+        <h4>8. Australian Consumer Law</h4>
+        <p>Nothing in these terms excludes, restricts or modifies any guarantee, right or remedy you have under the Australian Consumer Law or any other law that cannot be excluded. Where our liability for a breach of such a guarantee can lawfully be limited, it is limited, at our option, to re-supplying the app or paying the cost of having it re-supplied. Otherwise, section 3 applies.</p>
+
+        <h4>9. Business use</h4>
+        <p>The app is provided for use in trade or business by people buying livestock. By using it you confirm you are doing so in the course of a business and are responsible for your own compliance with the laws that apply to that business, including NLIS, NVD and biosecurity obligations.</p>
+
+        <h4>10. Changes and governing law</h4>
+        <p>We may change the app and these terms. If the terms change you'll be shown the new version and asked to agree again before continuing. These terms are governed by the laws of <span class="fill">[State]</span>, Australia, and you submit to the courts there.</p>
+
+        <p style="margin-top:14px;"><span class="fill">[Company Pty Ltd · ABN 00 000 000 000]</span> · Track n Trade · Terms version <span id="termsVer"></span></p>
+      </div>
+      <div class="terms-foot">
+        <label class="terms-agree" id="termsAgreeRow"><input type="checkbox" id="termsTick" class="native" onchange="termsTickChanged()"><span>I have read these terms and I agree to them. I understand the app's figures are only as good as what I enter, and that my buying decisions are my own.</span></label>
+        <button type="button" class="btn btn-g" id="termsBtn" onclick="acceptTerms()" disabled>Agree and continue</button>
+        <div class="terms-stamp" id="termsStamp"></div>
+      </div>
+    </div>
+  </div>
   <div id="docketModal" class="modal-overlay hidden">
     <div class="dk-card">
       <div class="dk-head"><div class="modal-title">Check docket</div><button type="button" class="dk-close" onclick="closeDocket()" aria-label="Close">✕</button></div>
@@ -1120,6 +1185,8 @@
         <div class="title">Feedback</div>
         <p class="note desc">Found a bug, or want something added? Tell us and we'll get onto it.</p>
         <button type="button" class="btn btn-g" onclick="sendFeedback()">Send feedback</button>
+        <button type="button" class="btn-ghost" style="width:100%;margin-top:8px;" onclick="openTerms(true)">Terms of use &amp; disclaimer</button>
+        <p class="note" id="termsNote" style="margin-top:8px;text-align:center;"></p>
       </div>
 
       <p class="note" id="verNote" style="text-align:center;margin-top:10px;"></p>
@@ -1143,7 +1210,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.130'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.131'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2254,6 +2321,43 @@ function scrollRing(price) {
   if (snap !== S.ringLast) { S.ringLast = snap; persist(); }
   setTimeout(()=>{ringLock=false;},160);
 }
+/* ── Terms & disclaimer — shown once on first open, again whenever TERMS_VERSION changes ── */
+const TERMS_VERSION = '2026-09-18';
+function termsAccepted() { return !!(S.terms && S.terms.v === TERMS_VERSION); }
+function termsTickChanged() {
+  document.getElementById('termsBtn').disabled = !document.getElementById('termsTick').checked;
+}
+function openTerms(readOnly) {
+  const done = termsAccepted();
+  document.getElementById('termsVer').textContent = TERMS_VERSION;
+  const row = document.getElementById('termsAgreeRow'), btn = document.getElementById('termsBtn'), tick = document.getElementById('termsTick');
+  tick.checked = false;
+  if (done && readOnly) {
+    row.classList.add('hidden');
+    btn.disabled = false; btn.textContent = 'Close';
+    document.getElementById('termsStamp').textContent = 'Agreed ' + localStamp(S.terms.t);
+  } else {
+    row.classList.remove('hidden');
+    btn.disabled = true; btn.textContent = 'Agree and continue';
+    document.getElementById('termsStamp').textContent = '';
+  }
+  document.getElementById('termsBody').scrollTop = 0;
+  document.getElementById('termsModal').classList.remove('hidden');
+}
+function acceptTerms() {
+  if (!termsAccepted()) {
+    if (!document.getElementById('termsTick').checked) return;
+    S.terms = { v: TERMS_VERSION, t: new Date().toISOString() };
+    persist();
+  }
+  document.getElementById('termsModal').classList.add('hidden');
+  termsNoteRender();
+}
+function termsNoteRender() {
+  const el = document.getElementById('termsNote');
+  if (el) el.textContent = termsAccepted() ? ('Agreed ' + localStamp(S.terms.t) + ' · version ' + TERMS_VERSION) : 'Not yet agreed.';
+}
+
 /* ── Docket check — our lots vs the yard's printout, pen by pen, one buyer way at a time ── */
 const DOCKET_KEY = 'cbpro_docket'; // DO NOT RENAME — per-sale check state; cleared on New sale
 let docket = { ways: {} };
@@ -4267,6 +4371,7 @@ function init() {
   document.getElementById('lotSex').value = '';
   fillSexChips();
  loadWatch(); loadDocket();
+ termsNoteRender(); if (!termsAccepted()) openTerms(false);
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); renderWatchlist(); updateCamButtons(); });
   trySyncQueue();
