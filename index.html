@@ -353,6 +353,8 @@
     .lots-table.compact th { padding: 8px 6px; font-size: 10px; white-space: nowrap; }
     .lots-table.compact td { padding: 11px 6px; font-size: 14px; white-space: nowrap; }
     #weightClasses .card { margin-bottom: 10px; position: relative; padding-top: 22px; }
+    /* room for the mint ring between the two entry boxes */
+    #weightClasses .card > input.hdr { margin: 14px 0 6px; }
     .card-x {
       position: absolute; top: 8px; left: 10px;
       width: 34px; height: 34px; border: 1.5px solid var(--line); background: var(--paper);
@@ -1228,7 +1230,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.138'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.139'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
