@@ -265,6 +265,19 @@
     .type-sum .btn-r { color: var(--tt-800); }
     .type-pick .mark-chip { min-height: 36px; padding: 0 12px; font-size: 13px; scroll-snap-align: none; }
     #pageSettings * { scroll-snap-align: none; }
+    /* ── Sale summary page: a plain scrolling page to the right of the recorder ── */
+    #pageSummary * { scroll-snap-align: none; }
+    .sum-wrap { padding: 8px 0 16px; }
+    .sum-wrap .card { margin-bottom: 10px; }
+    .sum-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .sum-back { border: 1.5px solid var(--line); background: var(--paper); color: var(--tt-800); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; }
+    .sum-stats { grid-template-columns: repeat(4, 1fr); border-radius: var(--r-md); }
+    .sum-stats .stat { padding: 8px 2px; min-width: 0; }
+    .sum-stats .stat-k { font-size: 9px; white-space: nowrap; }
+    .sum-stats .stat-v { font-size: 15px; }
+    .sum-door { position: relative; cursor: pointer; }
+    .sum-door::after { content: '›'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 18px; font-weight: 700; color: var(--muted); line-height: 1; }
+    body.lefty .sum-head { flex-direction: row-reverse; }
     .sub-toggles .toggle { padding: 9px 0; font-weight: 500; }
     .where-row { padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
     .where-sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
@@ -901,12 +914,12 @@
       <div id="blockRecorder">
         <div class="rec-split" id="recSplit">
           <div class="rec-top">
-            <div class="rec-stats stats" id="statsStandard">
+            <div class="rec-stats stats sum-door" id="statsStandard" onclick="showTab('summary')">
               <div class="stat"><div class="stat-k">HD</div><div class="stat-v" id="statHd">0</div></div>
               <div class="stat"><div class="stat-k">AVG $/HD</div><div class="stat-v" id="statAvgHd">$0</div></div>
               <div class="stat"><div class="stat-k">AVG $/KG</div><div class="stat-v" id="statAvgKg">$0.00</div></div>
             </div>
-            <div class="stats-by-buyer hidden" id="statsByBuyer"></div>
+            <div class="stats-by-buyer sum-door hidden" id="statsByBuyer" onclick="showTab('summary')"></div>
             <div class="edit-banner hidden" id="editingBanner">
               <span id="editingBannerText">Editing…</span>
               <span class="edit-actions"><button type="button" id="editDeleteBtn" class="del" onclick="openDeleteLot()">Delete</button><button type="button" id="editCancelBtn" onclick="cancelEditTap()">Cancel</button></span>
@@ -965,7 +978,6 @@
             </div>
           </div>
         </div>
-        <div class="screen screen-tight" id="recMoneyCard"><div class="card"><div class="title">Lot summary $</div><div id="lotsSummaryMoneyRecord"></div></div></div>
         <input type="file" id="penCardInput" accept="image/*" capture="environment" style="display:none" onchange="onPenCardPicked(this)">
         <div class="photo-modal hidden" id="photoModal" onclick="closePhoto()">
           <button type="button" class="photo-close" aria-label="Close">✕</button>
@@ -974,9 +986,32 @@
       </div>
     </section>
 
+    <!-- SALE SUMMARY — to the right of the recorder; swipe left on the recorder's top or bottom quarter to get here -->
+    <section id="pageSummary" class="hidden">
+      <div class="sum-wrap">
+        <div class="card">
+          <div class="sum-head"><button type="button" class="sum-back" onclick="goRecorder()">‹ Recorder</button><div class="title" style="margin:0;">Sale summary</div></div>
+          <div class="stats sum-stats" id="sumStats">
+            <div class="stat"><div class="stat-k">HD</div><div class="stat-v" id="sumHd">0</div></div>
+            <div class="stat"><div class="stat-k">AVG $/HD</div><div class="stat-v" id="sumAvgHd">$0</div></div>
+            <div class="stat"><div class="stat-k">AVG $/KG</div><div class="stat-v" id="sumAvgKg">$0.00</div></div>
+            <div class="stat"><div class="stat-k">TOTAL $</div><div class="stat-v" id="sumTotal">$0</div></div>
+          </div>
+          <div id="lotsSummaryMoney" style="margin-top:12px;"></div>
+        </div>
+        <div class="card">
+          <div class="title">Lots by buyer way</div>
+          <p class="note">Tap a lot to edit it, add a note or delete it.</p>
+          <div id="lotsSummaryRecord"></div>
+          <button type="button" class="btn btn-g dk-open" id="dkOpenBtn" onclick="openDocket()">Check docket<small id="dkOpenSub"></small></button>
+          <button type="button" class="btn-ghost" style="width:100%;margin-top:8px;" onclick="exportExcel()">Export to Excel</button>
+        </div>
+      </div>
+    </section>
+
     <!-- TRUCK -->
     <section id="pageTruck" class="hidden">
-        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lots for trucking</div><p class="note">Tick the lots going on this load, then send below.</p><div id="lotsSummaryTrucking"></div><button type="button" class="btn btn-g dk-open" id="dkOpenBtn" onclick="openDocket()">Check docket<small id="dkOpenSub"></small></button></div></div>
+        <div class="screen screen-tight" id="lotsTruckCard"><div class="card"><div class="title">Lots for trucking</div><p class="note">Tick the lots going on this load, then send below.</p><div id="lotsSummaryTrucking"></div></div></div>
       <div id="blockText" class="screen screen-tight"><div class="card">
         <div class="title">Send selected lots</div>
         <label>Select by buyer way</label>
@@ -1042,7 +1077,6 @@
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
         <div class="toggle" onclick="flip('showSex')"><span>Stock type chips <button type="button" class="info-btn" onclick="openToolInfo('showSex',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showSex"><i></i></div></div>
         <div id="sexTypeToggles" class="sub-toggles"></div>
-        <div class="toggle" onclick="flip('showMoneyRecord')"><span>Lot summary $ on Sale page <button type="button" class="info-btn" onclick="openToolInfo('showMoneyRecord',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMoneyRecord"><i></i></div></div>
         <div class="tool-grp">Truck</div>
         <div class="toggle" onclick="flip('showText')"><span>Text trucking agent <button type="button" class="info-btn" onclick="openToolInfo('showText',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showText"><i></i></div></div>
         <button type="button" class="btn btn-g" style="margin-top:12px;" onclick="stOpen(false)">Done</button>
@@ -1232,7 +1266,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.142'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.143'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1717,7 +1751,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', sync
 syncAppH();
 
 let yardsScrollTop = 0;
-const PAGES = { sale: 'pageYards', record: 'pageRecord', truck: 'pageTruck', setup: 'pageSettings' };
+const PAGES = { sale: 'pageYards', record: 'pageRecord', summary: 'pageSummary', truck: 'pageTruck', setup: 'pageSettings' };
 const pageScroll = {};
 let currentTab = 'sale';
 function showTab(name) {
@@ -1730,7 +1764,7 @@ function showTab(name) {
   Object.keys(PAGES).forEach(function(k){
     document.getElementById(PAGES[k]).classList.toggle('hidden', k !== name);
     const b = document.getElementById('nav_' + k);
-    if (b) b.classList.toggle('on', k === name);
+    if (b) b.classList.toggle('on', k === name || (k === 'record' && name === 'summary'));
   });
   currentTab = name;
   try { localStorage.setItem('tnt_tab', name); } catch(e) {}
@@ -1744,9 +1778,10 @@ function showTab(name) {
   if (name === 'record' && !ringPositioned) scrollRing(S.ringLast || 2000);
   if (name === 'record') refreshYardAuto();
   if (name === 'sale') { fillCalcsInputs(); refreshAgistCalcDisplay(); }
-  if (name === 'truck') renderLots();
+  if (name === 'truck' || name === 'summary') renderLots();
   if (main) {
     if (name === 'record' && pageScroll[name] == null) scrollMainTo(document.getElementById('recSplit'), 'start');
+    else if (name === 'summary') scrollMainTo(document.getElementById('pageSummary'), 'start');
     else main.scrollTop = pageScroll[name] || 0;
   }
 }
@@ -1774,12 +1809,11 @@ function applyFeatures() {
   document.getElementById('blockTradeAnalysis').classList.toggle('hidden', !S.showTradeAnalysis);
   document.getElementById('blockRing').classList.toggle('hidden', !S.showRing);
   document.getElementById('blockWatchlist').classList.toggle('hidden', !S.showWatchlist);
-  document.getElementById('recMoneyCard').classList.toggle('hidden', !S.showMoneyRecord);
   document.getElementById('blockText').classList.toggle('hidden', !S.showText);
 }
 
 function fillSettings() {
-  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showMoneyRecord','showText','showSex','lefty','contribMarket','veilMax'].forEach(k => {
+  ['showMarketTrend','showTradeAnalysis','showRing','showWatchlist','showText','showSex','lefty','contribMarket','veilMax'].forEach(k => {
     document.getElementById('sw_'+k).classList.toggle('on', !!S[k]);
   });
   renderSexToggles();
@@ -1847,7 +1881,7 @@ function flip(k) {
 }
 
 /* Show or hide tools folds to "what's off"; Edit opens the switches, Done folds them back */
-const TOOL_NAMES = { showMarketTrend: 'Last market', showTradeAnalysis: 'Trade analysis', showRing: 'Sales watch ring', showWatchlist: 'Pen watchlist', showMoneyRecord: 'Lot summary $ on Sale', showSex: 'Stock type chips', showText: 'Text trucking agent' };
+const TOOL_NAMES = { showMarketTrend: 'Last market', showTradeAnalysis: 'Trade analysis', showRing: 'Sales watch ring', showWatchlist: 'Pen watchlist', showSex: 'Stock type chips', showText: 'Text trucking agent' };
 function stRender() {
   const el = document.getElementById('stLine');
   if (!el) return;
@@ -2395,6 +2429,37 @@ function bindKp() {
   ['touchend','touchcancel','mouseup','mouseleave'].forEach(function(ev){ box.addEventListener(ev, hide); });
   window.addEventListener('blur', hide);
   box.addEventListener('contextmenu', function(e){ if (e.target.closest('.hold-eye')) e.preventDefault(); });
+})();
+/* ── Swipe between the recorder and the Sale summary ──
+   On the recorder only the top and bottom quarter of the split respond, so a sideways drag across the
+   boxes, chips or number keys never moves the page. On the summary the whole page swipes back. */
+(function(){
+  const split = document.getElementById('recSplit'), sum = document.getElementById('pageSummary');
+  let sx = null, sy = null, ok = false;
+  function start(zoneEl, e) {
+    const t = e.touches[0]; sx = t.clientX; sy = t.clientY; ok = false;
+    if (zoneEl === split) {
+      const r = split.getBoundingClientRect();
+      const y = (t.clientY - r.top) / r.height;
+      ok = y <= 0.25 || y >= 0.75;
+    } else ok = true;
+  }
+  function end(e, dir, go) {
+    if (!ok || sx == null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    sx = sy = null; ok = false;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+    if ((dir === 'left' && dx < 0) || (dir === 'right' && dx > 0)) go();
+  }
+  if (split) {
+    split.addEventListener('touchstart', function(e){ start(split, e); }, {passive:true});
+    split.addEventListener('touchend', function(e){ end(e, 'left', function(){ if (!document.getElementById('newSaleModal').classList.contains('hidden')) return; showTab('summary'); }); }, {passive:true});
+  }
+  if (sum) {
+    sum.addEventListener('touchstart', function(e){ start(sum, e); }, {passive:true});
+    sum.addEventListener('touchend', function(e){ end(e, 'right', goRecorder); }, {passive:true});
+  }
 })();
 /* indicator */
 function addWeight() {
@@ -3638,8 +3703,8 @@ function lotBlurb(l) { return (l.hd ? l.hd + ' ' + sexWord(l) : '') ; }
 /* After editing, drop back to the row in the lot table and flash it so the change is seen landing. */
 let editFrom = 'truck';
 function revealLotRow(id) {
-  const box = editFrom === 'record' ? '#lotsSummaryRecord' : '#lotsSummaryTrucking';
-  showTab(editFrom === 'record' ? 'record' : 'truck');
+  const box = editFrom === 'truck' ? '#lotsSummaryTrucking' : '#lotsSummaryRecord';
+  showTab(editFrom === 'truck' ? 'truck' : 'summary');
   const tr = document.querySelector(box + ' tr[data-id="' + id + '"]');
   if (!tr) return;
   tr.classList.add('flash-row');
@@ -4059,9 +4124,11 @@ function renderLots() {
   updateSelectedLotsInfo();
 
   if (!lots.length) {
-    ['lotsSummaryMoney','lotsSummaryMoneyRecord','lotsSummaryTrucking','lotsSummaryRecord'].forEach(function(id){
+    ['lotsSummaryMoney','lotsSummaryTrucking','lotsSummaryRecord'].forEach(function(id){
       const el = document.getElementById(id); if (el) el.innerHTML = '<div class="note">No lots yet.</div>';
     });
+    sumStatsRender(0, 0);
+    dkOpenLabel();
     return;
   }
 
@@ -4083,7 +4150,8 @@ function renderLots() {
     '<div class="table-scroll"><table class="lots-table compact"><thead><tr>'
     + '<th>BUYER WAY</th><th>HD</th><th>AVG $/HD</th><th>AVG $/KG</th><th>AVG KG</th>'
     + '</tr></thead><tbody>'+moneyRows+'</tbody></table></div>';
-  ['lotsSummaryMoney','lotsSummaryMoneyRecord'].forEach(function(id){ const el = document.getElementById(id); if (el) el.innerHTML = moneyHtml; });
+  ['lotsSummaryMoney'].forEach(function(id){ const el = document.getElementById(id); if (el) el.innerHTML = moneyHtml; });
+  sumStatsRender(th, td);
 
   const incompleteCount = lots.filter(lotIncomplete).length;
   const incompleteNote = incompleteCount
@@ -4122,10 +4190,19 @@ function renderLots() {
   if (recBox) recBox.innerHTML = lotTable(false);
   dkOpenLabel();
 }
+function sumStatsRender(th, td) {
+  const el = function(id){ return document.getElementById(id); };
+  if (!el('sumHd')) return;
+  el('sumHd').textContent = th || 0;
+  el('sumAvgHd').textContent = th ? '$' + Math.round(td/th).toLocaleString() : '$0';
+  const kg = weightedAvgKg(lots);
+  el('sumAvgKg').textContent = kg ? '$' + kg.toFixed(2) : '$0.00';
+  el('sumTotal').textContent = '$' + Math.round(td).toLocaleString();
+}
 function editLot(id) {
   const l = lots.find(function(x){ return x.id === id; });
   if (!l) return;
-  editFrom = (currentTab === 'record') ? 'record' : 'truck';
+  editFrom = (currentTab === 'summary') ? 'summary' : ((currentTab === 'record') ? 'record' : 'truck');
   editingLotId = id;
   pendingPhoto = null;
   updateCamButtons();
