@@ -538,11 +538,11 @@
     .rm-btns .btn { flex: 1; margin: 0; }
     .rm-btns .btn.rm-cancel { background: var(--tt-700); color: #fff; }
     /* ── Docket check — read down the yard's printout and ours side by side ── */
-    #docketModal { align-items: flex-start; padding: 10px; }
-    .dk-card { background: var(--paper); border-radius: var(--r-lg); width: 100%; max-width: 520px; max-height: calc(100% - 4px); display: flex; flex-direction: column; overflow: hidden; }
+    #docketModal { align-items: flex-start; padding: 56px 10px 10px; }
+    .dk-card { background: var(--paper); border-radius: var(--r-lg); width: 100%; max-width: 520px; max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
     .dk-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
     .dk-head .modal-title { margin: 0; }
-    .dk-close { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); font-size: 18px; font-weight: 700; }
+    .dk-close { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--tt-900); color: #fff; font-size: 20px; font-weight: 700; flex: 0 0 auto; }
     .dk-tabs { display: flex; gap: 8px; padding: 0 16px 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex: 0 0 auto; }
     .dk-tab { flex: 0 0 auto; border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 14px; color: var(--ink); text-align: left; }
     .dk-tab small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
@@ -552,7 +552,9 @@
     .dk-tab.on.diff small { color: #fcd34d; }
     .dk-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px; }
     .dk-cols, .dk-row { display: grid; grid-template-columns: 1.1fr .8fr 1.2fr 1fr; gap: 6px; align-items: center; }
-    .dk-cols { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 4px 10px; }
+    .dk-cols { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 16px; padding: 4px 11.5px; }
+    .dk-cols > span:nth-child(2), .dk-row > :nth-child(2), .dk-cols > span:nth-child(3), .dk-row > :nth-child(3) { text-align: center; }
+    .dk-row.extra > :nth-child(2) { text-align: left; }
     .dk-row { width: 100%; text-align: left; background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--r-md); padding: 12px 10px; margin-bottom: 8px; font-variant-numeric: tabular-nums; font-family: var(--font-ui); color: var(--ink); }
     .dk-row b { font-size: 24px; font-weight: 800; }
     .dk-row .dk-v { font-size: 20px; font-weight: 700; }
@@ -1141,7 +1143,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.129'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.130'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2314,7 +2316,7 @@ function renderDocket() {
   }).map(function(l) {
     const hd = l.hd || '—', mark = l.desc || '—';
     const price = l.priceUnit === 'kg'
-      ? '<span class="dk-v">$' + (+l.price).toFixed(2) + '</span><span class="dk-sub">$' + Math.round(lotPriceHd(l)).toLocaleString() + '/hd</span>'
+      ? '<span><span class="dk-v">$' + (+l.price).toFixed(2) + '</span><span class="dk-sub">$' + Math.round(lotPriceHd(l)).toLocaleString() + '/hd</span></span>'
       : '<span class="dk-v">$' + Math.round(l.price).toLocaleString() + '</span>';
     return '<button type="button" class="dk-row' + (l.chk ? ' ' + l.chk : '') + '" onclick="dkTap(' + l.id + ')"><b>' + xmlEsc(l.pen || '—') + '</b><span class="dk-v">' + hd + '</span>' + price + '<span class="dk-mark">' + xmlEsc(mark) + '</span></button>';
   });
