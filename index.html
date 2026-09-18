@@ -566,13 +566,15 @@
     .dk-tab.diff small { color: var(--warn); }
     .dk-tab.on.diff small { color: #fcd34d; }
     .dk-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px; }
-    .dk-cols, .dk-row { display: grid; grid-template-columns: .8fr .7fr 1.1fr 1.4fr; gap: 8px; align-items: center; }
-    .dk-cols > span, .dk-row > * { text-align: center; min-width: 0; }
+    /* fixed widths for the three number columns so nothing spills into Mark on narrow Android screens */
+    .dk-cols, .dk-row { display: grid; grid-template-columns: 58px 50px 92px minmax(0, 1fr); gap: 8px; align-items: center; }
+    .dk-cols > span, .dk-row > * { text-align: center; min-width: 0; white-space: nowrap; }
+    .dk-row > :last-child, .dk-cols > span:last-child { white-space: normal; }
     .dk-cols { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 16px; padding: 4px 11.5px; }
     .dk-row.extra > :nth-child(2) { text-align: left; }
     .dk-row { width: 100%; text-align: left; background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--r-md); padding: 12px 10px; margin-bottom: 8px; font-variant-numeric: tabular-nums; font-family: var(--font-ui); color: var(--ink); }
-    .dk-row b { font-size: 24px; font-weight: 800; }
-    .dk-row .dk-v { font-size: 20px; font-weight: 700; }
+    .dk-row b { font-size: 22px; font-weight: 800; }
+    .dk-row .dk-v { font-size: 19px; font-weight: 700; }
     .dk-row .dk-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
     .dk-row .dk-mark { font-size: 14px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; text-align: left; }
     .dk-cols > span:last-child { text-align: left; }
@@ -580,7 +582,7 @@
     .dk-row.ok b { color: var(--tt-800); }
     .dk-row.diff { background: var(--warn-bg); border-color: var(--warn); }
     .dk-row.diff b { color: var(--warn); }
-    .dk-row.extra { grid-template-columns: .8fr 1fr auto; }
+    .dk-row.extra { grid-template-columns: 58px minmax(0, 1fr) auto; }
     .dk-row.extra .dk-x { justify-self: end; font-size: 13px; font-weight: 700; color: var(--warn); }
     .dk-empty { color: var(--muted); font-size: 14px; padding: 12px 10px; }
     .dk-add { display: flex; gap: 8px; align-items: stretch; margin: 6px 0 10px; }
@@ -1230,7 +1232,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.141'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.142'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
