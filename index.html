@@ -185,13 +185,16 @@
     .max { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
     .max b { display: block; font-size: 2.75rem; font-weight: 900; letter-spacing: -.02em; line-height: 1.05; }
     /* discreet max-buy: a grey veil sits over the figure until the user swipes across it, then it hides again */
-    .max-num { position: relative; display: inline-block; min-width: 200px; }
-    .veil { position: absolute; inset: 0 -10px -4px; border-radius: var(--r-md); background: var(--wash); border: 1.5px solid var(--line);
-      display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-      touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: pointer; transition: opacity .15s; }
-    .veil svg { width: 18px; height: 18px; }
-    .veil.off { opacity: 0; pointer-events: none; }
-    body.no-veil .veil { display: none; }
+    .max-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .max-num { position: relative; display: inline-block; min-width: 190px; }
+    .veil { position: absolute; inset: 0 -8px -4px; border-radius: var(--r-md); background: var(--wash); border: 1.5px solid var(--line);
+      display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .veil.off { display: none; }
+    .hold-eye { width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--tt-700); color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto;
+      touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .hold-eye svg { width: 26px; height: 26px; }
+    .hold-eye:active, .hold-eye.on { background: var(--tt-900); }
+    body.no-veil .veil, body.no-veil .hold-eye { display: none; }
 
     /* ── Stats ──────────────────────────────────────────────────────────── */
     .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md) var(--r-md) 0 0; overflow: hidden; }
@@ -1027,7 +1030,7 @@
         <div class="tool-grp">Tools</div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
-        <div class="toggle" onclick="flip('veilMax')"><span>Hide max buy until swiped <button type="button" class="info-btn" onclick="openToolInfo('veilMax',event)" aria-label="What does this do?">i</button></span><div class="switch" id="sw_veilMax"><i></i></div></div>
+        <div class="toggle" onclick="flip('veilMax')"><span>Hide max buy until held <button type="button" class="info-btn" onclick="openToolInfo('veilMax',event)" aria-label="What does this do?">i</button></span><div class="switch" id="sw_veilMax"><i></i></div></div>
         <div class="tool-grp">Sale</div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
@@ -1223,7 +1226,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.136'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.137'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2165,8 +2168,8 @@ const TOOL_INFO = {
     body: "The running $ tally by buyer way that sits below the recorder on the Sale page. Turn it off and the recorder becomes the very bottom of the page — nothing below it to slide into, so a bump while you're entering lots can't move the screen. The same summary is always on the Truck page."
   },
   veilMax: {
-    title: 'Hide max buy until swiped',
-    body: "Puts a grey cover over the big max-buy figure in Trade analysis so nobody looking over your shoulder at the rail can read it. Swipe sideways across the cover to see the number for a few seconds; it covers itself again. A tap doesn't reveal it."
+    title: 'Hide max buy until held',
+    body: "Puts a grey cover over the big max-buy figure in Trade analysis so nobody looking over your shoulder at the rail can read it. Press and hold the eye button beside it to see the number; let go and it's covered again."
   },
   showRecorder: {
     title: 'Purchase recorder',
@@ -2374,22 +2377,18 @@ function bindKp() {
   });
 }
 
-/* veil: a sideways swipe of 40px+ reveals the figure for four seconds; taps and vertical scrolls do nothing */
+/* veil: the figure shows only while the eye button is held down */
 (function(){
   const box = document.getElementById('weightClasses');
   if (!box) return;
-  let sx = null, sy = null, target = null;
-  box.addEventListener('pointerdown', function(e){ const v = e.target.closest('.veil'); if (!v) return; sx = e.clientX; sy = e.clientY; target = v; });
-  box.addEventListener('pointerup', function(e){
-    if (!target || sx == null) return;
-    const dx = Math.abs(e.clientX - sx), dy = Math.abs(e.clientY - sy);
-    const v = target; sx = sy = null; target = null;
-    if (dx < 40 || dy > dx) return;
-    v.classList.add('off');
-    if (v._t) clearTimeout(v._t);
-    v._t = setTimeout(function(){ v.classList.remove('off'); }, 4000);
-  });
-  box.addEventListener('pointercancel', function(){ sx = sy = null; target = null; });
+  function veilFor(btn) { const row = btn.closest('.max-row'); return row ? row.querySelector('.veil') : null; }
+  function show(e) { const b = e.target.closest('.hold-eye'); if (!b) return; e.preventDefault(); b.classList.add('on'); const v = veilFor(b); if (v) v.classList.add('off'); }
+  function hide() { box.querySelectorAll('.hold-eye.on').forEach(function(b){ b.classList.remove('on'); }); box.querySelectorAll('.veil.off').forEach(function(v){ v.classList.remove('off'); }); }
+  box.addEventListener('touchstart', show, {passive:false});
+  box.addEventListener('mousedown', show);
+  ['touchend','touchcancel','mouseup','mouseleave'].forEach(function(ev){ box.addEventListener(ev, hide); });
+  window.addEventListener('blur', hide);
+  box.addEventListener('contextmenu', function(e){ if (e.target.closest('.hold-eye')) e.preventDefault(); });
 })();
 /* indicator */
 function addWeight() {
@@ -2421,7 +2420,7 @@ function renderClasses() {
       + '<div class="row"><span class="muted">Interest</span><span id="int'+c.id+'">—</span></div>'
       + '<div class="row"><span>Gross</span><b id="gross'+c.id+'">—</b></div>'
       + '<div class="row"><span>Net</span><b id="net'+c.id+'">—</b></div>'
-      + '<div class="max"><span class="muted" id="maxlab'+c.id+'">Max buy</span><div class="max-num"><b id="max'+c.id+'">—</b><div class="veil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Swipe to view</div></div></div>';
+      + '<div class="max"><span class="muted" id="maxlab'+c.id+'">Max buy</span><div class="max-row"><div class="max-num"><b id="max'+c.id+'">—</b><div class="veil">Hidden</div></div><button type="button" class="hold-eye" aria-label="Hold to view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>';
     box.appendChild(d);
   });
   bindKp();
