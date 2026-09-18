@@ -1267,7 +1267,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.146'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.147'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1732,8 +1732,12 @@ function loadLots() {
 function syncHeaderH() {
   const h = document.querySelector('header');
   if (!h) return;
+  // the header shrinks while the keypad is open; a resize caught in that state used to store the short
+  // height and leave main ~37px too tall once the keypad closed — the recorder's bottom row under the tab bar
+  if (document.body.classList.contains('kp-open')) return;
   document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
 }
+function syncLayout() { syncHeaderH(); syncAppH(); }
 /* iOS 26 home-screen web apps can report a viewport that stops short of the screen (a phantom Safari toolbar).
    Take the largest height anything reports and lay out to that, so the tab bar sits on the real bottom edge. */
 function syncAppH() {
@@ -1746,9 +1750,13 @@ function syncAppH() {
   // If the system has already stopped the window short of the screen edge, it is handling the home indicator itself.
   if (screen && screen.height && h < screen.height - 20) document.documentElement.style.setProperty('--nav-safe', '0px');
 }
-window.addEventListener('resize', function(){ syncHeaderH(); syncAppH(); });
-window.addEventListener('orientationchange', function(){ syncHeaderH(); syncAppH(); });
+window.addEventListener('resize', syncLayout);
+window.addEventListener('orientationchange', syncLayout);
 if (window.visualViewport) window.visualViewport.addEventListener('resize', syncAppH);
+// re-measure whenever the app comes back to the front or the fonts finish loading — both can change the header's height
+window.addEventListener('pageshow', function(){ syncLayout(); setTimeout(syncLayout, 300); });
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) { syncLayout(); setTimeout(syncLayout, 300); } });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ syncLayout(); });
 syncAppH();
 
 let yardsScrollTop = 0;
@@ -1756,6 +1764,7 @@ const PAGES = { sale: 'pageYards', record: 'pageRecord', summary: 'pageSummary',
 const pageScroll = {};
 let currentTab = 'sale';
 function showTab(name) {
+  syncLayout();
   if (name === 'yards' || name === 'calcs') name = 'sale';
   if (name === 'settings') name = 'setup';
   if (!PAGES[name]) name = 'sale';
@@ -2358,6 +2367,7 @@ function closeKp() {
   document.getElementById('keypad').classList.remove('show');
   document.body.classList.remove('kp-open');
   document.body.classList.remove('kp-locked');
+  setTimeout(syncLayout, 50);
   const inp = activeIn;
   if (inp) {
     inp.classList.remove('kp-active');
