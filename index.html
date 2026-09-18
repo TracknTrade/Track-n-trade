@@ -452,7 +452,8 @@
     .edit-banner button.del { background: transparent; color: var(--warn); border: 1.5px solid var(--warn-line); }
     /* undo toast — the safety net under Delete */
     .tnt-toast.undo { pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
-    .tnt-toast.undo button { background: #fff; color: var(--tt-900); border: none; border-radius: 8px; padding: 8px 14px; font-weight: 800; font-size: 14px; letter-spacing: .04em; flex: 0 0 auto; }
+    .tnt-toast.undo button { background: #fff; color: var(--tt-900); border: none; border-radius: 8px; padding: 8px 14px; font-weight: 800; font-size: 14px; letter-spacing: .04em; flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+    .undo-n { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; border-radius: 50%; background: var(--warn); color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
     .edit-note { flex: 0 0 auto; margin-top: 4px; }
     .edit-note input { min-height: 44px; font-size: 16px; text-align: left; padding: 8px 12px; font-weight: 600; }
     .edit-note input::placeholder { font-weight: 500; font-size: 14px; }
@@ -1266,7 +1267,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.144'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.145'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3654,14 +3655,21 @@ function showToast(msg, kind) {
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 /* a toast with an UNDO button — stays 8s, tapping UNDO runs fn and hides it */
+let undoTick = null;
 function showUndoToast(msg, fn) {
   const t = document.getElementById('tntToast');
   if (!t) return;
-  t.innerHTML = '<span>' + xmlEsc(msg) + '</span><button type="button">UNDO</button>';
-  t.querySelector('button').addEventListener('click', function(){ t.classList.remove('show'); t.className = 'tnt-toast'; fn(); });
+  let left = 8;
+  t.innerHTML = '<span>' + xmlEsc(msg) + '</span><button type="button">UNDO <b class="undo-n">' + left + '</b></button>';
+  const btn = t.querySelector('button'), n = t.querySelector('.undo-n');
+  const stop = function(){ if (undoTick) { clearInterval(undoTick); undoTick = null; } if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; } t.classList.remove('show'); t.className = 'tnt-toast'; };
+  btn.addEventListener('click', function(){ stop(); fn(); });
   t.className = 'tnt-toast show warn undo';
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ t.classList.remove('show'); t.className = 'tnt-toast'; }, 8000);
+  if (undoTick) clearInterval(undoTick);
+  // the number on the button counts the seconds left to change your mind
+  undoTick = setInterval(function(){ left -= 1; if (n) n.textContent = Math.max(0, left); if (left <= 0) stop(); }, 1000);
+  toastTimer = setTimeout(stop, 8000);
 }
 /* Delete lot — only from the edit banner, then slide-to-confirm, then 8 seconds to undo. */
 let deleteHold = null;
