@@ -1039,6 +1039,17 @@
       </div>
 
       <div class="card">
+        <div class="title">Backup</div>
+        <p class="note desc">Everything in this app lives on this phone. <b>Back up</b> makes one file — settings, buyer ways, markings, carriers, sign-off, the current sale's lots, watchlist and past sales — and hands it to your share sheet (AirDrop, Files, Drive, Mail). <b>Restore</b> loads that file onto a new phone and replaces what's there. Pen-card photos aren't included.</p>
+        <div class="send-minor">
+          <button type="button" class="btn-ghost" onclick="pickRestore()">Restore</button>
+          <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="backupApp()">Back up</button>
+        </div>
+        <input type="file" id="restoreInput" accept=".json,application/json,text/plain" style="display:none" onchange="onRestorePicked(this)">
+        <p class="note" id="backupStatus" style="margin-top:8px;"></p>
+      </div>
+
+      <div class="card">
         <div class="title">Feedback</div>
         <p class="note desc">Found a bug, or want something added? Tell us and we'll get onto it.</p>
         <button type="button" class="btn btn-g" onclick="sendFeedback()">Send feedback</button>
@@ -1065,7 +1076,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-17.125'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.126'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -3072,8 +3083,83 @@ function openNewSaleConfirm() {
     : 'No lots entered yet — this just resets the entry fields.';
   if (total && unsent) msg += ' ' + unsent + ' lot' + (unsent === 1 ? '' : 's') + ' not yet sent to a carrier.';
   document.getElementById('newSaleModalBody').textContent = msg;
+  document.querySelector('#newSaleModal .modal-title').textContent = 'Start a new sale?';
+  slideAction = function(){ startNewSale(); };
   resetSlideConfirm();
   document.getElementById('newSaleModal').classList.remove('hidden');
+}
+
+/* ── Backup / restore — one file the user owns; no account, no server ── */
+const BACKUP_TAG = 'trackntrade-backup';
+function backupBlob() {
+  let hist = [], watch = null;
+  try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) {}
+  try { watch = JSON.parse(localStorage.getItem(WATCH_KEY) || 'null'); } catch(e) {}
+  const data = { app: BACKUP_TAG, appVersion: APP_VERSION, t: new Date().toISOString(),
+    settings: S, lots: lots, history: hist, watch: watch };
+  return new Blob([JSON.stringify(data)], {type: 'application/json'});
+}
+function backupApp() {
+  const st = document.getElementById('backupStatus');
+  const name = 'TracknTrade-backup-' + localDate().replace(/[^0-9A-Za-z]+/g, '-') + '.json';
+  const blob = backupBlob();
+  const file = new File([blob], name, {type: 'application/json'});
+  if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
+    navigator.share({files: [file], title: 'Track n Trade backup'}).then(function(){
+      st.textContent = 'Backed up · ' + lots.length + ' lot' + (lots.length === 1 ? '' : 's') + ' · ' + localDate();
+    }).catch(function(){ st.textContent = 'Backup cancelled.'; });
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  st.textContent = 'Backup file saved · ' + name;
+}
+let restorePending = null;
+function pickRestore() { document.getElementById('restoreInput').click(); }
+function onRestorePicked(inp) {
+  const file = inp.files && inp.files[0];
+  inp.value = '';
+  const st = document.getElementById('backupStatus');
+  if (!file) return;
+  const rd = new FileReader();
+  rd.onload = function() {
+    let d = null;
+    try { d = JSON.parse(rd.result); } catch(e) {}
+    if (!d || d.app !== BACKUP_TAG || !d.settings || !Array.isArray(d.lots)) {
+      st.textContent = "That isn't a Track n Trade backup file.";
+      return;
+    }
+    restorePending = d;
+    const ways = (d.settings.clients || []).length;
+    const when = d.t ? localStamp(d.t) : 'unknown date';
+    document.querySelector('#newSaleModal .modal-title').textContent = 'Restore this backup?';
+    document.getElementById('newSaleModalBody').textContent =
+      'From ' + when + ' — ' + d.lots.length + ' lot' + (d.lots.length === 1 ? '' : 's') + ', ' + ways + ' buyer way' + (ways === 1 ? '' : 's') +
+      '. This replaces every setting and lot on this phone.';
+    slideAction = applyRestore;
+    resetSlideConfirm();
+    document.getElementById('newSaleModal').classList.remove('hidden');
+  };
+  rd.onerror = function(){ st.textContent = "Couldn't read that file."; };
+  rd.readAsText(file);
+}
+function applyRestore() {
+  const d = restorePending; restorePending = null;
+  document.getElementById('newSaleModal').classList.add('hidden');
+  if (!d) return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(d.settings));
+    localStorage.setItem(LOTS_KEY, JSON.stringify(d.lots));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(Array.isArray(d.history) ? d.history : []));
+    if (d.watch) localStorage.setItem(WATCH_KEY, JSON.stringify(d.watch)); else localStorage.removeItem(WATCH_KEY);
+    localStorage.removeItem(DRAFT_KEY);
+  } catch(e) {
+    document.getElementById('backupStatus').textContent = "Restore failed — phone storage wouldn't take it.";
+    return;
+  }
+  location.reload();
 }
 function closeNewSaleConfirm() {
   document.getElementById('newSaleModal').classList.add('hidden');
@@ -3116,6 +3202,7 @@ function resetSlideConfirm() {
   const knob = document.getElementById('slideKnob');
   if (knob) knob.style.transform = 'translateX(0px)';
 }
+let slideAction = function(){ startNewSale(); };
 function initSlideConfirm() {
   const knob = document.getElementById('slideKnob');
   const track = document.getElementById('slideConfirm');
@@ -3135,7 +3222,7 @@ function initSlideConfirm() {
     knob.style.transform = 'translateX(' + dx + 'px)';
     if (dx >= slideMax - 2) {
       slideDragging = false;
-      startNewSale();
+      slideAction();
     }
   }
   function up() {
