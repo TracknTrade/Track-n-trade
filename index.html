@@ -557,6 +557,7 @@
     .dk-row b { font-size: 24px; font-weight: 800; }
     .dk-row .dk-v { font-size: 20px; font-weight: 700; }
     .dk-row .dk-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+    .dk-row .dk-mark { font-size: 14px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
     .dk-row.ok { background: var(--tt-100); border-color: var(--tt-700); }
     .dk-row.ok b { color: var(--tt-800); }
     .dk-row.diff { background: var(--warn-bg); border-color: var(--warn); }
@@ -637,7 +638,7 @@
     <div class="dk-card">
       <div class="dk-head"><div class="modal-title">Check docket</div><button type="button" class="dk-close" onclick="closeDocket()" aria-label="Close">✕</button></div>
       <div class="dk-tabs" id="dkTabs"></div>
-      <div class="dk-cols"><span>Pen</span><span>Hd</span><span id="dkPriceHead">$/hd</span><span>Avg kg</span></div>
+      <div class="dk-cols"><span>Pen</span><span>Hd</span><span id="dkPriceHead">$/hd</span><span>Mark</span></div>
       <div class="dk-body" id="dkBody"></div>
       <div class="dk-foot">
         <div class="dk-add"><input id="dkExtraPen" inputmode="numeric" placeholder="Pen not in app"><button type="button" class="btn-ghost" onclick="dkAddExtra()">Add</button></div>
@@ -1140,7 +1141,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.128'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.129'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2311,11 +2312,11 @@ function renderDocket() {
   const rows = sm.mine.slice().sort(function(a, b) {
     return penKeyOf(a.pen) - penKeyOf(b.pen) || String(a.pen).localeCompare(String(b.pen), undefined, {numeric: true});
   }).map(function(l) {
-    const hd = l.hd || '—', kg = l.wt || '—';
+    const hd = l.hd || '—', mark = l.desc || '—';
     const price = l.priceUnit === 'kg'
       ? '<span class="dk-v">$' + (+l.price).toFixed(2) + '</span><span class="dk-sub">$' + Math.round(lotPriceHd(l)).toLocaleString() + '/hd</span>'
       : '<span class="dk-v">$' + Math.round(l.price).toLocaleString() + '</span>';
-    return '<button type="button" class="dk-row' + (l.chk ? ' ' + l.chk : '') + '" onclick="dkTap(' + l.id + ')"><b>' + xmlEsc(l.pen || '—') + '</b><span class="dk-v">' + hd + '</span>' + price + '<span class="dk-v">' + kg + '</span></button>';
+    return '<button type="button" class="dk-row' + (l.chk ? ' ' + l.chk : '') + '" onclick="dkTap(' + l.id + ')"><b>' + xmlEsc(l.pen || '—') + '</b><span class="dk-v">' + hd + '</span>' + price + '<span class="dk-mark">' + xmlEsc(mark) + '</span></button>';
   });
   (sm.st.extra || []).forEach(function(x, i) {
     rows.push('<button type="button" class="dk-row diff extra" onclick="dkDropExtra(' + i + ')"><b>' + xmlEsc(x.pen) + '</b><span class="dk-sub">On docket, not in app</span><span class="dk-x">remove</span></button>');
