@@ -1169,6 +1169,7 @@
         </div>
         <input type="hidden" id="s_meAgent"><input type="hidden" id="s_licenseCode">
         <p class="note hidden" id="syncStatusNote" style="margin-top:8px;">No licence code entered.</p>
+        <button type="button" class="btn-ghost hidden" id="cloudRestoreBtn" style="width:100%;margin-top:8px;" onclick="cloudRestore(false)">Restore from licence</button>
         <div class="toggle hidden" id="contribRow" onclick="flip('contribMarket')"><span>Contribute anonymised market data</span><div class="switch" id="sw_contribMarket"><i></i></div></div>
         <p class="note" id="marketNote" style="margin-top:8px;"></p>
       </div>
@@ -1213,9 +1214,9 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.134'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.135'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
-  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
+  showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
   targetWt: 420, adg: 1.2, saleBench: 2400, agistRate: 20, fixedCosts: 90, targetProfit: 100, useCarry: 1, saleKg: 6.00, exitMode: 'hd', interestRate: 8.5, finExit: 'kg',
   opCost: 0, headPerYr: 0,
@@ -1401,7 +1402,9 @@ function load() {
 }
 function persist() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+  scheduleSettingsPush();
 }
+function newSaleId() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function persistLots() {
   try { localStorage.setItem(LOTS_KEY, JSON.stringify(lots)); } catch(e) {}
 }
@@ -1432,9 +1435,12 @@ let syncInFlight = false;
 function updateSyncStatusNote() {
   const note = document.getElementById('syncStatusNote');
   if (!note) return;
+  const rb = document.getElementById('cloudRestoreBtn');
+  if (rb) rb.classList.toggle('hidden', !cloudOn());
   if (!S.licenseCode) { note.textContent = 'No licence code entered.'; return; }
-  const pending = lots.filter(function(l){ return !l.synced; }).length;
-  note.textContent = pending ? (pending + ' lot' + (pending === 1 ? '' : 's') + ' waiting to sync…') : 'All lots synced.';
+  if (!SYNC_ENDPOINT_URL) { note.textContent = 'Licence code saved. Sync switches on in a coming version.'; return; }
+  const pending = lots.filter(function(l){ return !l.synced; }).length + outQ.length;
+  note.textContent = pending ? (pending + ' item' + (pending === 1 ? '' : 's') + ' waiting to sync…') : 'All synced to your licence — the sheet is your backup.';
 }
 function syncLotToSheet(lot) {
   return fetch(SYNC_ENDPOINT_URL, {
@@ -1443,10 +1449,11 @@ function syncLotToSheet(lot) {
     headers: {'Content-Type': 'text/plain'},
     body: JSON.stringify({
       kind: 'lot', k: SYNC_SECRET, code: S.licenseCode,
-      id: lot.id, t: lot.t, sale: lot.sale, yard: lot.yard,
+      id: lot.id, saleId: lot.saleId || S.saleId || '', t: lot.t, sale: lot.sale, yard: lot.yard,
       pen: lot.pen, hd: lot.hd, wt: lot.wt,
       priceHd: lotPriceHd(lot), priceKg: lotPriceKg(lot), total: lotDollars(lot),
-      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || '', note: lot.note || '', docket: lot.chk || ''
+      agent: lot.agent, client: lot.client, sent: !!lot.sent, carrier: lot.carrier, desc: lot.desc, sex: lot.sex || '', note: lot.note || '', docket: lot.chk || '',
+      deleted: !!lot.deleted, raw: lot
     })
   });
 }
@@ -1468,6 +1475,93 @@ function trySyncQueue() {
   });
 }
 window.addEventListener('online', trySyncQueue);
+
+/* ── Paid tier: settings follow the licence code, deletes are told to the sheet, and a new phone
+   can pull everything back down. The sheet is the backup — nothing for the user to remember. ── */
+const OUTQ_KEY = 'cbpro_outq'; // DO NOT RENAME — settings snapshots / delete notices waiting for signal
+let outQ = [], outInFlight = false, settingsPushTimer = null;
+function loadOutQ() { try { outQ = JSON.parse(localStorage.getItem(OUTQ_KEY) || '[]') || []; } catch(e) { outQ = []; } }
+function saveOutQ() { try { localStorage.setItem(OUTQ_KEY, JSON.stringify(outQ.slice(-200))); } catch(e) {} }
+function cloudOn() { return !!SYNC_ENDPOINT_URL && !!S.licenseCode; }
+function scheduleSettingsPush() {
+  if (!cloudOn()) return;
+  if (settingsPushTimer) clearTimeout(settingsPushTimer);
+  settingsPushTimer = setTimeout(function(){
+    settingsPushTimer = null;
+    outQ = outQ.filter(function(x){ return x.kind !== 'settings'; });
+    outQ.push({ kind: 'settings', k: SYNC_SECRET, code: S.licenseCode, device: deviceId(), json: S });
+    saveOutQ(); tryOutQueue();
+  }, 4000);
+}
+function queueDeleteNotice(lot) {
+  if (!cloudOn()) return;
+  const dead = Object.assign({}, lot, { deleted: true });
+  outQ.push({ kind: 'lot', k: SYNC_SECRET, code: S.licenseCode, id: dead.id, saleId: dead.saleId || S.saleId || '', t: dead.t, pen: dead.pen, hd: dead.hd, wt: dead.wt, client: dead.client, deleted: true, raw: dead });
+  saveOutQ(); tryOutQueue();
+}
+function tryOutQueue() {
+  if (!cloudOn() || outInFlight || !outQ.length) return;
+  outInFlight = true;
+  fetch(SYNC_ENDPOINT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(outQ[0]) })
+    .then(function(){ outQ.shift(); saveOutQ(); outInFlight = false; if (outQ.length) tryOutQueue(); })
+    .catch(function(){ outInFlight = false; });
+}
+window.addEventListener('online', tryOutQueue);
+
+let cloudPending = null;
+function cloudRestore(quiet) {
+  const st = document.getElementById('syncStatusNote');
+  if (!cloudOn()) { if (!quiet) showToast('Enter a licence code first', 'warn'); return; }
+  if (!quiet && st) st.textContent = 'Checking the sync sheet…';
+  fetch(SYNC_ENDPOINT_URL + '?code=' + encodeURIComponent(S.licenseCode) + '&k=' + encodeURIComponent(SYNC_SECRET) + '&_=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) { if (!quiet) showToast("Sync sheet didn't accept that licence code", 'warn'); updateSyncStatusNote(); return; }
+      const cloudLots = Array.isArray(d.lots) ? d.lots : [];
+      if (!cloudLots.length && !d.settings) { if (!quiet) showToast('Nothing stored under this licence yet'); updateSyncStatusNote(); return; }
+      cloudPending = d;
+      const sales = {};
+      cloudLots.forEach(function(l){ sales[l.saleId || 'x'] = 1; });
+      const nSales = Object.keys(sales).length;
+      document.querySelector('#newSaleModal .modal-title').textContent = 'Restore from licence?';
+      document.getElementById('newSaleModalBody').textContent =
+        cloudLots.length + ' lot' + (cloudLots.length === 1 ? '' : 's') + ' across ' + nSales + ' sale' + (nSales === 1 ? '' : 's') +
+        (d.settings ? ', plus your settings and buyer ways' : '') + '. This replaces what is on this phone. Photos stay on the old phone.';
+      slideAction = applyCloudRestore;
+      resetSlideConfirm();
+      document.getElementById('newSaleModal').classList.remove('hidden');
+    })
+    .catch(function(){ if (!quiet) showToast("Couldn't reach the sync sheet — try again with signal", 'warn'); updateSyncStatusNote(); });
+}
+function applyCloudRestore() {
+  const d = cloudPending; cloudPending = null;
+  document.getElementById('newSaleModal').classList.add('hidden');
+  if (!d) return;
+  // group by sale: the sale holding the newest lot is the current one, the rest go to history
+  const groups = {};
+  (d.lots || []).forEach(function(l){ const k = l.saleId || 'x'; (groups[k] = groups[k] || []).push(l); });
+  let curKey = null, curT = '';
+  Object.keys(groups).forEach(function(k){ groups[k].forEach(function(l){ if ((l.t || '') > curT) { curT = l.t || ''; curKey = k; } }); });
+  const current = curKey ? groups[curKey] : [];
+  const hist = Object.keys(groups).filter(function(k){ return k !== curKey; }).map(function(k){
+    const g = groups[k]; let t = ''; g.forEach(function(l){ if ((l.t || '') > t) t = l.t || ''; });
+    return { t: t, lots: g };
+  }).sort(function(a, b){ return a.t < b.t ? -1 : 1; });
+  current.forEach(function(l){ l.synced = true; l.hasPhoto = false; l.selected = !l.sent; });
+  try {
+    if (d.settings && typeof d.settings === 'object') {
+      const keep = { licenseCode: S.licenseCode, terms: S.terms, deviceId: S.deviceId, yardAuto: S.yardAuto };
+      localStorage.setItem(KEY, JSON.stringify(Object.assign({}, d.settings, keep, { saleId: curKey && curKey !== 'x' ? curKey : newSaleId() })));
+    } else {
+      S.saleId = curKey && curKey !== 'x' ? curKey : (S.saleId || newSaleId());
+      localStorage.setItem(KEY, JSON.stringify(S));
+    }
+    localStorage.setItem(LOTS_KEY, JSON.stringify(current));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+    localStorage.removeItem(DRAFT_KEY);
+  } catch(e) { showToast("Restore failed — phone storage wouldn't take it", 'warn'); return; }
+  location.reload();
+}
 
 /* ── Free-tier market data — anonymised, one row per lot saved ────────────────
    Sent only when: an endpoint is set, the terms have been agreed, and either there is
@@ -2022,11 +2116,13 @@ function acctSave() {
   if (acctEditing === 'name') { S.meAgent = v || 'Self'; }
   else if (acctEditing === 'lic') { S.licenseCode = v; }
   persist();
+  const acctEditingWas = acctEditing;
   acctEditing = null;
   document.getElementById('acctEditBox').classList.add('hidden');
   renderAcct();
-  trySyncQueue();
+  trySyncQueue(); tryOutQueue();
   showToast(v ? 'Saved' : 'Cleared');
+  if (acctEditingWas === 'lic' && v && !lots.length) cloudRestore(true);
 }
 
 const TOOL_INFO = {
@@ -3489,7 +3585,7 @@ function deleteEditingLot() {
   cancelEditLot();
   showUndoToast(lotLabel(l) + ' deleted' + (lotBlurb(l) ? ' · ' + lotBlurb(l) : ''), undoDeleteLot);
   // the photo is only really dropped once the undo window has passed
-  setTimeout(function(){ if (deleteHold && deleteHold.lot === l) { if (l.hasPhoto) photoDel(l.id); deleteHold = null; } }, 8500);
+  setTimeout(function(){ if (deleteHold && deleteHold.lot === l) { if (l.hasPhoto) photoDel(l.id); deleteHold = null; queueDeleteNotice(l); } }, 8500);
 }
 function undoDeleteLot() {
   const h = deleteHold; deleteHold = null;
@@ -3552,7 +3648,7 @@ function backupBlob() {
   try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) {}
   try { watch = JSON.parse(localStorage.getItem(WATCH_KEY) || 'null'); } catch(e) {}
   const data = { app: BACKUP_TAG, appVersion: APP_VERSION, t: new Date().toISOString(),
-    settings: S, lots: lots, history: hist, watch: watch, docket: docket, market: marketQ };
+    settings: S, lots: lots, history: hist, watch: watch, docket: docket, market: marketQ, outq: outQ };
   return new Blob([JSON.stringify(data)], {type: 'application/json'});
 }
 function backupApp() {
@@ -3612,6 +3708,7 @@ function applyRestore() {
     if (d.watch) localStorage.setItem(WATCH_KEY, JSON.stringify(d.watch)); else localStorage.removeItem(WATCH_KEY);
     if (d.docket && d.docket.ways) localStorage.setItem(DOCKET_KEY, JSON.stringify(d.docket)); else localStorage.removeItem(DOCKET_KEY);
     if (Array.isArray(d.market)) localStorage.setItem(MARKET_KEY, JSON.stringify(d.market));
+    if (Array.isArray(d.outq)) localStorage.setItem(OUTQ_KEY, JSON.stringify(d.outq));
     localStorage.removeItem(DRAFT_KEY);
   } catch(e) {
     document.getElementById('backupStatus').textContent = "Restore failed — phone storage wouldn't take it.";
@@ -3624,6 +3721,7 @@ function closeNewSaleConfirm() {
   resetSlideConfirm();
 }
 function startNewSale() {
+  S.saleId = newSaleId();
   if (lots.length) {
     let hist = [];
     try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { hist = []; }
@@ -3825,7 +3923,7 @@ function addLot() {
       yard: document.getElementById('pickupLoc').value,
       t: new Date().toISOString(),
       sent: false, carrier: '', selected: true, synced: false,
-      hasPhoto: !!pendingPhoto
+      hasPhoto: !!pendingPhoto, saleId: S.saleId || ''
     };
     lots.push(newLot);
     if (pendingPhoto) { photoPut(newLot.id, pendingPhoto); pendingPhoto = null; }
@@ -4488,9 +4586,9 @@ function init() {
   foldSettingsNotes();
   document.getElementById('lotSex').value = '';
   fillSexChips();
- loadWatch(); loadDocket(); loadMarketQ();
+ loadWatch(); loadDocket(); loadMarketQ(); loadOutQ(); if (!S.saleId) { S.saleId = newSaleId(); persist(); }
  termsNoteRender(); if (!termsAccepted()) openTerms(false);
- marketNoteRender(); tryMarketQueue();
+ marketNoteRender(); tryMarketQueue(); tryOutQueue();
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); renderWatchlist(); updateCamButtons(); });
   trySyncQueue();
