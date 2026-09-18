@@ -1211,7 +1211,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-18.132'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-18.133'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1472,6 +1472,9 @@ function loadLots() {
     if (raw) {
       lots = JSON.parse(raw) || [];
       nextLot = lots.reduce(function(m, l){ return Math.max(m, (l.id||0) + 1); }, 1);
+      let fixed = false;
+      lots.forEach(function(l){ const d = normalizeDesc(l.desc); if (d !== (l.desc || '')) { l.desc = d; fixed = true; } });
+      if (fixed) persistLots();
     }
   } catch(e) {}
 }
@@ -2841,11 +2844,17 @@ function noMarkName() { return (S.markings || []).find(isNoMark) || ''; }
 function markListFromDesc(desc) {
   return String(desc || '').split(/\s*,\s*/).map(function(x){ return x.trim(); }).filter(Boolean);
 }
+/* "No Mark" means exactly that — it can never sit beside a real mark. Older versions could save both. */
+function normalizeMarks(list) {
+  const l = (list || []).filter(Boolean);
+  return l.length > 1 ? l.filter(function(m){ return !isNoMark(m); }) : l;
+}
+function normalizeDesc(desc) { return normalizeMarks(markListFromDesc(desc)).join(', '); }
 function currentDesc() { return markPicked.join(', '); }
 function setMarkPicked(list) {
   const sel = document.getElementById('lotDesc');
   const known = Array.from(sel ? sel.options : []).map(function(o){ return o.value; });
-  markPicked = (list || []).filter(function(m){ return m && m !== '__add__'; });
+  markPicked = normalizeMarks((list || []).filter(function(m){ return m && m !== '__add__'; }));
   // any marking the lot has that's not in the current list gets a temporary option so it can show as a chip
   markPicked.forEach(function(m){
     if (known.indexOf(m) < 0 && sel) {
