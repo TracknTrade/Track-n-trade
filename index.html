@@ -1288,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.156'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.157'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1504,7 +1504,7 @@ function sendFeedback() {
    licences. Inert with no licence code entered: nothing about how a lot is
    recorded or saved changes. Never blocks a save, never shows an error mid-sale
    — a failed or offline push just stays queued and is retried later. */
-const SYNC_ENDPOINT_URL = '';
+const SYNC_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbxg4rISUINAXOtoRf4KSBGvwiwzUEA7BKS-Cz3FUNyE_huPaZkQg_cy8tAuEsnQscqM/exec';
 let syncInFlight = false;
 function updateSyncStatusNote() {
   const note = document.getElementById('syncStatusNote');
@@ -1641,7 +1641,7 @@ function applyCloudRestore() {
    Sent only when: an endpoint is set, the terms have been agreed, and either there is
    no licence code (free) or a licensed user has switched "Contribute" on. The row builder
    is the whole privacy design: only the fields listed here ever leave the phone. */
-const SYNC_SECRET = '';
+const SYNC_SECRET = 'lNvBnc7IhXzss7OwO2J07qQIUP6QDV7s';
 const MARKET_KEY = 'cbpro_market'; // DO NOT RENAME — queued rows waiting for signal
 const YARD_SNAP_KM = 25;
 const YARDS = [
