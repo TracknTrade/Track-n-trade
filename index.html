@@ -265,6 +265,15 @@
     .type-sum .btn-r { color: var(--tt-800); }
     .type-pick .mark-chip { min-height: 36px; padding: 0 12px; font-size: 13px; scroll-snap-align: none; }
     #pageSettings * { scroll-snap-align: none; }
+    /* ── Swipe feel: the panel follows the finger, then eases across or springs back ── */
+    #recSplit, #pageSummary { touch-action: pan-y; will-change: transform; }
+    .swipe-drag { transition: none !important; }
+    .swipe-settle { transition: transform .18s ease-out, opacity .18s ease-out; }
+    .page-arrive { animation: pageArrive .22s ease-out; }
+    .page-arrive-left { animation: pageArriveLeft .22s ease-out; }
+    @keyframes pageArrive { from { transform: translateX(48px); opacity: .5; } to { transform: none; opacity: 1; } }
+    @keyframes pageArriveLeft { from { transform: translateX(-48px); opacity: .5; } to { transform: none; opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .page-arrive, .page-arrive-left { animation: none; } .swipe-settle { transition: none; } }
     /* ── Sale summary page: a plain scrolling page to the right of the recorder ── */
     #pageSummary * { scroll-snap-align: none; }
     .sum-wrap { padding: 8px 0 16px; }
@@ -1279,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.149'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.150'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2460,40 +2469,73 @@ function bindKp() {
   box.addEventListener('contextmenu', function(e){ if (e.target.closest('.hold-eye')) e.preventDefault(); });
 })();
 /* ── Swipe between the recorder and the Sale summary ──
-   On the recorder only the top and bottom quarter of the split respond, so a sideways drag across the
-   boxes, chips or number keys never moves the page. On the summary the whole page swipes back. */
+   The panel follows the finger (with resistance) once the drag is clearly sideways, then eases across
+   or springs back. On the recorder only touches starting in the top or bottom quarter of the split count,
+   so a drag across the boxes, chips or number keys never moves the page. Same 70px threshold as before
+   (or a quick flick); one page change per half second; nothing while a pop-up is open. */
 (function(){
   const split = document.getElementById('recSplit'), sum = document.getElementById('pageSummary');
-  let sx = null, sy = null, ok = false, busyUntil = 0;
+  let sx = null, sy = null, ok = false, locked = false, panel = null, busyUntil = 0, lastX = 0, lastT = 0, vel = 0;
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function reset(el) { if (!el) return; el.classList.remove('swipe-drag'); el.classList.add('swipe-settle'); el.style.transform = ''; el.style.opacity = ''; setTimeout(function(){ el.classList.remove('swipe-settle'); }, 200); }
   function start(zoneEl, e) {
-    const t = e.touches[0]; sx = t.clientX; sy = t.clientY; ok = false;
+    if (e.touches.length !== 1) { ok = false; return; }
+    const t = e.touches[0]; sx = t.clientX; sy = t.clientY; locked = false; vel = 0; lastX = sx; lastT = Date.now();
+    if (document.querySelector('.modal-overlay:not(.hidden)') || Date.now() < busyUntil) { ok = false; return; }
     if (zoneEl === split) {
       const r = split.getBoundingClientRect();
       const y = (t.clientY - r.top) / r.height;
-      ok = y <= 0.25 || y >= 0.75;
-    } else ok = true;
+      ok = (y <= 0.25 || y >= 0.75) && currentTab === 'record';
+    } else ok = currentTab === 'summary';
+    panel = zoneEl;
   }
-  function end(e, dir, from, go) {
+  function move(e, dir) {
     if (!ok || sx == null) return;
-    const t = e.changedTouches[0];
+    const t = e.touches[0];
     const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (!locked) {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.5) { ok = false; return; }   // it's a scroll, not a swipe
+      locked = true; panel.classList.add('swipe-drag');
+    }
+    e.preventDefault();
+    const now = Date.now(); if (now > lastT) { vel = (t.clientX - lastX) / (now - lastT); lastX = t.clientX; lastT = now; }
+    const forward = (dir === 'left' && dx < 0) || (dir === 'right' && dx > 0);
+    const shown = forward ? dx * 0.6 : dx * 0.15;   // the wrong direction barely moves — it isn't going anywhere
+    if (!reduced) { panel.style.transform = 'translateX(' + shown + 'px)'; panel.style.opacity = String(Math.max(0.55, 1 - Math.abs(shown) / 400)); }
+  }
+  function end(e, dir, go, arriveClass) {
+    if (!ok || sx == null) { sx = sy = null; return; }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx;
+    const forward = (dir === 'left' && dx < 0) || (dir === 'right' && dx > 0);
+    const flick = forward && Math.abs(dx) > 30 && Math.abs(vel) > 0.45;
+    const commit = locked && forward && (Math.abs(dx) >= 70 || flick);
     sx = sy = null; ok = false;
-    if (Math.abs(dx) < 70 || Math.abs(dx) < 2 * Math.abs(dy)) return;
-    if (!((dir === 'left' && dx < 0) || (dir === 'right' && dx > 0))) return;
-    // a flurry of swipes must not stack page changes on top of each other — one every half second, from the right page
-    const now = Date.now();
-    if (now < busyUntil || currentTab !== from) return;
-    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
-    busyUntil = now + 500;
-    setTimeout(go, 30);
+    if (!commit) { reset(panel); return; }
+    busyUntil = Date.now() + 500;
+    // ease the rest of the way off, then swap pages and let the new one slide in from the other side
+    const off = (dir === 'left' ? -1 : 1) * Math.max(120, Math.abs(dx) * 0.6 + 60);
+    panel.classList.remove('swipe-drag'); panel.classList.add('swipe-settle');
+    if (!reduced) { panel.style.transform = 'translateX(' + off + 'px)'; panel.style.opacity = '0.4'; }
+    setTimeout(function(){
+      panel.classList.remove('swipe-settle'); panel.style.transform = ''; panel.style.opacity = '';
+      go();
+      const arriving = dir === 'left' ? sum : split;
+      if (arriving && !reduced) { arriving.classList.remove('page-arrive', 'page-arrive-left'); void arriving.offsetWidth; arriving.classList.add(arriveClass); setTimeout(function(){ arriving.classList.remove(arriveClass); }, 260); }
+    }, reduced ? 0 : 150);
   }
   if (split) {
     split.addEventListener('touchstart', function(e){ start(split, e); }, {passive:true});
-    split.addEventListener('touchend', function(e){ end(e, 'left', 'record', function(){ showTab('summary'); }); }, {passive:true});
+    split.addEventListener('touchmove', function(e){ move(e, 'left'); }, {passive:false});
+    split.addEventListener('touchend', function(e){ end(e, 'left', function(){ showTab('summary'); }, 'page-arrive'); }, {passive:true});
+    split.addEventListener('touchcancel', function(){ ok = false; sx = null; reset(split); }, {passive:true});
   }
   if (sum) {
     sum.addEventListener('touchstart', function(e){ start(sum, e); }, {passive:true});
-    sum.addEventListener('touchend', function(e){ end(e, 'right', 'summary', goRecorder); }, {passive:true});
+    sum.addEventListener('touchmove', function(e){ move(e, 'right'); }, {passive:false});
+    sum.addEventListener('touchend', function(e){ end(e, 'right', goRecorder, 'page-arrive-left'); }, {passive:true});
+    sum.addEventListener('touchcancel', function(){ ok = false; sx = null; reset(sum); }, {passive:true});
   }
 })();
 /* indicator */
