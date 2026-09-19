@@ -752,7 +752,7 @@
       </div>
     </div>
   </div>
-  <div id="docketModal" class="modal-overlay hidden">
+  <div id="docketModal" class="modal-overlay hidden" onclick="if (event.target === this) closeDocket()">
     <div class="dk-card">
       <div class="dk-head"><div class="modal-title">Check docket</div><button type="button" class="dk-close" onclick="closeDocket()" aria-label="Close">✕</button></div>
       <div class="dk-tabs" id="dkTabs"></div>
@@ -765,7 +765,7 @@
       </div>
     </div>
   </div>
-  <div id="ringModal" class="modal-overlay hidden">
+  <div id="ringModal" class="modal-overlay hidden" onclick="if (event.target === this) closeRingModal()">
     <div class="watch rm-card">
       <div class="title" style="text-align:center;color:#fff;">Work out $/hd</div>
       <div class="grid-2">
@@ -1288,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.154'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.155'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
