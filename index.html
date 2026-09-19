@@ -1192,7 +1192,7 @@
 
       <div class="card">
         <div class="title">Markings</div>
-        <p class="note desc">Paint-mark options shown on the Purchase recorder, like Shoulder, Loin, Rump, Tail — or No Mark by default. Add more here, or on the fly from the recorder.</p>
+        <p class="note desc">Paint-mark chips on the Purchase recorder. Defaults are NM (no mark), R, S, L and T — rump, shoulder, loin, tail — short so they fit on one row. NM always stands alone; the others can combine. Add more here, or on the fly from the recorder.</p>
         <div id="markChips"></div>
         <button type="button" class="btn btn-g" id="addMarkBtn" onclick="toggleAddForm('mark', true)">Add marking</button>
         <div id="markForm" class="hidden">
@@ -1267,7 +1267,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.147'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.148'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1278,8 +1278,8 @@ const defaults = {
   carriers: [{name:'Main carrier', phone:''}],
   smsTail: '',
   agents: ['Self', 'Agency/Staff Buyer'],
-  clients: ['Self', 'Client 1', 'Client 2', 'Client 3', 'Client 4'],
-  markings: ['No Mark', 'Shoulder', 'Loin', 'Rump', 'Tail'],
+  clients: ['Self'],
+  markings: ['NM', 'R', 'S', 'L', 'T'],
   meAgent: 'Self',
   meClient: 'Self',
   licenseCode: ''
