@@ -31,8 +31,26 @@ I put them into `SYNC_ENDPOINT_URL` and `SYNC_SECRET` in the app and ship the ve
 
 The tabs create themselves with headers on the first row received.
 
+## 5. Sell a seat (v3)
+The **licences** tab is your customer list until Jeff's system replaces it. Open the sheet → the `licences` tab (created on first run; or add it with the header row `code | plan | seats | addons | expires | active | notes`) and add a row per licence sold:
+
+| code | plan | seats | addons | expires | active | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| TNT-7K2Q-M9PX | solo | 1 | | 2027-09-19 | yes | J Smith, paid 19/9 |
+| TNT-AGENCY-01 | agency | 15 | analyst | 2027-06-30 | yes | Elders Wodonga |
+
+- `code` — anything you like, no spaces; the app upper-cases it.
+- `plan` — `solo`, `agency` or `site`; anything not `free` unlocks the paid features.
+- `seats` — how many distinct phones (or mobiles, once captured) may activate. The `activations` tab fills itself; delete a row there to free a seat.
+- `expires` — last day of the licence. The app allows 14 days' grace after it, then drops to free without deleting anything on the phone.
+- `active` — `yes`, or `no` to switch a licence off immediately.
+
+Emails left on the first-open screen land in the **leads** tab with a consent flag — only email the ones marked `yes`.
+
 ## Test the restore read
 Open `<Web app URL>?code=TEST&k=<your SECRET>` in a browser. You should see `{"ok":true,"lots":[],"settings":null}`. Wrong secret shows `{"ok":false}`.
+
+Activation test: `<Web app URL>?code=TEST&k=<SECRET>&act=1&dev=test1` → `{"ok":true,"plan":"free","reason":"unknown"}` until you add TEST to the licences tab, then `{"ok":true,"plan":"solo","seats":1,"seatsUsed":1,...}`.
 
 ## Changing the script later
 Edit the code → **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**. The URL stays the same. If you only click Save without a new deployment, the phones keep hitting the old code.
