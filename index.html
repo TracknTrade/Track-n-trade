@@ -1288,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.152'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.153'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2482,11 +2482,12 @@ function bindKp() {
     if (e.touches.length !== 1) { ok = false; return; }
     const t = e.touches[0]; sx = t.clientX; sy = t.clientY; locked = false; vel = 0; lastX = sx; lastT = Date.now();
     if (document.querySelector('.modal-overlay:not(.hidden)') || Date.now() < busyUntil) { ok = false; return; }
-    if (zoneEl === split) {
-      const r = split.getBoundingClientRect();
-      const y = (t.clientY - r.top) / r.height;
-      ok = (y <= 0.25 || y >= 0.75) && currentTab === 'record';
-    } else ok = currentTab === 'summary';
+    // same zones on both pages: only the top and bottom quarter of what's on screen swipes
+    const main = document.querySelector('main');
+    const r = zoneEl === split ? split.getBoundingClientRect() : (main ? main.getBoundingClientRect() : zoneEl.getBoundingClientRect());
+    const y = (t.clientY - r.top) / r.height;
+    const inZone = y <= 0.25 || y >= 0.75;
+    ok = inZone && (zoneEl === split ? currentTab === 'record' : currentTab === 'summary');
     panel = zoneEl;
   }
   function move(e, dir) {
