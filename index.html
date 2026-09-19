@@ -1073,11 +1073,11 @@
       <div class="card">
         <div class="title">Sale mode</div>
         <div class="mode-sw">
-          <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">Special sale</button>
-          <button type="button" id="modePrime" onclick="setSaleMode('prime')">Prime sale</button>
+          <button type="button" id="modeSpecial" class="on" onclick="setSaleMode('special')">$ per head</button>
+          <button type="button" id="modePrime" onclick="setSaleMode('prime')">$ per kg</button>
         </div>
         <div class="toggle" style="margin-top:6px;border-bottom:none;" onclick="flip('lefty')"><span>Left-handed layout</span><div class="switch" id="sw_lefty"><i></i></div></div>
-        <p class="note desc">Prime sale swaps the Purchase recorder for one-tap voice entry — record price ($/kg), pen, head and weight in one go, then tap Markings and Buyer-Way to set those, check the fields, then Save Lot. Needs microphone access and works best in Safari on iPhone.</p>
+        <p class="note desc">How prices are recorded. <b>$ per head</b> is the usual store-sale entry — $/hd straight off the hammer. <b>$ per kg</b> is for prime sales sold over the scales: the recorder takes $/kg, works out $/hd from the weight, and the watchlist and ring hand over $/kg. $ per kg also offers hold-to-talk voice entry, which only works in quiet conditions.</p>
       </div>
 
       <div class="card">
@@ -1288,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.155'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.156'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
