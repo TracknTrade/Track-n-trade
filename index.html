@@ -6,11 +6,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Track n Trade" />
+  <meta name="apple-mobile-web-app-title" content="Penside" />
   <meta name="theme-color" content="#052e23" />
   <link rel="manifest" href="manifest.json" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Track n Trade</title>
+  <title>Penside</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -711,10 +711,10 @@
     <div class="terms-card">
       <div class="terms-head"><div class="modal-title">Before you start</div><div class="eyebrow">Terms of use &amp; disclaimer</div></div>
       <div class="terms-body" id="termsBody">
-        <p>Please read this once. It says what Track n Trade is, what it isn't, and what you're agreeing to by using it.</p>
+        <p>Please read this once. It says what Penside is, what it isn't, and what you're agreeing to by using it.</p>
 
-        <h4>1. What Track n Trade is</h4>
-        <p>Track n Trade is a recording and calculation tool for people buying livestock. It records what you enter and does arithmetic on it. It is not a stock agent, a financial adviser, an accountant or a lawyer, and nothing in it is financial, legal, veterinary or professional advice.</p>
+        <h4>1. What Penside is</h4>
+        <p>Penside is a recording and calculation tool for people buying livestock. It records what you enter and does arithmetic on it. It is not a stock agent, a financial adviser, an accountant or a lawyer, and nothing in it is financial, legal, veterinary or professional advice.</p>
 
         <h4>2. The maths</h4>
         <p>We have checked every calculator in the app against worked examples. But every result depends entirely on the numbers you enter and the assumptions you set — target weight, daily gain, costs, interest rate, sale price and the rest. A wrong, stale or missing input gives a wrong answer. You must check any figure yourself before you rely on it.</p>
@@ -734,7 +734,7 @@
         <p>Any personal information we do hold (for example your email if you contact us, or licence details if you subscribe) is handled in accordance with the Privacy Act 1988 (Cth). Questions: <span class="fill">[privacy email]</span>.</p>
 
         <h4>7. Saleyards and agencies</h4>
-        <p>Track n Trade is not affiliated with, endorsed by, or connected to any saleyard, livestock agency, or saleyard software provider. The saleyard's and selling agent's records are the official record of a sale. The Check docket feature helps you compare your record against theirs; it does not verify either, and it does not tell you which one is right.</p>
+        <p>Penside is not affiliated with, endorsed by, or connected to any saleyard, livestock agency, or saleyard software provider. The saleyard's and selling agent's records are the official record of a sale. The Check docket feature helps you compare your record against theirs; it does not verify either, and it does not tell you which one is right.</p>
 
         <h4>8. Australian Consumer Law</h4>
         <p>Nothing in these terms excludes, restricts or modifies any guarantee, right or remedy you have under the Australian Consumer Law or any other law that cannot be excluded. Where our liability for a breach of such a guarantee can lawfully be limited, it is limited, at our option, to re-supplying the app or paying the cost of having it re-supplied. Otherwise, section 3 applies.</p>
@@ -745,13 +745,13 @@
         <h4>10. Changes and governing law</h4>
         <p>We may change the app and these terms. If the terms change you'll be shown the new version and asked to agree again before continuing. These terms are governed by the laws of Victoria, Australia, and you submit to the courts there.</p>
 
-        <p style="margin-top:14px;">Tragen Tech Pty Ltd · ACN 702 367 306 · Track n Trade · Terms version <span id="termsVer"></span></p>
+        <p style="margin-top:14px;">Tragen Tech Pty Ltd (ACN 702 367 306) trading as Penside · Terms version <span id="termsVer"></span></p>
       </div>
       <div class="terms-foot">
         <label class="terms-agree" id="termsAgreeRow"><input type="checkbox" id="termsTick" class="native" onchange="termsTickChanged()"><span>I have read these terms and I agree to them. I understand the app's figures are only as good as what I enter, and that my buying decisions are my own.</span></label>
         <div class="terms-email" id="termsEmailRow">
           <input type="email" id="termsEmail" class="native" placeholder="Email (optional)" autocapitalize="none" autocomplete="email" inputmode="email">
-          <label class="terms-agree"><input type="checkbox" id="termsNews" class="native"><span>Send me Track n Trade news and tips. You can stop this any time by replying STOP.</span></label>
+          <label class="terms-agree"><input type="checkbox" id="termsNews" class="native"><span>Send me Penside news and tips. You can stop this any time by replying STOP.</span></label>
         </div>
         <button type="button" class="btn btn-g" id="termsBtn" onclick="acceptTerms()" disabled>Agree and continue</button>
         <div class="terms-stamp" id="termsStamp"></div>
@@ -842,7 +842,7 @@
   </div>
 
   <header>
-    <h1>Track n Trade</h1>
+    <h1>Penside</h1>
   </header>
 
   <main>
@@ -1294,7 +1294,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.158'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.159'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1495,12 +1495,12 @@ function persistLots() {
    turned on yet rather than opening a blank, address-less email. */
 const FEEDBACK_EMAIL = '';
 function sendFeedback() {
-  if (!confirm('Send feedback about Track n Trade?')) return;
+  if (!confirm('Send feedback about Penside?')) return;
   if (!FEEDBACK_EMAIL) {
     alert("Feedback isn't turned on yet — this will be ready in an upcoming update.");
     return;
   }
-  const subject = 'Track n Trade feedback';
+  const subject = 'Penside feedback';
   const body = 'App version: ' + APP_VERSION + '\nDevice: ' + navigator.userAgent +
     '\n\nDescribe the issue or suggestion below:\n';
   window.location.href = 'mailto:' + FEEDBACK_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
@@ -2797,7 +2797,7 @@ function tryLead() {
 window.addEventListener('online', tryLead);
 
 /* ── Terms & disclaimer — shown once on first open, again whenever TERMS_VERSION changes ── */
-const TERMS_VERSION = '2026-09-19';
+const TERMS_VERSION = '2026-09-19b';
 function termsAccepted() { return !!(S.terms && S.terms.v === TERMS_VERSION); }
 function termsTickChanged() {
   document.getElementById('termsBtn').disabled = !document.getElementById('termsTick').checked;
@@ -3928,7 +3928,8 @@ function openNewSaleConfirm() {
 }
 
 /* ── Backup / restore — one file the user owns; no account, no server ── */
-const BACKUP_TAG = 'trackntrade-backup';
+const BACKUP_TAG = 'penside-backup';
+const BACKUP_TAGS_OK = ['penside-backup', 'trackntrade-backup']; // older files still restore
 function backupBlob() {
   let hist = [], watch = null;
   try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) {}
@@ -3939,13 +3940,13 @@ function backupBlob() {
 }
 function backupApp() {
   const st = document.getElementById('backupStatus');
-  const name = 'TracknTrade-backup-' + localDate().replace(/[^0-9A-Za-z]+/g, '-') + '.json';
+  const name = 'Penside-backup-' + localDate().replace(/[^0-9A-Za-z]+/g, '-') + '.json';
   const blob = backupBlob();
   // Android Chrome's share sheet refuses .json but takes plain text, so offer the same bytes as .txt if it must
   const tries = [new File([blob], name, {type: 'application/json'}), new File([blob], name.replace(/\.json$/, '.txt'), {type: 'text/plain'})];
   const shareable = (navigator.share && navigator.canShare) ? tries.find(function(f){ try { return navigator.canShare({files: [f]}); } catch(e) { return false; } }) : null;
   if (shareable) {
-    navigator.share({files: [shareable], title: 'Track n Trade backup'}).then(function(){
+    navigator.share({files: [shareable], title: 'Penside backup'}).then(function(){
       st.textContent = 'Backed up · ' + lots.length + ' lot' + (lots.length === 1 ? '' : 's') + ' · ' + localDate();
     }).catch(function(){ st.textContent = 'Backup cancelled.'; });
     return;
@@ -3967,8 +3968,8 @@ function onRestorePicked(inp) {
   rd.onload = function() {
     let d = null;
     try { d = JSON.parse(rd.result); } catch(e) {}
-    if (!d || d.app !== BACKUP_TAG || !d.settings || !Array.isArray(d.lots)) {
-      st.textContent = "That isn't a Track n Trade backup file.";
+    if (!d || BACKUP_TAGS_OK.indexOf(d.app) < 0 || !d.settings || !Array.isArray(d.lots)) {
+      st.textContent = "That isn't a Penside backup file.";
       return;
     }
     restorePending = d;
@@ -4845,7 +4846,7 @@ function exportExcel() {
   const status = document.getElementById('smsStatus');
   const file = (window.File) ? new File([blob], name, {type: blob.type}) : null;
   if (file && navigator.canShare && navigator.canShare({files: [file]})) {
-    navigator.share({files: [file], title: 'Track n Trade export'}).then(function(){
+    navigator.share({files: [file], title: 'Penside export'}).then(function(){
       if (status) status.textContent = 'Excel file ready to send.';
     }).catch(function(err){
       if (err && err.name === 'AbortError') return;
