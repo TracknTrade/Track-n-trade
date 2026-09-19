@@ -714,7 +714,7 @@
         <p>We have checked every calculator in the app against worked examples. But every result depends entirely on the numbers you enter and the assumptions you set — target weight, daily gain, costs, interest rate, sale price and the rest. A wrong, stale or missing input gives a wrong answer. You must check any figure yourself before you rely on it.</p>
 
         <h4>3. Your decisions are yours</h4>
-        <p>Every bid, purchase, sale, price, trucking, delivery and animal-husbandry decision is made by you, using your own judgement. To the fullest extent permitted by law, <span class="fill">[Company Pty Ltd]</span> and its directors, staff and contractors are not liable for any loss, cost or damage arising from your use of, or reliance on, the app or anything in it — including lost profit, stock bought or sold at the wrong price, miscounts, wrong or missed deliveries, animal welfare or biosecurity outcomes, or any difference between the app's records and a saleyard's or agency's records.</p>
+        <p>Every bid, purchase, sale, price, trucking, delivery and animal-husbandry decision is made by you, using your own judgement. To the fullest extent permitted by law, Tragen Tech Pty Ltd (ACN 702 367 306) and its directors, staff and contractors are not liable for any loss, cost or damage arising from your use of, or reliance on, the app or anything in it — including lost profit, stock bought or sold at the wrong price, miscounts, wrong or missed deliveries, animal welfare or biosecurity outcomes, or any difference between the app's records and a saleyard's or agency's records.</p>
 
         <h4>4. Your data lives on your phone</h4>
         <p>Your sales, lots, settings, photos and contacts are stored on this device, not on our servers (except as set out in section 6). You are responsible for backing them up — Setup → Backup makes a file you can keep. We are not liable for data lost through a lost, damaged, reset or replaced phone, a browser clearing its storage, or an app update.</p>
@@ -739,7 +739,7 @@
         <h4>10. Changes and governing law</h4>
         <p>We may change the app and these terms. If the terms change you'll be shown the new version and asked to agree again before continuing. These terms are governed by the laws of <span class="fill">[State]</span>, Australia, and you submit to the courts there.</p>
 
-        <p style="margin-top:14px;"><span class="fill">[Company Pty Ltd · ABN 00 000 000 000]</span> · Track n Trade · Terms version <span id="termsVer"></span></p>
+        <p style="margin-top:14px;">Tragen Tech Pty Ltd · ACN 702 367 306 · Track n Trade · Terms version <span id="termsVer"></span></p>
       </div>
       <div class="terms-foot">
         <label class="terms-agree" id="termsAgreeRow"><input type="checkbox" id="termsTick" class="native" onchange="termsTickChanged()"><span>I have read these terms and I agree to them. I understand the app's figures are only as good as what I enter, and that my buying decisions are my own.</span></label>
@@ -1288,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.150'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.151'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2781,7 +2781,7 @@ function tryLead() {
 window.addEventListener('online', tryLead);
 
 /* ── Terms & disclaimer — shown once on first open, again whenever TERMS_VERSION changes ── */
-const TERMS_VERSION = '2026-09-18';
+const TERMS_VERSION = '2026-09-19';
 function termsAccepted() { return !!(S.terms && S.terms.v === TERMS_VERSION); }
 function termsTickChanged() {
   document.getElementById('termsBtn').disabled = !document.getElementById('termsTick').checked;
