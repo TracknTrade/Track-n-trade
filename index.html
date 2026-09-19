@@ -97,14 +97,20 @@
       position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nav-h) - var(--nav-safe)); bottom: auto; z-index: 75;
       height: calc(var(--nav-h) + var(--nav-safe)); padding: 4px 8px calc(4px + var(--nav-safe));
       background: var(--card); border-top: 1px solid var(--line);
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
     }
+    body.tools-on .bnav { grid-template-columns: repeat(4, 1fr); }
     .bnav button {
       background: none; border: none; color: var(--ink); opacity: .45; font-family: var(--font-ui);
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-      font-size: 11px; font-weight: 700; padding: 3px 0; border-radius: 12px; min-height: 50px;
+      font-size: 12px; font-weight: 700; padding: 3px 0; border-radius: 12px; min-height: 50px;
     }
-    .bnav button svg { width: 24px; height: 24px; }
+    .bnav button svg { width: 30px; height: 30px; }
+    body.tools-on .bnav button svg { width: 24px; height: 24px; }
+    /* minimal launch: the Tools page and its Setup pieces exist but stay out of sight until switched on */
+    .tools-only { display: none !important; }
+    body.tools-on .tools-only { display: revert !important; }
+    body.tools-on .bnav .tools-only { display: flex !important; }
     .bnav button.on { opacity: 1; background: var(--tt-50); color: var(--tt-800); }
     body.kp-open .bnav { display: none; }
     .tabs { display: flex; gap: 6px; width: 100%; }
@@ -1088,10 +1094,10 @@
           <button type="button" class="btn-ghost" style="flex:0 0 auto;padding:0 16px;" onclick="stOpen(true)">Edit</button>
         </div>
         <div id="stBody" class="hidden">
-        <div class="tool-grp">Tools</div>
+        <div class="tools-only"><div class="tool-grp">Tools</div>
         <div class="toggle" onclick="flip('showMarketTrend')"><span>Last market <button type="button" class="info-btn" onclick="openToolInfo('showMarketTrend',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showMarketTrend"><i></i></div></div>
         <div class="toggle" onclick="flip('showTradeAnalysis')"><span>Trade analysis <button type="button" class="info-btn" onclick="openToolInfo('showTradeAnalysis',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showTradeAnalysis"><i></i></div></div>
-        <div class="toggle" onclick="flip('veilMax')"><span>Hide max buy until held <button type="button" class="info-btn" onclick="openToolInfo('veilMax',event)" aria-label="What does this do?">i</button></span><div class="switch" id="sw_veilMax"><i></i></div></div>
+        <div class="toggle" onclick="flip('veilMax')"><span>Hide max buy until held <button type="button" class="info-btn" onclick="openToolInfo('veilMax',event)" aria-label="What does this do?">i</button></span><div class="switch" id="sw_veilMax"><i></i></div></div></div>
         <div class="tool-grp">Sale</div>
         <div class="toggle" onclick="flip('showRing')"><span>Sales watch ring <button type="button" class="info-btn" onclick="openToolInfo('showRing',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showRing"><i></i></div></div>
         <div class="toggle" onclick="flip('showWatchlist')"><span>Pen watchlist <button type="button" class="info-btn" onclick="openToolInfo('showWatchlist',event)" aria-label="What does this tool do?">i</button></span><div class="switch" id="sw_showWatchlist"><i></i></div></div>
@@ -1103,8 +1109,8 @@
         </div>
       </div>
 
-      <div class="setup-grp">Numbers</div>
-      <div class="card">
+      <div class="setup-grp tools-only">Numbers</div>
+      <div class="card tools-only">
         <div class="title">Buy indicator</div>
         <p class="note desc">Drives the Trade analysis on the Tools tab. Changes apply as you type. Set Use carry costs to No if you know your desired gross margin. The agistment cost calculator at the foot works out a $/wk figure from your whole-farm running cost and fills it into Agistment $/wk for you.</p>
         <div id="biSummary" class="bi-sum">
@@ -1272,10 +1278,10 @@
   </main>
 
   <nav class="bnav" id="bnav" aria-label="Main">
-    <button type="button" id="nav_sale" class="on" onclick="showTab('sale')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Tools</span></button>
-    <button type="button" id="nav_record" onclick="showTab('record')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="8.5" cy="8" r="0.6" fill="currentColor"/><line x1="11.5" y1="8" x2="16" y2="8"/><circle cx="8.5" cy="12" r="0.6" fill="currentColor"/><line x1="11.5" y1="12" x2="16" y2="12"/><circle cx="8.5" cy="16" r="0.6" fill="currentColor"/><line x1="11.5" y1="16" x2="16" y2="16"/></svg><span>Sale</span></button>
-    <button type="button" id="nav_truck" onclick="showTab('truck')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Truck</span></button>
     <button type="button" id="nav_setup" onclick="showTab('setup')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Setup</span></button>
+    <button type="button" id="nav_record" class="on" onclick="showTab('record')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="8.5" cy="8" r="0.6" fill="currentColor"/><line x1="11.5" y1="8" x2="16" y2="8"/><circle cx="8.5" cy="12" r="0.6" fill="currentColor"/><line x1="11.5" y1="12" x2="16" y2="12"/><circle cx="8.5" cy="16" r="0.6" fill="currentColor"/><line x1="11.5" y1="16" x2="16" y2="16"/></svg><span>Sale</span></button>
+    <button type="button" id="nav_truck" onclick="showTab('truck')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Truck</span></button>
+    <button type="button" id="nav_sale" class="tools-only" onclick="showTab('sale')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Tools</span></button>
   </nav>
 
 <script>
@@ -1288,7 +1294,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.157'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.158'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -1782,11 +1788,17 @@ syncAppH();
 
 let yardsScrollTop = 0;
 const PAGES = { sale: 'pageYards', record: 'pageRecord', summary: 'pageSummary', truck: 'pageTruck', setup: 'pageSettings' };
+/* Minimal launch (decided 19 Sep): the Tools page — Buy indicator, Last market, Trade analysis — and its Setup pieces are
+   hidden, not removed. Two ways back on: flip TOOLS_ON for everyone, or put "tools" in a licence's addons for one customer. */
+const TOOLS_ON = false;
+function toolsOn() { return TOOLS_ON || !!(S.ent && Array.isArray(S.ent.addons) && S.ent.addons.indexOf('tools') >= 0); }
+function applyToolsUI() { document.body.classList.toggle('tools-on', toolsOn()); }
 const pageScroll = {};
 let currentTab = 'sale';
 function showTab(name) {
   syncLayout();
   if (name === 'yards' || name === 'calcs') name = 'sale';
+  if (name === 'sale' && !toolsOn()) name = 'record';
   if (name === 'settings') name = 'setup';
   if (!PAGES[name]) name = 'sale';
   closeKp();
@@ -1833,6 +1845,7 @@ function updateSexStrip() {
   if (ss) ss.classList.toggle('hidden', !S.showSex || editingLotId == null);
 }
 function applyFeatures() {
+  applyToolsUI();
   document.body.classList.toggle('lefty', !!S.lefty);
   document.body.classList.toggle('no-veil', S.veilMax === false);
   updateSexStrip();
@@ -2762,7 +2775,7 @@ function activateLicence(code, quiet) {
   fetch(SYNC_ENDPOINT_URL + q).then(function(r){ return r.json(); }).then(function(d){
     if (!d || !d.ok) { if (!quiet) showToast("Couldn't check that code", 'warn'); return; }
     S.ent = { code: code, plan: d.plan || 'free', seats: d.seats || 0, seatsUsed: d.seatsUsed || 0, addons: d.addons || [], expires: d.expires || '', reason: d.reason || '', checked: Date.now() };
-    persist(); applyPlanUI(); updateSyncStatusNote();
+    persist(); applyPlanUI(); applyToolsUI(); updateSyncStatusNote();
     if (quiet) return;
     if (d.plan === 'free' && d.reason === 'seats') openInfo('No seats left', 'This licence has all ' + d.seats + ' seat' + (d.seats === 1 ? '' : 's') + ' in use. Ask your account admin to add a seat, or remove a buyer who\'s left. This phone stays on the free plan for now.');
     else if (d.plan === 'free') showToast('Code not recognised — check it against your licence email', 'warn');
@@ -4881,7 +4894,7 @@ function init() {
   trySyncQueue();
   restoreDraft();
   recHighlight();
-  try { const t = localStorage.getItem('tnt_tab'); if (t && t !== 'sale') showTab(t); } catch(e) {}
+  try { const t = localStorage.getItem('tnt_tab'); if (t && t !== 'sale') showTab(t); else if (!toolsOn()) showTab('record'); } catch(e) {}
   const vn = document.getElementById('verNote');
   if (vn) vn.textContent = 'Version ' + APP_VERSION + (matchMedia('(display-mode: standalone)').matches ? ' · home screen' : ' · browser') + ' · view ' + window.innerHeight + ' / vv ' + (window.visualViewport ? Math.round(window.visualViewport.height) : '-') + ' / doc ' + document.documentElement.clientHeight + ' of ' + screen.height + ' · app-h ' + (getComputedStyle(document.documentElement).getPropertyValue('--app-h') || '').trim();
   const sc = document.getElementById('recSexChips');
