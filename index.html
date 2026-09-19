@@ -851,7 +851,7 @@
   </header>
 
   <main>
-    <div class="moved hidden" id="movedBar"><span>Penside has moved to penside.com.au. Tap to take your data with you.</span><button type="button" onclick="migrateToNewHome()">Move my data</button><button type="button" class="later" onclick="movedLater()">Later</button></div>
+    <div class="moved hidden" id="movedBar"><span>Penside has moved to penside.com.au. Tap to get a move code, then install Penside from Safari and enter it.</span><button type="button" onclick="migrateToNewHome()">Move my data</button><button type="button" class="later" onclick="movedLater()">Later</button></div>
     <!-- YARDS -->
     <section id="pageYards">
       <div id="blockIndicator" class="hidden">
@@ -1268,6 +1268,7 @@
           <button type="button" class="btn btn-g" style="margin-top:0;min-height:46px;" onclick="backupApp()">Back up</button>
         </div>
         <input type="file" id="restoreInput" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="onRestorePicked(this)">
+        <button type="button" class="btn-ghost" style="width:100%;margin-top:8px;" onclick="askMoveCode()">Enter a move code</button>
         <p class="note" id="backupStatus" style="margin-top:8px;"></p>
       </div>
 
@@ -1300,7 +1301,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.160'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.161'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2817,15 +2818,33 @@ function movedBarRender() {
   b.classList.toggle('hidden', !onOldHome() || (Date.now() - snoozed < 24*3600*1000));
 }
 function movedLater() { try { localStorage.setItem('tnt_moved_later', String(Date.now())); } catch(e) {} movedBarRender(); }
+/* A home-screen app can't switch addresses, and a new address gets fresh storage — so the move goes via the sync sheet:
+   park the backup under a 6-digit code, install Penside from Safari, type the code on first open. */
 function migrateToNewHome() {
-  try {
-    const blob = backupBlob();
-    blob.text().then(function(txt){
-      const packed = btoa(unescape(encodeURIComponent(txt)));
-      if (packed.length > 1500000) { openInfo('Too much to move in one go', 'This phone has a very large history. Use Setup → Backup → Back up, then Restore on penside.com.au.'); return; }
-      location.href = NEW_HOME + '#move=' + packed;
-    });
-  } catch(e) { openInfo("Couldn't pack the data", 'Use Setup → Backup → Back up, then Restore on penside.com.au.'); }
+  if (!SYNC_ENDPOINT_URL) { openInfo('Move', 'Use Setup → Backup → Back up, then Restore on penside.com.au.'); return; }
+  if (!navigator.onLine) { showToast('Needs signal to move — try again with reception', 'warn'); return; }
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  backupBlob().text().then(function(txt){
+    return fetch(SYNC_ENDPOINT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({ kind: 'move', k: SYNC_SECRET, code: code, json: txt }) });
+  }).then(function(){
+    openInfo('Your move code', '<div style="font-size:2.4rem;font-weight:900;letter-spacing:.12em;text-align:center;margin:8px 0 14px;font-variant-numeric:tabular-nums;">' + code + '</div>' +
+      '<b>1.</b> Open Safari (or Chrome) and go to <b>penside.com.au</b>.<br><b>2.</b> Share → <b>Add to Home Screen</b>.<br><b>3.</b> Open Penside from the home screen, agree the terms, and enter this code when asked.<br><br>The code works once and expires in 24 hours. Photos stay on this phone; everything else comes across.');
+  }).catch(function(){ openInfo("Couldn't send the data", 'Use Setup → Backup → Back up, then Restore on penside.com.au.'); });
+}
+function askMoveCode() {
+  const v = prompt('Moving from the old Track n Trade app? Enter the 6-digit move code it gave you.\n\n(Leave blank if you are starting fresh.)');
+  if (v == null) return;
+  const code = String(v).replace(/\D/g, '');
+  if (!code) return;
+  if (!navigator.onLine) { showToast('Needs signal — try again with reception', 'warn'); return; }
+  fetch(SYNC_ENDPOINT_URL + '?code=move&move=' + encodeURIComponent(code) + '&k=' + encodeURIComponent(SYNC_SECRET) + '&_=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.found || !d.data) { showToast("That code wasn't found or has expired", 'warn'); return; }
+      restorePending = d.data;
+      applyRestore();
+    })
+    .catch(function(){ showToast("Couldn't reach the sync sheet — try again with signal", 'warn'); });
 }
 function importFromMove() {
   if (!location.hash || location.hash.indexOf('#move=') !== 0) return false;
@@ -2883,6 +2902,7 @@ function acceptTerms() {
   document.getElementById('termsModal').classList.add('hidden');
   termsNoteRender();
   marketNoteRender(); refreshYardAuto(); tryMarketQueue();
+  if (!onOldHome() && !lots.length && !S.licenseCode && SYNC_ENDPOINT_URL) setTimeout(askMoveCode, 400);
 }
 function termsNoteRender() {
   const el = document.getElementById('termsNote');
