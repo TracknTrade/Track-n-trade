@@ -656,6 +656,11 @@
     .terms-email { margin-top: 10px; }
     .terms-email input { min-height: 46px; font-size: 16px; text-align: left; padding: 8px 12px; font-weight: 600; }
     .terms-email .terms-agree { margin: 8px 0 0; font-weight: 500; }
+    /* ── "Penside has moved" — shown only on the old address; one tap carries the phone's data to the new one ── */
+    .moved { position: sticky; top: 0; z-index: 95; background: var(--warn-bg); border-bottom: 1.5px solid var(--warn-line); padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--warn); }
+    .moved span { flex: 1; }
+    .moved button { background: var(--warn); color: #fff; border: none; border-radius: 10px; padding: 10px 14px; font-weight: 800; font-size: 14px; white-space: nowrap; }
+    .moved .later { background: transparent; color: var(--warn); border: 1.5px solid var(--warn-line); }
     /* ── Modals ─────────────────────────────────────────────────────────── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,10,11,.72); z-index: 210; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.hidden { display: none !important; }
@@ -846,6 +851,7 @@
   </header>
 
   <main>
+    <div class="moved hidden" id="movedBar"><span>Penside has moved to penside.com.au. Tap to take your data with you.</span><button type="button" onclick="migrateToNewHome()">Move my data</button><button type="button" class="later" onclick="movedLater()">Later</button></div>
     <!-- YARDS -->
     <section id="pageYards">
       <div id="blockIndicator" class="hidden">
@@ -1294,7 +1300,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.159'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.160'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2795,6 +2801,51 @@ function tryLead() {
     .then(function(){ l.sent = true; persist(); }).catch(function(){});
 }
 window.addEventListener('online', tryLead);
+
+/* ── Moving house: trackntrade.github.io → penside.com.au ──
+   The old address keeps working, with a banner. "Move my data" builds the same file Back up makes, tucks it into
+   the new address as a URL fragment (never sent to a server — fragments stay on the phone), and opens it. The new
+   address sees the fragment, imports it, clears the URL, and reloads as the old phone. Photos don't travel; the
+   lot record does. Licensed phones can also just enter the code and Restore from licence. */
+const OLD_HOSTS = ['trackntrade.github.io'];
+const NEW_HOME = 'https://penside.com.au/';
+function onOldHome() { return OLD_HOSTS.indexOf(location.hostname) >= 0; }
+function movedBarRender() {
+  const b = document.getElementById('movedBar');
+  if (!b) return;
+  let snoozed = 0; try { snoozed = parseInt(localStorage.getItem('tnt_moved_later') || '0', 10); } catch(e) {}
+  b.classList.toggle('hidden', !onOldHome() || (Date.now() - snoozed < 24*3600*1000));
+}
+function movedLater() { try { localStorage.setItem('tnt_moved_later', String(Date.now())); } catch(e) {} movedBarRender(); }
+function migrateToNewHome() {
+  try {
+    const blob = backupBlob();
+    blob.text().then(function(txt){
+      const packed = btoa(unescape(encodeURIComponent(txt)));
+      if (packed.length > 1500000) { openInfo('Too much to move in one go', 'This phone has a very large history. Use Setup → Backup → Back up, then Restore on penside.com.au.'); return; }
+      location.href = NEW_HOME + '#move=' + packed;
+    });
+  } catch(e) { openInfo("Couldn't pack the data", 'Use Setup → Backup → Back up, then Restore on penside.com.au.'); }
+}
+function importFromMove() {
+  if (!location.hash || location.hash.indexOf('#move=') !== 0) return false;
+  let d = null;
+  try { d = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6))))); } catch(e) { d = null; }
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!d || BACKUP_TAGS_OK.indexOf(d.app) < 0 || !d.settings) return false;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(d.settings));
+    localStorage.setItem(LOTS_KEY, JSON.stringify(Array.isArray(d.lots) ? d.lots : []));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(Array.isArray(d.history) ? d.history : []));
+    if (d.watch) localStorage.setItem(WATCH_KEY, JSON.stringify(d.watch));
+    if (d.docket && d.docket.ways) localStorage.setItem(DOCKET_KEY, JSON.stringify(d.docket));
+    if (Array.isArray(d.market)) localStorage.setItem(MARKET_KEY, JSON.stringify(d.market));
+    if (Array.isArray(d.outq)) localStorage.setItem(OUTQ_KEY, JSON.stringify(d.outq));
+    localStorage.setItem('tnt_moved_in', new Date().toISOString());
+  } catch(e) { return false; }
+  location.reload();
+  return true;
+}
 
 /* ── Terms & disclaimer — shown once on first open, again whenever TERMS_VERSION changes ── */
 const TERMS_VERSION = '2026-09-19b';
@@ -4868,6 +4919,7 @@ function downloadExcelBlob(blob, name) {
 }
 
 function init() {
+  if (importFromMove()) return;
   load();
   loadLots();
   syncHeaderH();
@@ -4889,7 +4941,8 @@ function init() {
   fillSexChips();
  loadWatch(); loadDocket(); loadMarketQ(); loadOutQ(); if (!S.saleId) { S.saleId = newSaleId(); persist(); }
  termsNoteRender(); if (!termsAccepted()) openTerms(false);
- marketNoteRender(); tryMarketQueue(); tryOutQueue(); applyPlanUI(); recheckLicence(); tryLead();
+ marketNoteRender(); tryMarketQueue(); tryOutQueue(); applyPlanUI(); recheckLicence(); tryLead(); movedBarRender();
+  try { if (localStorage.getItem('tnt_moved_in')) { localStorage.removeItem('tnt_moved_in'); showToast('Welcome to penside.com.au — your data came with you'); } } catch(e) {}
  applyFeatures(); renderClasses(); calculate(); renderLots(); buildRing(); renderWatchlist(); bindKp();
   photoLoadAll().then(function(){ renderLots(); renderWatchlist(); updateCamButtons(); });
   trySyncQueue();
