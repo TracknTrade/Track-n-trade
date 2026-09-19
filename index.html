@@ -702,7 +702,8 @@
     .note { font-size: 13px; color: var(--ink-2); margin-top: 8px; line-height: 1.5; }
 
     /* ── Sale-mode switch (chips) ───────────────────────────────────────── */
-    .mode-sw { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .mode-sw { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .mode-sw button { white-space: nowrap; }
     .mode-sw button {
       border: 1.5px solid var(--line); background: var(--paper); color: var(--tt-800);
       border-radius: var(--r-md); padding: 10px 6px; font-weight: 600; font-size: 14px; line-height: 1.2; min-height: 54px;
@@ -1301,7 +1302,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.161'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.162'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
