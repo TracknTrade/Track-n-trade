@@ -276,7 +276,7 @@
     @media (prefers-reduced-motion: reduce) { .page-arrive, .page-arrive-left { animation: none; } .swipe-settle { transition: none; } }
     /* ── Sale summary page: a plain scrolling page to the right of the recorder ── */
     #pageSummary * { scroll-snap-align: none; }
-    .sum-wrap { padding: 8px 0 16px; }
+    .sum-wrap { padding: 8px 0 16px; min-height: calc(var(--app-h) - var(--header-h) - var(--nav-h) - var(--nav-safe)); }
     .sum-wrap .card { margin-bottom: 10px; }
     .sum-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .sum-back { border: 1.5px solid var(--line); background: var(--paper); color: var(--tt-800); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; }
@@ -1288,7 +1288,7 @@ const KEY = 'cbpro_v1';
 const LOTS_KEY = 'cbpro_lots';
 const HISTORY_KEY = 'cbpro_history';
 const HISTORY_CAP = 8;
-const APP_VERSION = '2026-09-19.153'; // bump this string on every deploy so update-checking can detect a new version
+const APP_VERSION = '2026-09-19.154'; // bump this string on every deploy so update-checking can detect a new version
 const defaults = {
   showIndicator: true, showMarketTrend: false, showAgist: true, profiles: {}, showSex: true, sexOn: null, lastSex: '', showTradeAnalysis: true, showMoneyRecord: true, lefty: false, contribMarket: false, deviceId: '', yardAuto: null, saleId: '', veilMax: true, ent: null, meMobile: '', lead: null, showRing: true, showWatchlist: true, showRecorder: true, showText: true,
   saleMode: 'special',
@@ -2532,11 +2532,13 @@ function bindKp() {
     split.addEventListener('touchend', function(e){ end(e, 'left', function(){ showTab('summary'); }, 'page-arrive'); }, {passive:true});
     split.addEventListener('touchcancel', function(){ ok = false; sx = null; reset(split); }, {passive:true});
   }
-  if (sum) {
-    sum.addEventListener('touchstart', function(e){ start(sum, e); }, {passive:true});
-    sum.addEventListener('touchmove', function(e){ move(e, 'right'); }, {passive:false});
-    sum.addEventListener('touchend', function(e){ end(e, 'right', goRecorder, 'page-arrive-left'); }, {passive:true});
-    sum.addEventListener('touchcancel', function(){ ok = false; sx = null; reset(sum); }, {passive:true});
+  const mainEl = document.querySelector('main');
+  if (sum && mainEl) {
+    // listen on main, not the page: a touch that lands in main's own padding below the last card still counts
+    mainEl.addEventListener('touchstart', function(e){ if (currentTab === 'summary') start(sum, e); }, {passive:true});
+    mainEl.addEventListener('touchmove', function(e){ if (currentTab === 'summary') move(e, 'right'); }, {passive:false});
+    mainEl.addEventListener('touchend', function(e){ if (currentTab === 'summary') end(e, 'right', goRecorder, 'page-arrive-left'); }, {passive:true});
+    mainEl.addEventListener('touchcancel', function(){ ok = false; sx = null; reset(sum); }, {passive:true});
   }
 })();
 /* indicator */
